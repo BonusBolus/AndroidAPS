@@ -147,7 +147,7 @@
     <string name="triggerStepsCountDropdownLabel">Measurement Duration</string>
 
     <!--    SMB mode-->
-    <string name="changeSmbState">Enable/disable SMB</string>
+    <string name="changeSmbState">Enable/Disable/Flip SMB</string>
     <string name="changeSmbTo">Change SMB to %1$s</string>
     <string name="newSmbMode">New SMB mode:</string>
     <string name="on">ON</string>
