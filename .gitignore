@@ -36,7 +36,8 @@ wear/pumpcontrol/*
 
 
 # Graphify
-ZZZ_for_Claude_graphify-out/*
-!ZZZ_for_Claude_graphify-out/GRAPH_REPORT.md
-!ZZZ_for_Claude_graphify-out/graph.json
-!ZZZ_for_Claude_graphify-out/.graphify_analysis.json
+AI_agents/agents_graphify/*
+!AI_agents/agents_graphify/GRAPH_REPORT.md
+!AI_agents/agents_graphify/graph.json
+!AI_agents/agents_graphify/.graphify_analysis.json
+AI_agents/agents_graphify/cache/
