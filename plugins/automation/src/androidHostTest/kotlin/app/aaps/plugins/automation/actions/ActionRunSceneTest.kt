@@ -3,6 +3,8 @@ package app.aaps.plugins.automation.actions
 import app.aaps.core.data.model.Scene
 import app.aaps.core.interfaces.scenes.SceneAutomationResult
 import app.aaps.plugins.automation.AutomationStrings
+import app.aaps.plugins.automation.elements.ComparatorExists
+import app.aaps.plugins.automation.triggers.TriggerSceneActive
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -14,7 +16,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.skyscreamer.jsonassert.JSONAssert
 
-private const val STRING_JSON = """{"data":{"sceneId":"scene-1"},"type":"ActionRunScene"}"""
+private const val STRING_JSON = """{"data":{"sceneId":"scene-1","guard":"NO_SCENE_ACTIVE"},"type":"ActionRunScene"}"""
 
 class ActionRunSceneTest : ActionsTestBase() {
 
@@ -95,5 +97,53 @@ class ActionRunSceneTest : ActionsTestBase() {
         sut.scene.value = "missing"
         whenever(sceneApi.getScene("missing")).thenReturn(null)
         assertThat(sut.isValid()).isFalse()
+    }
+
+    @Test fun defaultGuardSkipsWhileAnySceneIsRunning() = runTest {
+        assertThat(sut.guard).isEqualTo(ActionRunScene.Guard.NO_SCENE_ACTIVE)
+        val precondition = sut.precondition as TriggerSceneActive
+        assertThat(precondition.comparator.value).isEqualTo(ComparatorExists.Compare.NOT_EXISTS)
+        assertThat(precondition.scene.value).isEmpty()
+
+        whenever(sceneApi.isAnySceneActive()).thenReturn(true)
+        assertThat(precondition.shouldRun()).isFalse()
+        whenever(sceneApi.isAnySceneActive()).thenReturn(false)
+        assertThat(precondition.shouldRun()).isTrue()
+    }
+
+    @Test fun targetNotActiveGuardReplacesOtherScenesButNotItself() = runTest {
+        sut.guard = ActionRunScene.Guard.TARGET_NOT_ACTIVE
+        sut.scene.value = "scene-1" // set after the guard: the check must follow the chosen scene
+
+        val precondition = sut.precondition!!
+        whenever(sceneApi.activeSceneId()).thenReturn("scene-2")
+        assertThat(precondition.shouldRun()).isTrue()
+        whenever(sceneApi.activeSceneId()).thenReturn("scene-1")
+        assertThat(precondition.shouldRun()).isFalse()
+        whenever(sceneApi.activeSceneId()).thenReturn(null)
+        assertThat(precondition.shouldRun()).isTrue()
+    }
+
+    @Test fun noneGuardHasNoPrecondition() {
+        sut.guard = ActionRunScene.Guard.NONE
+        assertThat(sut.precondition).isNull()
+    }
+
+    @Test fun guardIsRestoredFromJSON() {
+        sut.fromJSON("""{"sceneId":"scene-1","guard":"TARGET_NOT_ACTIVE"}""")
+        assertThat(sut.guard).isEqualTo(ActionRunScene.Guard.TARGET_NOT_ACTIVE)
+        assertThat(sut.precondition).isNotNull()
+        sut.fromJSON("""{"sceneId":"scene-1","guard":"NONE"}""")
+        assertThat(sut.guard).isEqualTo(ActionRunScene.Guard.NONE)
+        assertThat(sut.precondition).isNull()
+    }
+
+    @Test fun missingOrUnknownGuardGivesTheSafestGuard() {
+        sut.guard = ActionRunScene.Guard.NONE
+        sut.fromJSON("""{"sceneId":"scene-1"}""")
+        assertThat(sut.guard).isEqualTo(ActionRunScene.Guard.NO_SCENE_ACTIVE)
+        sut.guard = ActionRunScene.Guard.NONE
+        sut.fromJSON("""{"sceneId":"scene-1","guard":"FROM_A_NEWER_VERSION"}""")
+        assertThat(sut.guard).isEqualTo(ActionRunScene.Guard.NO_SCENE_ACTIVE)
     }
 }

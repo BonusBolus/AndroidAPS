@@ -1,5 +1,6 @@
 package app.aaps.plugins.automation.triggers
 
+import app.aaps.core.data.model.Scene
 import app.aaps.core.interfaces.navigation.ElementType
 import app.aaps.core.utils.lenientString
 import app.aaps.plugins.automation.AutomationStrings
@@ -54,5 +55,45 @@ class TriggerSceneActiveTest : TriggerTestBase() {
         assertThat(t.friendlyDescription()).isEqualTo("Scene exists")
         assertThat(t.composeIcon()).isNotNull()
         assertThat(t.elementType()).isEqualTo(ElementType.SCENE)
+    }
+
+    private fun triggerFor(sceneId: String, compare: ComparatorExists.Compare) =
+        trigger(compare).also { it.scene.value = sceneId }
+
+    @Test fun shouldRun_forChosenScene() = runTest {
+        whenever(sceneApi.activeSceneId()).thenReturn("scene-1")
+        assertThat(triggerFor("scene-1", ComparatorExists.Compare.EXISTS).shouldRun()).isTrue()
+        assertThat(triggerFor("scene-1", ComparatorExists.Compare.NOT_EXISTS).shouldRun()).isFalse()
+        // another scene is the running one
+        assertThat(triggerFor("scene-2", ComparatorExists.Compare.EXISTS).shouldRun()).isFalse()
+        assertThat(triggerFor("scene-2", ComparatorExists.Compare.NOT_EXISTS).shouldRun()).isTrue()
+    }
+
+    @Test fun shouldRun_forChosenSceneWhenNoSceneActive() = runTest {
+        whenever(sceneApi.activeSceneId()).thenReturn(null)
+        assertThat(triggerFor("scene-1", ComparatorExists.Compare.EXISTS).shouldRun()).isFalse()
+        assertThat(triggerFor("scene-1", ComparatorExists.Compare.NOT_EXISTS).shouldRun()).isTrue()
+    }
+
+    @Test fun json_sceneRoundTrip() {
+        val data = triggerFor("scene-1", ComparatorExists.Compare.EXISTS).dataJSON().toString()
+        val restored = triggerFactory.triggerSceneActive().fromJSON(data) as TriggerSceneActive
+        assertThat(restored.scene.value).isEqualTo("scene-1")
+    }
+
+    @Test fun json_withoutSceneMeansAnyScene() {
+        // Stored before the scene could be chosen.
+        val restored = triggerFactory.triggerSceneActive().fromJSON("""{"comparator":"EXISTS"}""") as TriggerSceneActive
+        assertThat(restored.scene.value).isEmpty()
+    }
+
+    @Test fun duplicate_copiesScene() {
+        val copy = triggerFor("scene-1", ComparatorExists.Compare.EXISTS).duplicate() as TriggerSceneActive
+        assertThat(copy.scene.value).isEqualTo("scene-1")
+    }
+
+    @Test fun friendlyDescription_withChosenScene() {
+        whenever(sceneApi.getScene("scene-1")).thenReturn(Scene(id = "scene-1", name = "Sleep"))
+        assertThat(triggerFor("scene-1", ComparatorExists.Compare.EXISTS).friendlyDescription()).isEqualTo("Scene Sleep exists")
     }
 }

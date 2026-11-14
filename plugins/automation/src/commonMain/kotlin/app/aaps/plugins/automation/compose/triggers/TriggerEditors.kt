@@ -15,6 +15,7 @@ import app.aaps.core.ui.CoreUiStrings
 import app.aaps.core.ui.compose.NumberInputRow
 import app.aaps.core.ui.compose.stringResource
 import app.aaps.plugins.automation.AutomationStrings
+import app.aaps.plugins.automation.compose.actions.ScenePicker
 import app.aaps.plugins.automation.compose.elements.AutomationDropdown
 import app.aaps.plugins.automation.compose.elements.ComparatorConnectEditor
 import app.aaps.plugins.automation.compose.elements.ComparatorExistsEditor
@@ -49,6 +50,7 @@ import app.aaps.plugins.automation.triggers.TriggerPumpBatteryAge
 import app.aaps.plugins.automation.triggers.TriggerPumpBatteryLevel
 import app.aaps.plugins.automation.triggers.TriggerPumpLastConnection
 import app.aaps.plugins.automation.triggers.TriggerRecurringTime
+import app.aaps.plugins.automation.triggers.TriggerSceneActive
 import app.aaps.plugins.automation.triggers.TriggerReservoirLevel
 import app.aaps.plugins.automation.triggers.TriggerSensorAge
 import app.aaps.plugins.automation.triggers.TriggerStepsCount
@@ -93,6 +95,7 @@ fun TriggerEditor(
             is TriggerPumpLastConnection -> TriggerPumpLastConnectionEditor(trigger, onChange, tick)
             is TriggerProfilePercent     -> TriggerProfilePercentEditor(trigger, onChange, tick)
             is TriggerTempTarget         -> TriggerTempTargetEditor(trigger, onChange)
+            is TriggerSceneActive        -> TriggerSceneActiveEditor(trigger, onChange, tick)
             is TriggerTempTargetValue    -> TriggerTempTargetValueEditor(trigger, onChange, tick)
             is TriggerStepsCount         -> TriggerStepsCountEditor(trigger, onChange, tick)
             is TriggerTime               -> TriggerTimeEditor(trigger, onChange)
@@ -439,6 +442,18 @@ fun TriggerProfilePercentEditor(t: TriggerProfilePercent, onChange: () -> Unit, 
 @Composable
 fun TriggerTempTargetEditor(t: TriggerTempTarget, onChange: () -> Unit) {
     ComparatorExistsEditor(t.comparator.value, onValueChange = { t.comparator.value = it; onChange() })
+}
+
+@Composable
+fun TriggerSceneActiveEditor(t: TriggerSceneActive, onChange: () -> Unit, tick: Int = 0) {
+    @Suppress("UNUSED_EXPRESSION") tick
+    ComparatorExistsEditor(t.comparator.value, onValueChange = { t.comparator.value = it; onChange() })
+    ScenePicker(
+        selectedId = t.scene.value,
+        sceneOptions = t.scenes(),
+        onPicked = { t.scene.value = it; onChange() },
+        anyLabel = stringResource(AutomationStrings.trigger_scene_any)
+    )
 }
 
 @Composable

@@ -30,6 +30,7 @@ import app.aaps.plugins.automation.actions.ActionSendSMS
 import app.aaps.plugins.automation.actions.ActionSettingsExport
 import app.aaps.plugins.automation.actions.ActionSmoothingChange
 import app.aaps.plugins.automation.actions.ActionStartTempTarget
+import app.aaps.plugins.automation.actions.ActionStopScene
 import app.aaps.plugins.automation.compose.elements.AutomationDropdown
 import app.aaps.plugins.automation.compose.elements.InputDropdownOnOffEditor
 import app.aaps.plugins.automation.compose.elements.InputStringEditor
@@ -76,6 +77,7 @@ fun ActionEditor(
             is ActionRunScene             -> ActionRunSceneEditor(action, sceneOptions, tick, onChange)
             is ActionEnableScene          -> ActionEnableSceneEditor(action, sceneOptions, tick, onChange)
             is ActionDisableScene         -> ActionDisableSceneEditor(action, sceneOptions, tick, onChange)
+            is ActionStopScene            -> ActionStopSceneEditor(action, tick, onChange)
             else                          -> Text(action::class.simpleName.orEmpty())
         }
     }
@@ -273,11 +275,13 @@ fun ActionStartTempTargetEditor(a: ActionStartTempTarget, tick: Int = 0, onChang
     )
 }
 
+/** [anyLabel] adds a first choice that gives an empty id, meaning any scene. */
 @Composable
-private fun ScenePicker(
+internal fun ScenePicker(
     selectedId: String,
     sceneOptions: List<Scene>,
-    onPicked: (String) -> Unit
+    onPicked: (String) -> Unit,
+    anyLabel: String? = null
 ) {
     // Disambiguate dropdown labels when scene names collide so picking is unambiguous.
     val nameCounts = sceneOptions.groupingBy { it.name }.eachCount()
@@ -285,13 +289,14 @@ private fun ScenePicker(
         val unique = (nameCounts[scene.name] ?: 0) <= 1
         scene.id to if (unique) scene.name else "${scene.name} (${scene.id.take(6)})"
     }
-    val labels = sceneOptions.map { labelById.getValue(it.id) }
-    val selectedLabel = labelById[selectedId].orEmpty()
+    val labels = listOfNotNull(anyLabel) + sceneOptions.map { labelById.getValue(it.id) }
+    val selectedLabel = if (selectedId.isEmpty() && anyLabel != null) anyLabel else labelById[selectedId].orEmpty()
     AutomationDropdown(
         value = selectedLabel,
         options = labels,
         onValueChange = { pickedLabel ->
-            labelById.entries.firstOrNull { it.value == pickedLabel }?.key?.let(onPicked)
+            if (pickedLabel == anyLabel) onPicked("")
+            else labelById.entries.firstOrNull { it.value == pickedLabel }?.key?.let(onPicked)
         },
         label = stringResource(AutomationStrings.action_scene_label)
     )
@@ -304,6 +309,15 @@ fun ActionRunSceneEditor(a: ActionRunScene, sceneOptions: List<Scene>, tick: Int
         selectedId = a.scene.value,
         sceneOptions = sceneOptions,
         onPicked = { a.scene.value = it; onChange() }
+    )
+    val guardLabels = ActionRunScene.Guard.entries.associateWith { stringResource(it.stringRes) }
+    AutomationDropdown(
+        value = guardLabels.getValue(a.guard),
+        options = guardLabels.values.toList(),
+        onValueChange = { pickedLabel ->
+            guardLabels.entries.firstOrNull { it.value == pickedLabel }?.key?.let { a.guard = it; onChange() }
+        },
+        label = stringResource(AutomationStrings.action_run_scene_guard_label)
     )
 }
 
@@ -324,5 +338,18 @@ fun ActionDisableSceneEditor(a: ActionDisableScene, sceneOptions: List<Scene>, t
         selectedId = a.scene.value,
         sceneOptions = sceneOptions,
         onPicked = { a.scene.value = it; onChange() }
+    )
+}
+
+@Composable
+fun ActionStopSceneEditor(a: ActionStopScene, tick: Int = 0, onChange: () -> Unit) {
+    @Suppress("UNUSED_EXPRESSION") tick
+    val stopOnly = stringResource(AutomationStrings.action_stop_scene_option_stop_only)
+    val withFollowUp = stringResource(AutomationStrings.action_stop_scene_option_follow_up)
+    AutomationDropdown(
+        value = if (a.runFollowUp) withFollowUp else stopOnly,
+        options = listOf(stopOnly, withFollowUp),
+        onValueChange = { a.runFollowUp = it == withFollowUp; onChange() },
+        label = stringResource(AutomationStrings.action_stop_scene_follow_up_label)
     )
 }
