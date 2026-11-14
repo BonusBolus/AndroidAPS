@@ -17,7 +17,7 @@ Use the upstream `master` branch as the reference implementation.
  
 ### Core Principles
  
-* **Safety above all else.** Never bypass or weaken existing safety mechanisms.
+* **Safety above all else.** Never bypass or weaken existing safety mechanisms
 * **Simple beats complex.** Use the simplest solution that correctly solves the problem.
 * **One correct path.** Avoid unnecessary alternatives, fallbacks, abstractions, and duplicate mechanisms.
 * **Surgical changes only.** Make the smallest change necessary; don't refactor unrelated code.
