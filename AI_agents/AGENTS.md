@@ -115,5 +115,4 @@ Skills live in `AI_agents/skills/<name>/SKILL.md`. Claude Code and Antigravity d
 
 ## Reference Material
 
-- `AI_agents/agents_graphify/` (`GRAPH_REPORT.md`, `graph.json`, `.graphify_analysis.json`): Graphify analysis, a snapshot for orientation only. Always verify against the actual source; for safety-critical code never rely on it alone. If it disagrees with the source, trust the source and tell the user it is stale and should be regenerated.
 - `AI_agents/AndroidAPS_Feature_Backlog.md`: planned custom features (SMB max-minutes actions, BG notification icon, Garmin, AutoISF, FPU bolus). Read it when asked about the backlog or porting an upstream PR; re-verify against current upstream before starting an item.

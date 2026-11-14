@@ -40,12 +40,6 @@ wear/watchfacepush/*Cwf/*
 .claude/CLAUDE_COMMANDS.md
 
 
-# Graphify
-AI_agents/agents_graphify/*
-!AI_agents/agents_graphify/GRAPH_REPORT.md
-!AI_agents/agents_graphify/graph.json
-!AI_agents/agents_graphify/.graphify_analysis.json
-AI_agents/agents_graphify/cache/
 tmpclaude-*
 ios/app/Signing.local.xcconfig
 ios/app/build*/
