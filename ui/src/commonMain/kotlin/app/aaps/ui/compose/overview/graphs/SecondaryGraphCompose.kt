@@ -27,6 +27,7 @@ import app.aaps.core.interfaces.overview.graph.BolusType
 import app.aaps.core.interfaces.overview.graph.DeviationType
 import app.aaps.core.interfaces.overview.graph.GraphDataPoint
 import app.aaps.core.interfaces.overview.graph.SeriesType
+import app.aaps.core.interfaces.overview.graph.TirGraphMode
 import app.aaps.core.interfaces.overview.graph.TreatmentGraphData
 import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.ui.compose.AapsTheme
@@ -110,6 +111,8 @@ private data class ModelInput(
 fun SecondaryGraphCompose(
     viewModel: GraphViewModel,
     seriesTypes: List<SeriesType>,
+    tirMode: TirGraphMode = TirGraphMode.DAY,
+    onTirModeChange: ((TirGraphMode) -> Unit)? = null,
     scrollState: VicoScrollState,
     zoomState: VicoZoomState,
     derivedTimeRange: Pair<Long, Long>?,
@@ -122,6 +125,17 @@ fun SecondaryGraphCompose(
 ) {
     val dateUtil = LocalDateUtil.current
     if (seriesTypes.isEmpty()) return
+    if (SeriesType.TIR in seriesTypes) {
+        TirGraphCompose(
+            viewModel = viewModel,
+            mode = tirMode,
+            onModeChange = onTirModeChange ?: {},
+            derivedTimeRange = derivedTimeRange,
+            nowTimestamp = nowTimestamp,
+            modifier = modifier
+        )
+        return
+    }
 
     val sides = remember(seriesTypes) { graphSides(seriesTypes) }
 
@@ -895,6 +909,7 @@ data class SeriesColors(
         SeriesType.HEART_RATE      -> heartRate
         SeriesType.STEPS           -> steps
         SeriesType.ACTIVITY        -> activity
+        SeriesType.TIR             -> activity // TIR has its own bar renderer
         SeriesType.PREDICTIONS     -> activity // unused — PREDICTIONS is a BG overlay flag, not a secondary series
     }
 }

@@ -57,4 +57,15 @@ class SecondaryGraphHeightTest {
     fun writesNothingForANegativeIndex() {
         assertNull(withSecondaryGraphHeight(config, -1, cob.series, 200))
     }
+
+    @Test
+    fun tirReplacesOtherSeries() {
+        assertEquals(listOf(SeriesType.TIR), toggleSeries(bgi.series, SeriesType.TIR))
+        assertEquals(listOf(SeriesType.COB), toggleSeries(listOf(SeriesType.TIR), SeriesType.COB))
+    }
+
+    @Test
+    fun togglingTirOffLeavesAnEmptySelection() {
+        assertEquals(emptyList(), toggleSeries(listOf(SeriesType.TIR), SeriesType.TIR))
+    }
 }

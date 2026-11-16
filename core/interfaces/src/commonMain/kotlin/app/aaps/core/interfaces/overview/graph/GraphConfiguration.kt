@@ -25,16 +25,24 @@ enum class SeriesType {
     HEART_RATE,
     STEPS,
     ACTIVITY,
+    TIR,
     PREDICTIONS
+}
+
+enum class TirGraphMode {
+
+    DAY,
+    HOURS_24
 }
 
 /**
  * Secondary graph entry: series list + per-graph height (dp).
- * Max 2 series per graph. Height is per-graph user-adjustable.
+ * TIR is exclusive: it cannot be combined with another series.
  */
 data class SecondaryGraph(
     val series: List<SeriesType>,
-    val height: Int = GraphConfig.DEFAULT_GRAPH_HEIGHT_DP
+    val height: Int = GraphConfig.DEFAULT_GRAPH_HEIGHT_DP,
+    val tirMode: TirGraphMode = TirGraphMode.DAY
 )
 
 /**
@@ -51,7 +59,7 @@ data class SecondaryGraph(
  *   IOB cannot appear here (it has a dedicated fixed slot). Each graph is a List (not Set) to
  *   preserve selection order:
  *   - list[0] = left axis (start), list[1] = right axis (end).
- *   Max 2 series per graph. FIFO: adding a 3rd deselects the oldest.
+ *   TIR is exclusive and cannot be combined with another series.
  */
 data class GraphConfig(
     val bgOverlays: List<SeriesType> = listOf(SeriesType.ACTIVITY, SeriesType.PREDICTIONS),

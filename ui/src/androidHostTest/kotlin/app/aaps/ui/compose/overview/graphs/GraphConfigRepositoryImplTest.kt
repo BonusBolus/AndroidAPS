@@ -3,6 +3,7 @@ package app.aaps.ui.compose.overview.graphs
 import app.aaps.core.interfaces.overview.graph.GraphConfig
 import app.aaps.core.interfaces.overview.graph.SecondaryGraph
 import app.aaps.core.interfaces.overview.graph.SeriesType
+import app.aaps.core.interfaces.overview.graph.TirGraphMode
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.Test
 
@@ -23,12 +24,32 @@ class GraphConfigRepositoryImplTest {
             iobOverlays = listOf(SeriesType.ACTIVITY),
             bgHeight = 200,
             iobHeight = 150,
-            secondaryGraphs = listOf(SecondaryGraph(listOf(SeriesType.COB), 180))
+            secondaryGraphs = listOf(SecondaryGraph(listOf(SeriesType.COB), 180, TirGraphMode.DAY))
         )
 
         val restored = GraphConfigRepositoryImpl.fromJson(GraphConfigRepositoryImpl.toJson(config))
 
         assertThat(restored).isEqualTo(config)
+    }
+
+    @Test
+    fun `TIR is exclusive and keeps its selected mode`() {
+        val restored = GraphConfigRepositoryImpl.fromJson(
+            """{"secondaryGraphs":[{"series":["TIR","COB"],"height":180,"tirMode":"HOURS_24"}]}"""
+        )
+
+        assertThat(restored.secondaryGraphs).containsExactly(
+            SecondaryGraph(listOf(SeriesType.TIR), 180, TirGraphMode.HOURS_24)
+        )
+    }
+
+    @Test
+    fun `missing TIR mode defaults to day`() {
+        val restored = GraphConfigRepositoryImpl.fromJson(
+            """{"secondaryGraphs":[{"series":["TIR"]}]}"""
+        )
+
+        assertThat(restored.secondaryGraphs.first().tirMode).isEqualTo(TirGraphMode.DAY)
     }
 
     @Test

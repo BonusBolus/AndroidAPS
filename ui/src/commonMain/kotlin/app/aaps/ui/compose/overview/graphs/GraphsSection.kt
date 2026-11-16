@@ -703,6 +703,15 @@ fun GraphsSection(
                     viewModel = graphViewModel,
                     inspect = inspect,
                     seriesTypes = secondary.series,
+                    tirMode = secondary.tirMode,
+                    onTirModeChange = { mode ->
+                        val currentConfig = graphViewModel.graphConfigFlow.value
+                        val graphs = currentConfig.secondaryGraphs.toMutableList()
+                        if (i < graphs.size && graphs[i] == secondary) {
+                            graphs[i] = secondary.copy(tirMode = mode)
+                            graphViewModel.updateGraphConfig(currentConfig.copy(secondaryGraphs = graphs))
+                        }
+                    },
                     scrollState = secScrollStates[i],
                     zoomState = secZoomStates[i],
                     derivedTimeRange = derivedTimeRange,
@@ -739,13 +748,7 @@ fun GraphsSection(
                 },
                 onToggle = { type ->
                     val graphs = graphConfig.secondaryGraphs.toMutableList()
-                    val current = graphs[index].series.toMutableList()
-                    if (type in current) {
-                        current.remove(type)
-                    } else {
-                        current.add(type)
-                        if (current.size > 2) current.removeAt(0) // FIFO: drop oldest
-                    }
+                    val current = toggleSeries(graphs[index].series, type)
                     if (current.isEmpty()) {
                         // Auto-remove graph when all series deselected
                         graphs.removeAt(index)
@@ -789,14 +792,7 @@ fun GraphsSection(
                 height = newGraphHeight,
                 onHeightChange = { newGraphHeight = it },
                 onToggle = { type ->
-                    val current = newGraphSeries.toMutableList()
-                    if (type in current) {
-                        current.remove(type)
-                    } else {
-                        current.add(type)
-                        if (current.size > 2) current.removeAt(0)
-                    }
-                    newGraphSeries = current
+                    newGraphSeries = toggleSeries(newGraphSeries, type)
                 },
                 onDismiss = {
                     if (newGraphSeries.isNotEmpty()) {
@@ -842,6 +838,14 @@ internal fun withSecondaryGraphHeight(config: GraphConfig, index: Int, expectedS
     return config.copy(secondaryGraphs = graphs)
 }
 
+internal fun toggleSeries(current: List<SeriesType>, type: SeriesType): List<SeriesType> =
+    when {
+        type in current -> current - type
+        type == SeriesType.TIR || SeriesType.TIR in current -> listOf(type)
+        current.size >= 2 -> current.drop(1) + type
+        else -> current + type
+    }
+
 // =========================================================================
 // Graph label generation
 // =========================================================================
@@ -866,6 +870,7 @@ private fun seriesShortNameId(type: SeriesType): TextRef = when (type) {
     SeriesType.HEART_RATE      -> CoreUiStrings.heartRate_shortname
     SeriesType.STEPS           -> CoreUiStrings.steps_shortname
     SeriesType.ACTIVITY        -> CoreUiStrings.activity_shortname
+    SeriesType.TIR          -> CoreUiStrings.tir
     SeriesType.PREDICTIONS     -> CoreUiStrings.predictions_shortname
 }
 
@@ -882,6 +887,7 @@ private fun seriesNameId(type: SeriesType): TextRef = when (type) {
     SeriesType.HEART_RATE      -> CoreUiStrings.graph_series_heart_rate
     SeriesType.STEPS           -> CoreUiStrings.graph_series_steps
     SeriesType.ACTIVITY        -> CoreUiStrings.graph_series_activity
+    SeriesType.TIR          -> CoreUiStrings.graph_series_tir
     SeriesType.PREDICTIONS     -> CoreUiStrings.graph_series_predictions
 }
 

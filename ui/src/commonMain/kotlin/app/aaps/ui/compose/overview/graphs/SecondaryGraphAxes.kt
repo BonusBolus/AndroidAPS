@@ -26,6 +26,7 @@ internal fun axisRuleOf(type: SeriesType): AxisRule = when (type) {
     SeriesType.SENSITIVITY                            -> AxisRule.Pivot(100.0, SENS_MIN_DEVIATION)
     SeriesType.DEV_SLOPE                              -> AxisRule.Pivot(0.0)
     SeriesType.VAR_SENSITIVITY, SeriesType.HEART_RATE -> AxisRule.Free
+    SeriesType.TIR                                     -> AxisRule.Free
     else                                              -> AxisRule.ZeroFloor
 }
 
