@@ -665,6 +665,7 @@ class OverviewDataCacheImpl(
             TempTargetDisplayData(
                 targetRangeText = targetRange,
                 state = TempTargetState.ACTIVE,
+                profileTargetRangeText = "",
                 timestamp = tempTarget.timestamp,
                 duration = tempTarget.duration,
                 reason = tempTarget.reason,
@@ -679,11 +680,18 @@ class OverviewDataCacheImpl(
                 if (adjustedTarget != null) {
                     // APS adjusted target
                     val apsTarget = profileUtil.toTargetRangeString(adjustedTarget, adjustedTarget, GlucoseUnit.MGDL, units)
-                    TempTargetDisplayData(apsTarget, TempTargetState.ADJUSTED, 0L, 0L)
+                    val profileTarget = profileUtil.toTargetRangeString(profile.getTargetLowMgdl(), profile.getTargetHighMgdl(), GlucoseUnit.MGDL, units)
+                    TempTargetDisplayData(
+                        targetRangeText = apsTarget,
+                        state = TempTargetState.ADJUSTED,
+                        profileTargetRangeText = profileTarget,
+                        timestamp = 0L,
+                        duration = 0L
+                    )
                 } else {
                     // Default profile target
                     val profileTarget = profileUtil.toTargetRangeString(profile.getTargetLowMgdl(), profile.getTargetHighMgdl(), GlucoseUnit.MGDL, units)
-                    TempTargetDisplayData(profileTarget, TempTargetState.NONE, 0L, 0L)
+                    TempTargetDisplayData(profileTarget, TempTargetState.NONE, timestamp = 0L, duration = 0L)
                 }
             } else {
                 // No profile loaded yet

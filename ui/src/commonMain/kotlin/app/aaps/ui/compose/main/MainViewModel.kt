@@ -60,6 +60,7 @@ import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.Round
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.BooleanKey
+import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.StringNonKey
 import app.aaps.core.keys.interfaces.AppPlatform
 import app.aaps.core.keys.interfaces.Preferences
@@ -257,6 +258,7 @@ class MainViewModel(
             isProfileModified = chip.isProfileModified,
             profileProgress = chip.profileProgress,
             tempTargetText = chip.tempTargetText,
+            profileTargetText = chip.profileTargetText,
             tempTargetState = chip.tempTargetState,
             tempTargetProgress = chip.tempTargetProgress,
             tempTargetReason = chip.tempTargetReason,
@@ -268,6 +270,7 @@ class MainViewModel(
             runningModeRecordId = chip.runningModeRecordId,
             tbrState = chip.tbrState,
             smbEnabled = ev.smbEnabled,
+            smbMaxMinutes = ev.smbMaxMinutes,
             quickWizardItems = chip.quickWizardItems
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MainUiState())
@@ -278,6 +281,9 @@ class MainViewModel(
             .launchIn(viewModelScope)
         preferences.observe(BooleanKey.ApsUseSmb)
             .onEach { smb -> _eventState.update { it.copy(smbEnabled = smb) } }
+            .launchIn(viewModelScope)
+        preferences.observe(IntKey.ApsMaxMinutesOfBasalToLimitSmb)
+            .onEach { minutes -> _eventState.update { it.copy(smbMaxMinutes = minutes) } }
             .launchIn(viewModelScope)
         observeQuickLaunch()
     }
@@ -371,6 +377,7 @@ class MainViewModel(
             isProfileModified = profileData?.isModified ?: false,
             profileProgress = profileProgress,
             tempTargetText = ttText,
+            profileTargetText = ttData?.profileTargetRangeText ?: "",
             tempTargetState = if (ttExpired) TempTargetChipState.None
             else ttData?.state?.toChipState() ?: TempTargetChipState.None,
             tempTargetProgress = ttProgress,
@@ -1030,6 +1037,7 @@ private data class EventState(
     val isDrawerOpen: Boolean = false,
     val isSimpleMode: Boolean = true,
     val smbEnabled: Boolean = false,
+    val smbMaxMinutes: Int = 0,
     val showAboutDialog: Boolean = false,
     val showMaintenanceSheet: Boolean = false,
     val showAuthFailedDialog: Boolean = false
@@ -1047,6 +1055,7 @@ private data class ChipState(
     val isProfileModified: Boolean = false,
     val profileProgress: Float = 0f,
     val tempTargetText: String = "",
+    val profileTargetText: String = "",
     val tempTargetState: TempTargetChipState = TempTargetChipState.None,
     val tempTargetProgress: Float = 0f,
     val tempTargetReason: TT.Reason? = null,

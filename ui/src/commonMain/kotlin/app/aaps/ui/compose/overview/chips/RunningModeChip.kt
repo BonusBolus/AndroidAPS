@@ -8,12 +8,13 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -26,10 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import app.aaps.core.data.model.RM
 import app.aaps.core.ui.CoreUiStrings
 import app.aaps.core.ui.compose.AapsSpacing
@@ -44,10 +42,10 @@ import app.aaps.core.ui.compose.icons.IcLoopPaused
 import app.aaps.core.ui.compose.icons.IcLoopPausedDst
 import app.aaps.core.ui.compose.icons.IcLoopPausedPump
 import app.aaps.core.ui.compose.icons.IcLoopSuperbolus
+import app.aaps.core.ui.compose.icons.IcSmb
 import app.aaps.core.ui.compose.icons.IcQuestion
 import app.aaps.core.ui.compose.loopColor
 import app.aaps.core.ui.compose.stringResource
-import app.aaps.ui.compose.overview.graphs.TriangleShape
 
 /**
  * @see RunningModeChipClosedLoopPreview
@@ -70,6 +68,7 @@ fun RunningModeChip(
     remaining: String = "",
     sceneManaged: Boolean = false,
     smbEnabled: Boolean = false,
+    smbMaxMinutes: Int = 0,
     enabled: Boolean = true,
     onClick: () -> Unit = {}
 ) {
@@ -101,23 +100,42 @@ fun RunningModeChip(
                         .fillMaxHeight()
                         .padding(start = AapsSpacing.medium, end = AapsSpacing.small, top = AapsSpacing.small, bottom = AapsSpacing.small)
                 ) {
-                    Box(modifier = Modifier.size(AapsSpacing.chipIconSize)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.height(IntrinsicSize.Min)
+                    ) {
                         Icon(
                             imageVector = mode?.toIcon() ?: IcQuestion,
                             contentDescription = text,
                             tint = iconColor,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.size(AapsSpacing.chipIconSize)
                         )
-                        if (smbEnabled) {
-                            // Only a small drawn triangle; named so the chip reads "Closed Loop, SMB".
-                            val smbLabel = stringResource(CoreUiStrings.smb_shortname)
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .offset(x = 4.dp, y = 4.dp)
-                                    .size(13.dp)
-                                    .background(AapsTheme.elementColors.insulin, TriangleShape)
-                                    .semantics { contentDescription = smbLabel }
+                        if (smbMaxMinutes > 0) {
+                            Box {
+                                Icon(
+                                    imageVector = IcSmb,
+                                    contentDescription = stringResource(CoreUiStrings.smb_shortname),
+                                    tint = if (smbEnabled) AapsTheme.elementColors.insulin else MaterialTheme.colorScheme.error,
+                                    modifier = Modifier
+                                        .padding(start = AapsSpacing.small)
+                                        .size(AapsSpacing.chipIconSize)
+                                )
+                                if (!smbEnabled) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = stringResource(CoreUiStrings.smb_shortname),
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier
+                                            .align(Alignment.Center)
+                                            .size(AapsSpacing.chipIconSize)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "${smbMaxMinutes}m",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (smbEnabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(start = AapsSpacing.small)
                             )
                         }
                     }
