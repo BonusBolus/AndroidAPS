@@ -396,6 +396,9 @@ fun NavGraphBuilder.appNavGraph(
     ) {
         WizardDialogScreen(
             wizardSettingsDef = builtInSearchables.wizardSettings,
+            bgInfoState = graphViewModel.bgInfoState,
+            iobUiState = chipsViewModel.iobUiState,
+            cobUiState = chipsViewModel.cobUiState,
             onNavigateBack = { navController.safePopBackStack() },
             onShowDeliveryError = { comment ->
                 onShowDeliveryError(comment, CoreUiStrings.treatmentdeliveryerror)
