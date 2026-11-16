@@ -37,6 +37,23 @@ class ActionProfileSwitchPercentTest : ActionsTestBase() {
         assertThat(sut.shortDescription()).isEqualTo("Start profile 100% for 30 min")
     }
 
+    @Test fun permanentSwitchTest() = runTest {
+        whenever(profileFunction.createProfileSwitch(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(mock<PS>())
+        sut.pct = InputPercent(100.0)
+        sut.duration = InputDuration(0, InputDuration.TimeUnit.MINUTES)
+        assertThat(sut.isValid()).isTrue()
+        assertThat(sut.shortDescription()).isEqualTo("Start profile 100%")
+        assertThat(sut.doAction().success).isTrue()
+        verify(profileFunction, times(1)).createProfileSwitch(eq(0), eq(100), eq(0), any(), any(), any(), any(), eq(0L))
+    }
+
+    @Test fun preconditionOnlyForTemporarySwitchTest() = runTest {
+        sut.duration = InputDuration(30, InputDuration.TimeUnit.MINUTES)
+        assertThat(sut.precondition).isNotNull()
+        sut.duration = InputDuration(0, InputDuration.TimeUnit.MINUTES)
+        assertThat(sut.precondition).isNull()
+    }
+
     @Test fun doActionTest() = runTest {
         whenever(profileFunction.createProfileSwitch(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(mock<PS>())
         sut.pct = InputPercent(110.0)

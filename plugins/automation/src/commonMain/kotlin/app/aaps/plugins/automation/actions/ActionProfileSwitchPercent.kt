@@ -35,9 +35,15 @@ class ActionProfileSwitchPercent(
 
 
     var pct = InputPercent()
+    /** Minutes, 0 = permanent switch of the current profile. */
     var duration = InputDuration(30, InputDuration.TimeUnit.MINUTES)
 
-    override var precondition: Trigger? = TriggerProfilePercent(triggerDeps, 100.0, Comparator.Compare.IS_EQUAL)
+    private val profileAt100Percent = TriggerProfilePercent(triggerDeps, 100.0, Comparator.Compare.IS_EQUAL)
+
+    // A temporary switch only starts from 100%. A permanent one replaces whatever percentage is running, so no precondition.
+    override var precondition: Trigger?
+        get() = if (duration.value > 0) profileAt100Percent else null
+        set(_) = Unit
 
     override fun friendlyName(): TextRef = AutomationStrings.profilepercentage
     override fun shortDescription(): String =
@@ -54,7 +60,7 @@ class ActionProfileSwitchPercent(
             timeShiftInHours = 0,
             action = app.aaps.core.data.ue.Action.PROFILE_SWITCH,
             source = Sources.Automation,
-            note = rh.gs(InterfacesStrings.confirmation_line, title, rh.gs(CoreUiStrings.startprofile, pct.value.toInt(), duration.value)),
+            note = rh.gs(InterfacesStrings.confirmation_line, title, shortDescription()),
             listValues = listOf(
                 ValueWithUnit.Percent(pct.value.toInt()),
                 ValueWithUnit.Minute(duration.value)
@@ -93,5 +99,5 @@ class ActionProfileSwitchPercent(
     override fun isValid(): Boolean =
         pct.value >= InputPercent.MIN &&
             pct.value <= InputPercent.MAX &&
-            duration.value > 0
+            duration.value >= 0
 }
