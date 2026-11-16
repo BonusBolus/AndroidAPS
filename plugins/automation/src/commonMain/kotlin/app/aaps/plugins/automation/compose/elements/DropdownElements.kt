@@ -83,6 +83,28 @@ fun InputDropdownOnOffEditor(
     }
 }
 
+/**
+ * On / Off / Toggle selector. [state] is `null` when Toggle is selected.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun InputDropdownOnOffToggleEditor(
+    state: Boolean?,
+    onValueChange: (Boolean?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val options = listOf(true to "On", false to "Off", null to "Toggle")
+    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+        options.forEachIndexed { i, (v, label) ->
+            SegmentedButton(
+                selected = state == v,
+                onClick = { onValueChange(v) },
+                shape = SegmentedButtonDefaults.itemShape(i, options.size)
+            ) { Text(label) }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InputLocationModeEditor(
