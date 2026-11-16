@@ -92,7 +92,10 @@ Do not expand the scope unless necessary for correctness or safety.
 
 The user does all building, testing, merging, and pushing.
 
-- Every feature gets its own branch: `feature/<short-name>` (e.g. `feature/smb-max-minutes-automation`). **Never work directly on `master`.** If no branch name has been established, ask; do not invent one.
+- Feature branches: Every functional feature gets its own branch: feature/<short-name> (e.g. feature/smb-max-minutes-automation). Never work directly on master. If no branch name has been established, ask the user before creating or switching branches. Never invent a branch name.
+
+- UI and non-functional branches: Changes that do not affect loop behaviour or algorithm functionality must be kept separate from functional feature branches. These branches can use a different naming convention, such as ui/<short-name> (e.g. ui/automation-settings-layout). The ui/ prefix is an example, not a strict requirement; other suitable naming conventions are allowed.
+
 - Allowed without asking: `git status`, `diff`, `log`, `fetch`; creating/switching to a `feature/*` branch; focused commits on the current `feature/*` branch (`WIP:` prefix for unfinished work).
 - **Never do** (the user does these): `git push`; merging into `master` (or `master` into a feature branch without asking); `rebase`, `reset --hard`, `push --force`, `clean -fd`, discarding uncommitted changes; merging/rebasing/resetting onto upstream; deleting branches. If a task seems to require one, stop and ask.
 - Pause: commit as `WIP: <state>` and switch. Abandon: the user deletes the branch; `master` stays untouched.
