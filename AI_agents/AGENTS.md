@@ -92,7 +92,7 @@ Do not expand the scope unless necessary for correctness or safety.
 
 The user does all building, testing, merging, and pushing.
 
-All new branches should be made from master, such that all feature branches only contain the unique features/changes and are up to date with upstream. For easy revertability. 
+All new branches should be made from main(which should be up to date with upstream master), such that all feature branches only contain the unique features/changes and are up to date with upstream. For easy revertability. 
 
 - Feature branches: Every functional feature gets its own branch: feature/<short-name> (e.g. feature/smb-max-minutes-automation). Never work directly on master. If no branch name has been established, ask the user before creating or switching branches. Never invent a branch name.
 
