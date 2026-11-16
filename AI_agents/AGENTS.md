@@ -1,7 +1,7 @@
 # AI_agents/AGENTS.md - BonusBolus/AndroidAPS
 
 Shared instructions for all AI coding agents (Codex, Claude Code, Gemini/Antigravity).
-Fork of `nightscout/AndroidAPS` (`master`). Target pump: Medtrum Nano 200U (`pump/medtrum`).
+Fork of `nightscout/AndroidAPS` (`master`). Target pump: Medtrum Nano 200U (`pump/medtrum`). More general project guidlines and skills in .claude and .agent. Below user specific guide
 
 ## AndroidAPS Development
  
