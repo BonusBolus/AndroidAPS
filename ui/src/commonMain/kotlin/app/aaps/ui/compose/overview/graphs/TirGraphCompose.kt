@@ -10,9 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,7 +37,6 @@ import app.aaps.core.interfaces.utils.MidnightTime
 internal fun TirGraphCompose(
     viewModel: GraphViewModel,
     mode: TirGraphMode,
-    onModeChange: (TirGraphMode) -> Unit,
     derivedTimeRange: Pair<Long, Long>?,
     nowTimestamp: Long,
     modifier: Modifier = Modifier
@@ -69,24 +65,6 @@ internal fun TirGraphCompose(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            TirGraphMode.entries.forEachIndexed { index, graphMode ->
-                SegmentedButton(
-                    selected = mode == graphMode,
-                    onClick = { onModeChange(graphMode) },
-                    shape = SegmentedButtonDefaults.itemShape(index, TirGraphMode.entries.size),
-                    label = {
-                        Text(
-                            if (graphMode == TirGraphMode.DAY) {
-                                stringResource(UiStrings.agp_today)
-                            } else {
-                                stringResource(UiStrings.agp_hours, 24)
-                            }
-                        )
-                    }
-                )
-            }
-        }
         breakdown?.let {
             TirBarCompose(
                 veryLowPct = it.veryLow,

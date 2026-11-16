@@ -112,7 +112,6 @@ fun SecondaryGraphCompose(
     viewModel: GraphViewModel,
     seriesTypes: List<SeriesType>,
     tirMode: TirGraphMode = TirGraphMode.DAY,
-    onTirModeChange: ((TirGraphMode) -> Unit)? = null,
     scrollState: VicoScrollState,
     zoomState: VicoZoomState,
     derivedTimeRange: Pair<Long, Long>?,
@@ -129,7 +128,6 @@ fun SecondaryGraphCompose(
         TirGraphCompose(
             viewModel = viewModel,
             mode = tirMode,
-            onModeChange = onTirModeChange ?: {},
             derivedTimeRange = derivedTimeRange,
             nowTimestamp = nowTimestamp,
             modifier = modifier

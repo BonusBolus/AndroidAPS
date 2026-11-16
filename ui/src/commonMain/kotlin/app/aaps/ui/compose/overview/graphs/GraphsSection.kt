@@ -26,6 +26,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -704,14 +707,6 @@ fun GraphsSection(
                     inspect = inspect,
                     seriesTypes = secondary.series,
                     tirMode = secondary.tirMode,
-                    onTirModeChange = { mode ->
-                        val currentConfig = graphViewModel.graphConfigFlow.value
-                        val graphs = currentConfig.secondaryGraphs.toMutableList()
-                        if (i < graphs.size && graphs[i] == secondary) {
-                            graphs[i] = secondary.copy(tirMode = mode)
-                            graphViewModel.updateGraphConfig(currentConfig.copy(secondaryGraphs = graphs))
-                        }
-                    },
                     scrollState = secScrollStates[i],
                     zoomState = secZoomStates[i],
                     derivedTimeRange = derivedTimeRange,
@@ -740,6 +735,7 @@ fun GraphsSection(
                 selectedSeries = editing.series,
                 availableSeries = CONFIGURABLE_SERIES,
                 height = editing.height,
+                tirMode = editing.tirMode,
                 onHeightChange = { h ->
                     // The current config, not the captured one: after "Remove graph" the captured
                     // config still holds the removed graph, and writing it back would restore it.
@@ -757,6 +753,14 @@ fun GraphsSection(
                         graphs[index] = graphs[index].copy(series = current)
                     }
                     graphViewModel.updateGraphConfig(graphConfig.copy(secondaryGraphs = graphs))
+                },
+                onTirModeChange = { mode ->
+                    val currentConfig = graphViewModel.graphConfigFlow.value
+                    val graphs = currentConfig.secondaryGraphs.toMutableList()
+                    graphs.getOrNull(index)?.let { current ->
+                        graphs[index] = current.copy(tirMode = mode)
+                        graphViewModel.updateGraphConfig(currentConfig.copy(secondaryGraphs = graphs))
+                    }
                 },
                 onRemoveGraph = {
                     val graphs = graphConfig.secondaryGraphs.toMutableList()
@@ -785,23 +789,27 @@ fun GraphsSection(
         if (canAddGraph && showAddSheet) {
             var newGraphSeries by remember { mutableStateOf(emptyList<SeriesType>()) }
             var newGraphHeight by remember { mutableIntStateOf(GraphConfig.DEFAULT_GRAPH_HEIGHT_DP) }
+            var newGraphTirMode by remember { mutableStateOf(TirGraphMode.DAY) }
             GraphSeriesBottomSheet(
                 title = stringResource(CoreUiStrings.graph_new),
                 selectedSeries = newGraphSeries,
                 availableSeries = CONFIGURABLE_SERIES,
                 height = newGraphHeight,
+                tirMode = newGraphTirMode,
                 onHeightChange = { newGraphHeight = it },
                 onToggle = { type ->
                     newGraphSeries = toggleSeries(newGraphSeries, type)
                 },
+                onTirModeChange = { newGraphTirMode = it },
                 onDismiss = {
                     if (newGraphSeries.isNotEmpty()) {
                         val graphs = graphConfig.secondaryGraphs.toMutableList()
-                        graphs.add(SecondaryGraph(newGraphSeries, newGraphHeight))
+                        graphs.add(SecondaryGraph(newGraphSeries, newGraphHeight, newGraphTirMode))
                         graphViewModel.updateGraphConfig(graphConfig.copy(secondaryGraphs = graphs))
                     }
                     newGraphSeries = emptyList()
                     newGraphHeight = GraphConfig.DEFAULT_GRAPH_HEIGHT_DP
+                    newGraphTirMode = TirGraphMode.DAY
                     showAddSheet = false
                 }
             )
@@ -951,8 +959,10 @@ private fun GraphSeriesBottomSheet(
     selectedSeries: List<SeriesType>,
     availableSeries: List<SeriesType>,
     height: Int,
+    tirMode: TirGraphMode = TirGraphMode.DAY,
     onHeightChange: (Int) -> Unit,
     onToggle: (SeriesType) -> Unit,
+    onTirModeChange: (TirGraphMode) -> Unit = {},
     onDismiss: () -> Unit,
     onRemoveGraph: (() -> Unit)? = null
 ) {
@@ -992,6 +1002,31 @@ private fun GraphSeriesBottomSheet(
                 step = 10.0,
                 formatAsInt = true
             )
+            if (SeriesType.TIR in selectedSeries) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = stringResource(CoreUiStrings.graph_series_tir),
+                    style = MaterialTheme.typography.labelMedium
+                )
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    TirGraphMode.entries.forEachIndexed { index, graphMode ->
+                        SegmentedButton(
+                            selected = tirMode == graphMode,
+                            onClick = { onTirModeChange(graphMode) },
+                            shape = SegmentedButtonDefaults.itemShape(index, TirGraphMode.entries.size),
+                            label = {
+                                Text(
+                                    if (graphMode == TirGraphMode.DAY) {
+                                        stringResource(UiStrings.agp_today)
+                                    } else {
+                                        stringResource(UiStrings.agp_hours, 24)
+                                    }
+                                )
+                            }
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.height(8.dp))
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
