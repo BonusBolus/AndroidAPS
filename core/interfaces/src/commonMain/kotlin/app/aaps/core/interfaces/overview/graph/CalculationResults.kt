@@ -365,7 +365,8 @@ data class TempTargetDisplayData(
     val timestamp: Long,                 // When TT started (for progress calculation)
     val duration: Long,                  // TT duration in ms (0 if not active)
     val reason: TT.Reason? = null,       // TT reason for icon coloring (null if no TT)
-    val recordId: Long = 0               // DB record ID (for scene override detection)
+    val recordId: Long = 0,              // DB record ID (for scene override detection)
+    val profileTargetRangeText: String = "" // Profile target, used when APS adjusts the target
 )
 
 /**
