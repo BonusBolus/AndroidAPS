@@ -67,12 +67,14 @@ class GraphConfigRepositoryImplTest {
     }
 
     @Test
-    fun `a repeated series is kept once, and at most two are kept`() {
+    fun `a repeated series is kept once, without a series count cap`() {
         val restored = GraphConfigRepositoryImpl.fromJson(
             """{"secondaryGraphs":[{"series":["COB","COB","ACTIVITY","DEVIATIONS"]}]}"""
         )
 
-        assertThat(restored.secondaryGraphs.first().series).containsExactly(SeriesType.COB, SeriesType.ACTIVITY).inOrder()
+        assertThat(restored.secondaryGraphs.first().series)
+            .containsExactly(SeriesType.COB, SeriesType.ACTIVITY, SeriesType.DEVIATIONS)
+            .inOrder()
     }
 
     @Test

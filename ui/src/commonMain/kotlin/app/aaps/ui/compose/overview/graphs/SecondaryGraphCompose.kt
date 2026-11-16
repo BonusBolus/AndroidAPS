@@ -95,7 +95,7 @@ private data class ModelInput(
 /**
  * General-purpose secondary graph composable.
  *
- * Shows one or two series. Every series draws the same way, on either axis:
+ * Shows one or more series. Every series draws the same way, on either axis:
  * - IOB: Blue line with area fill + bolus markers (SMBs, normal boluses, extended boluses)
  * - COB: Orange adaptive-step line with area fill + carbs markers + failover dots
  * - Simple line series (AbsIOB, BGI, Sensitivity, VarSens, DevSlope): Colored line with gradient fill
@@ -903,16 +903,17 @@ data class SeriesColors(
 fun rememberSeriesColors(): SeriesColors {
     val iobColor = AapsTheme.generalColors.iobPrediction
     val cobColor = AapsTheme.generalColors.cobPrediction
-    val onSurface = MaterialTheme.colorScheme.onSurface
-    return remember(iobColor, cobColor, onSurface) {
+    val sensitivityColor = AapsTheme.elementColors.sensitivity
+    val varSensitivityColor = AapsTheme.elementColors.scene
+    return remember(iobColor, cobColor, sensitivityColor, varSensitivityColor) {
         SeriesColors(
             iob = iobColor,                         // #1e88e5 blue (matches @color/iob)
             absIob = iobColor,                      // same blue as IOB
             cob = cobColor,                         // #FB8C00 orange (matches @color/cob)
             bgi = Color(0xFF00EEEE),                // cyan (matches @color/bgi)
             deviations = Color(0xFF00EEEE),         // cyan (matches @color/bgi — legacy uses per-type colors)
-            sensitivity = onSurface,                // #000000 light / #FFFFFF dark (matches @color/ratio)
-            varSensitivity = onSurface,             // same as sensitivity
+            sensitivity = sensitivityColor,
+            varSensitivity = varSensitivityColor,
             devSlope = Color(0xFFFFFF00),            // yellow (matches @color/devSlopePos)
             heartRate = Color(0xFFFFFF66),           // pale yellow (matches @color/heartRate #FFFFFF66)
             steps = Color(0xFF66FFB8),              // mint green (matches @color/steps)

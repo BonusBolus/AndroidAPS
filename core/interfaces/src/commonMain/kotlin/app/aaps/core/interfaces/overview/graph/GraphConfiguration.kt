@@ -30,7 +30,7 @@ enum class SeriesType {
 
 /**
  * Secondary graph entry: series list + per-graph height (dp).
- * Max 2 series per graph. Height is per-graph user-adjustable.
+ * Any number of series may be selected per graph. Height is per-graph user-adjustable.
  */
 data class SecondaryGraph(
     val series: List<SeriesType>,
@@ -50,8 +50,7 @@ data class SecondaryGraph(
  * @param secondaryGraphs  Ordered list of user-configurable secondary graph configurations.
  *   IOB cannot appear here (it has a dedicated fixed slot). Each graph is a List (not Set) to
  *   preserve selection order:
- *   - list[0] = left axis (start), list[1] = right axis (end).
- *   Max 2 series per graph. FIFO: adding a 3rd deselects the oldest.
+ *   - list[0] = left axis (start), all later entries = right axis (end).
  */
 data class GraphConfig(
     val bgOverlays: List<SeriesType> = listOf(SeriesType.ACTIVITY, SeriesType.PREDICTIONS),

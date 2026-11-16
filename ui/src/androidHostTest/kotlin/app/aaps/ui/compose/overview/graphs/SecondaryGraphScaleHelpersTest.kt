@@ -245,15 +245,11 @@ internal class SecondaryGraphScaleHelpersTest {
 
         // #5376: DEV was moved to the left, COB drew a plain line on the right and the numbers were DEV's
         @Test
-        fun `the first series takes the left axis and the second the right one`() {
+        fun `the first series takes the left axis and later series take the right one`() {
             assertThat(graphSides(listOf(SeriesType.COB, SeriesType.DEVIATIONS))).isEqualTo(GraphSides(listOf(SeriesType.COB), listOf(SeriesType.DEVIATIONS)))
             assertThat(graphSides(listOf(SeriesType.DEVIATIONS, SeriesType.COB))).isEqualTo(GraphSides(listOf(SeriesType.DEVIATIONS), listOf(SeriesType.COB)))
-        }
-
-        @Test
-        fun `two series with the same unit share the left axis`() {
-            assertThat(graphSides(listOf(SeriesType.BGI, SeriesType.DEVIATIONS))).isEqualTo(GraphSides(listOf(SeriesType.BGI, SeriesType.DEVIATIONS), emptyList()))
-            assertThat(graphSides(listOf(SeriesType.DEVIATIONS, SeriesType.BGI))).isEqualTo(GraphSides(listOf(SeriesType.DEVIATIONS, SeriesType.BGI), emptyList()))
+            assertThat(graphSides(listOf(SeriesType.SENSITIVITY, SeriesType.VAR_SENSITIVITY, SeriesType.HEART_RATE)))
+                .isEqualTo(GraphSides(listOf(SeriesType.SENSITIVITY), listOf(SeriesType.VAR_SENSITIVITY, SeriesType.HEART_RATE)))
         }
 
         @Test
