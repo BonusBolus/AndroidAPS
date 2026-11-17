@@ -239,7 +239,7 @@ fun ActionProfileSwitchPercentEditor(a: ActionProfileSwitchPercent, tick: Int = 
         labelRef = CoreUiStrings.duration_label,
         value = a.duration.value.toDouble(),
         onValueChange = { a.duration.value = it.toInt(); onChange() },
-        valueRange = 5.0..(24 * 60.0),
+        valueRange = 0.0..(24 * 60.0), // 0 = permanent
         step = 10.0,
         unitLabel = CoreUiStrings.units_min
     )
