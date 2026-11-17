@@ -1,5 +1,6 @@
 package app.aaps.plugins.automation.actions
 
+import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.interfaces.BooleanPreferenceKey
 import app.aaps.plugins.automation.AutomationStrings
 import app.aaps.plugins.automation.elements.InputDropdownOnOffMenu
@@ -11,9 +12,10 @@ import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.kotlin.any
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.skyscreamer.jsonassert.JSONAssert
 
-private const val STRING_JSON = """{"data":{"smbState":true},"type":"ActionSMBChange"}"""
+private const val STRING_JSON = """{"data":{"smbState":true,"toggle":false},"type":"ActionSMBChange"}"""
 
 class ActionSMBChangeTest : ActionsTestBase() {
 
@@ -40,6 +42,25 @@ class ActionSMBChangeTest : ActionsTestBase() {
         verify(preferences, times(1)).put(any<BooleanPreferenceKey>(), anyBoolean())
     }
 
+    @Test fun toggleShortDescriptionTest() = runTest {
+        sut.toggle = true
+        assertThat(sut.shortDescription()).isEqualTo("Toggle SMB")
+    }
+
+    @Test fun doActionToggleTurnsOffWhenOn() = runTest {
+        whenever(preferences.get(BooleanKey.ApsUseSmb)).thenReturn(true)
+        sut.toggle = true
+        assertThat(sut.doAction().success).isTrue()
+        verify(preferences, times(1)).put(BooleanKey.ApsUseSmb, false)
+    }
+
+    @Test fun doActionToggleTurnsOnWhenOff() = runTest {
+        whenever(preferences.get(BooleanKey.ApsUseSmb)).thenReturn(false)
+        sut.toggle = true
+        assertThat(sut.doAction().success).isTrue()
+        verify(preferences, times(1)).put(BooleanKey.ApsUseSmb, true)
+    }
+
     @Test fun hasDialogTest() = runTest {
         assertThat(sut.hasDialog()).isTrue()
     }
@@ -52,5 +73,11 @@ class ActionSMBChangeTest : ActionsTestBase() {
     @Test fun fromJSONTest() = runTest {
         sut.fromJSON("""{"smbState":"false"}""")
         assertThat(sut.smbState.value).isEqualTo(false)
+        assertThat(sut.toggle).isFalse()
+    }
+
+    @Test fun fromJSONToggleTest() = runTest {
+        sut.fromJSON("""{"smbState":true,"toggle":true}""")
+        assertThat(sut.toggle).isTrue()
     }
 }

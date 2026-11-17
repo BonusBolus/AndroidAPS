@@ -164,6 +164,7 @@
     <!--    SMB mode-->
     <string name="changeSmbState">Enable/Disable/Flip SMB</string>
     <string name="changeSmbTo">Change SMB to %1$s</string>
+    <string name="toggleSmb">Toggle SMB</string>
     <string name="newSmbMode">New SMB mode:</string>
     <string name="on">ON</string>
     <string name="off">OFF</string>
@@ -174,6 +175,12 @@
     <string name="smoothing_label">Smoothing</string>
     <string name="precondition_smoothing_not_active_name">Smoothing not active</string>
     <string name="precondition_smoothing_not_active" comment="%1$s=name of the smoothing plugin. Shown as a precondition. Example: Smoothing Average smoothing is not active">Smoothing %1$s is not active</string>
+
+    <!--    SMB max minutes-->
+    <string name="changeSmbMaxMinutes">Change SMB max minutes</string>
+    <string name="changeSmbMaxMinutesTo" comment="%1$d=minutes of basal to limit SMB. Example: Change SMB max minutes to 30 min">Change SMB max minutes to %1$d min</string>
+    <string name="changeUamSmbMaxMinutes">Change UAM SMB max minutes</string>
+    <string name="changeUamSmbMaxMinutesTo" comment="%1$d=minutes of basal to limit UAM SMB. Example: Change UAM SMB max minutes to 30 min">Change UAM SMB max minutes to %1$d min</string>
 
     <!--    Map Picker (OpenStreetMap)-->
     <string name="pick_from_map">Pick from map</string>

@@ -26,21 +26,27 @@ class ActionSMBChange(
 
 
     var smbState: InputDropdownOnOffMenu = InputDropdownOnOffMenu(rh, true)
+    /** When true, [smbState] is ignored and the current SMB setting is inverted instead. */
+    var toggle: Boolean = false
 
     override fun friendlyName(): TextRef = AutomationStrings.changeSmbState
-    override fun shortDescription(): String = rh.gs(AutomationStrings.changeSmbTo, smbState.toTextValue())
+    override fun shortDescription(): String =
+        if (toggle) rh.gs(AutomationStrings.toggleSmb) else rh.gs(AutomationStrings.changeSmbTo, smbState.toTextValue())
     override fun composeIcon() = IcSmb
     override fun elementType() = ElementType.INSULIN
 
     override suspend fun doAction(): PumpEnactResult {
-        preferences.put(BooleanKey.ApsUseSmb, smbState.value)
+        preferences.put(BooleanKey.ApsUseSmb, if (toggle) !preferences.get(BooleanKey.ApsUseSmb) else smbState.value)
         return pumpEnactResultProvider().success(true).comment(CoreUiStrings.ok)
     }
 
     override fun hasDialog(): Boolean = true
 
     override fun toJSON(): String {
-        val data = buildJsonObject { put("smbState", smbState.value) }
+        val data = buildJsonObject {
+            put("smbState", smbState.value)
+            put("toggle", toggle)
+        }
         return buildJsonObject {
             put("type", this@ActionSMBChange::class.simpleName)
             put("data", data)
@@ -50,6 +56,7 @@ class ActionSMBChange(
     override fun fromJSON(data: String): Action {
         val o = jsonOf(data)
         smbState.value = o.lenientBoolean("smbState", true)
+        toggle = o.lenientBoolean("toggle", false)
         return this
     }
 
