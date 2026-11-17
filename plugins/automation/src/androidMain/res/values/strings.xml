@@ -30,8 +30,19 @@
     <string name="action_disable_scene">Disable scene</string>
     <string name="action_disable_scene_short">Disable scene: %1$s</string>
     <string name="action_scene_label">Scene</string>
+    <string name="action_run_scene_guard_label">If a scene is running</string>
+    <string name="action_run_scene_guard_no_scene">Do not run, keep the running scene</string>
+    <string name="action_run_scene_guard_other_scene">Replace another scene, do not run if this scene is running</string>
+    <string name="action_run_scene_guard_always">Always run, replace any running scene</string>
+    <string name="action_stop_scene">Stop scene</string>
+    <string name="action_stop_scene_follow_up_short">Stop scene, run follow-up scene</string>
+    <string name="action_stop_scene_follow_up_label">Follow-up scene</string>
+    <string name="action_stop_scene_option_stop_only">Do not run follow-up scene</string>
+    <string name="action_stop_scene_option_follow_up">Run follow-up scene if there is one</string>
     <string name="trigger_scene_active">Scene</string>
     <string name="trigger_scene_active_compared">Scene %1$s</string>
+    <string name="trigger_scene_named_compared" comment="%1$s=scene name, %2$s=exists or not exists. Example: Scene Sleep exists">Scene %1$s %2$s</string>
+    <string name="trigger_scene_any">Any scene</string>
     <string name="action_scene_not_found">Scene not found</string>
     <string name="action_scene_disabled">Scene is disabled</string>
     <string name="automation_unit_meters">m</string>

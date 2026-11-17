@@ -32,11 +32,39 @@ class ActionRunScene(
 ) : Action(aapsLogger, rh, pumpEnactResultProvider) {
 
 
+    /** What to do when a scene is already running. */
+    enum class Guard(val stringRes: TextRef) {
+
+        /** Skip while any scene is running. A running scene is never replaced. This is the default. */
+        NO_SCENE_ACTIVE(AutomationStrings.action_run_scene_guard_no_scene),
+
+        /** Replace other scenes. Skip when the chosen scene is already the running scene. */
+        TARGET_NOT_ACTIVE(AutomationStrings.action_run_scene_guard_other_scene),
+
+        /** Always run and replace any running scene. Also restarts the chosen scene if it is running. */
+        NONE(AutomationStrings.action_run_scene_guard_always)
+    }
+
     var scene: InputSceneName = InputSceneName()
 
-    // Skip activation if a scene is already running — don't overwrite a manually
-    // activated scene the user may be relying on.
-    override var precondition: Trigger? = TriggerSceneActive(triggerDeps, sceneApi, ComparatorExists.Compare.NOT_EXISTS)
+    var guard: Guard = Guard.NO_SCENE_ACTIVE
+        set(value) {
+            field = value
+            precondition = preconditionFor(value)
+        }
+
+    // The guard decides if the action may run. By default a running scene is not replaced,
+    // so a scene the user started by hand stays.
+    override var precondition: Trigger? = preconditionFor(Guard.NO_SCENE_ACTIVE)
+
+    private fun preconditionFor(mode: Guard): Trigger? = when (mode) {
+        Guard.NO_SCENE_ACTIVE   -> TriggerSceneActive(triggerDeps, sceneApi, ComparatorExists.Compare.NOT_EXISTS)
+
+        // Shares the scene value of this action, so the check follows the chosen scene.
+        Guard.TARGET_NOT_ACTIVE -> TriggerSceneActive(triggerDeps, sceneApi, ComparatorExists.Compare.NOT_EXISTS).also { it.scene = scene }
+
+        Guard.NONE              -> null
+    }
 
     override fun friendlyName(): TextRef = AutomationStrings.action_run_scene
     override fun shortDescription(): String =
@@ -71,7 +99,10 @@ class ActionRunScene(
     override fun hasDialog(): Boolean = true
 
     override fun toJSON(): String {
-        val data = buildJsonObject { put("sceneId", scene.value) }
+        val data = buildJsonObject {
+            put("sceneId", scene.value)
+            put("guard", guard.name)
+        }
         return buildJsonObject {
             put("type", this@ActionRunScene::class.simpleName)
             put("data", data)
@@ -81,6 +112,8 @@ class ActionRunScene(
     override fun fromJSON(data: String): Action {
         val o = jsonOf(data)
         scene.value = o.lenientString("sceneId", "")
+        // A missing or unknown value gives the safest guard: do not replace a running scene.
+        guard = Guard.entries.firstOrNull { it.name == o.lenientString("guard", "") } ?: Guard.NO_SCENE_ACTIVE
         return this
     }
 

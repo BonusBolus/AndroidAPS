@@ -36,6 +36,9 @@ class SceneAutomationApiImpl(
     // "a scene is in force" are different questions. isActive() answers the first one.
     override fun isAnySceneActive(): Boolean = activeSceneManager.isActive() && !activeSceneManager.isExpired()
 
+    override fun activeSceneId(): String? =
+        if (isAnySceneActive()) activeSceneManager.getActiveState()?.scene?.id else null
+
     override fun hasSceneToStop(): Boolean = activeSceneManager.isActive()
 
     override val activeFlow: Flow<Boolean> =

@@ -57,6 +57,12 @@ interface SceneAutomationApi {
     fun isAnySceneActive(): Boolean
 
     /**
+     * Id of the scene that is in force right now, or null when none is.
+     * Same rule as [isAnySceneActive]: an expired scene does not count.
+     */
+    fun activeSceneId(): String?
+
+    /**
      * Whether [stopActiveScene] has something to act on: a scene that is running, or one that has
      * expired but whose banner has not been dismissed yet (dismissing it is a valid stop).
      *

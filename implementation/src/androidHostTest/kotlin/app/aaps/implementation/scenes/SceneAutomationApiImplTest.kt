@@ -1,5 +1,7 @@
 package app.aaps.implementation.scenes
 
+import app.aaps.core.data.model.ActiveSceneState
+import app.aaps.core.data.model.Scene
 import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.shared.tests.TestBase
@@ -54,5 +56,28 @@ class SceneAutomationApiImplTest : TestBase() {
 
         assertThat(createSut().isAnySceneActive()).isFalse()
         assertThat(createSut().hasSceneToStop()).isFalse()
+    }
+
+    @Test
+    fun `the id of a running scene is returned`() {
+        givenScene(active = true, expired = false)
+        whenever(activeSceneManager.getActiveState())
+            .thenReturn(ActiveSceneState(scene = Scene(id = "scene-1", name = "Sleep"), activatedAt = 0L, durationMs = 0L))
+
+        assertThat(createSut().activeSceneId()).isEqualTo("scene-1")
+    }
+
+    @Test
+    fun `an expired scene has no active id`() {
+        givenScene(active = true, expired = true)
+
+        assertThat(createSut().activeSceneId()).isNull()
+    }
+
+    @Test
+    fun `with no scene at all the active id is null`() {
+        givenScene(active = false, expired = false)
+
+        assertThat(createSut().activeSceneId()).isNull()
     }
 }
