@@ -251,7 +251,7 @@ fun QuickLauchConfigScreen(
             // ── Dynamic: Scenes ──
             if (state.availableSceneItems.isNotEmpty()) {
                 item(key = "divider_scenes") {
-                    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+                    HorizontalDivider()
                 }
                 item(key = "header_scenes") {
                     SectionHeader(stringResource(CoreUiStrings.scenes))

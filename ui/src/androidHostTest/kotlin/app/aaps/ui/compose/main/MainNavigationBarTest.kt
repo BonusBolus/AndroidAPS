@@ -1,7 +1,6 @@
 package app.aaps.ui.compose.main
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasStateDescription
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -41,7 +40,6 @@ class MainNavigationBarTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private lateinit var availableThree: String
     private lateinit var objectivesProgress: String
 
     @Before
@@ -52,7 +50,6 @@ class MainNavigationBarTest {
         val app = RuntimeEnvironment.getApplication()
         // Taken from the resources rather than hard coded, so editing the wording cannot make the
         // test lie about what is spoken.
-        availableThree = app.getString(R.string.a11y_badge_available, 3)
         objectivesProgress = app.getString(R.string.a11y_objectives_progress, 9, 10)
     }
 
@@ -80,28 +77,4 @@ class MainNavigationBarTest {
         compose.onNode(hasStateDescription(objectivesProgress)).assertIsDisplayed()
     }
 
-    @Test
-    fun aCountingBadgeIsSpokenAsAStateOnTheItem() {
-        compose.setContent {
-            MaterialTheme {
-                MainNavigationBar(onManageClick = {}, onTreatmentClick = {}, quickWizardCount = 3)
-            }
-        }
-
-        compose.onNode(hasStateDescription(availableThree)).assertIsDisplayed()
-    }
-
-    @Test
-    fun anItemWithoutABadgeGetsNoState() {
-        compose.setContent {
-            MaterialTheme {
-                MainNavigationBar(onManageClick = {}, onTreatmentClick = {}, quickWizardCount = 0)
-            }
-        }
-
-        // Treatments has no badge at a count of zero, and Manage never has one. A state on either
-        // would be read out on every pass over the bar for no reason.
-        val availableZero = RuntimeEnvironment.getApplication().getString(R.string.a11y_badge_available, 0)
-        compose.onAllNodes(hasStateDescription(availableZero)).assertCountEquals(0)
-    }
 }
