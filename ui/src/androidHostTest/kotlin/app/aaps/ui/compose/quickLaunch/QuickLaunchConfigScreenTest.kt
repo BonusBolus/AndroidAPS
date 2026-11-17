@@ -40,8 +40,7 @@ import app.aaps.core.ui.R as CoreUiR
  *  - an empty selection says so rather than showing an empty gap;
  *  - a category section is hidden completely while it has nothing in it, instead of leaving a
  *    heading with no rows under it;
- *  - Add and Remove really change the stored list, and the configuration button stays last so the
- *    user can always get back here;
+ *  - Add and Remove really change the stored list, including the optional configuration action;
  *  - only a profile entry offers the preset editor, and that editor calls a duration of zero
  *    "permanent" rather than showing a bare 0.
  *
@@ -214,13 +213,12 @@ class QuickLaunchConfigScreenTest {
         // Found by the full label, so this also pins that a screen reader hears what is removed.
         compose.onNodeWithContentDescription(removeLabelFor("Bolus wizard")).performClick()
 
-        // The configuration button is not a user entry, so what is left is an empty selection.
-        assertThat(storedActions()).containsExactly(QuickLaunchAction.QuickLaunchConfig)
+        assertThat(storedActions()).isEmpty()
         compose.onNodeWithText(noItems).assertIsDisplayed()
     }
 
     @Test
-    fun addingAnAvailableActionAppendsItAndKeepsTheConfigButtonLast() {
+    fun addingAnAvailableActionAppendsIt() {
         viewModels.labelOf = { if (it == QuickLaunchAction.Wizard) "Bolus wizard" else it.typeId }
         viewModels.givenSelected(emptyList())
 
@@ -229,9 +227,7 @@ class QuickLaunchConfigScreenTest {
         compose.onNodeWithContentDescription(addLabelFor("Bolus wizard")).performClick()
 
         val stored = storedActions()
-        assertThat(stored).containsExactly(QuickLaunchAction.Wizard, QuickLaunchAction.QuickLaunchConfig).inOrder()
-        // Without this the user could pin an action ahead of the button that reopens this screen.
-        assertThat(stored.last()).isEqualTo(QuickLaunchAction.QuickLaunchConfig)
+        assertThat(stored).containsExactly(QuickLaunchAction.Wizard).inOrder()
     }
 
     /**
@@ -254,7 +250,7 @@ class QuickLaunchConfigScreenTest {
         moveDownActions.single().action()
         compose.waitForIdle()
 
-        assertThat(storedActions()).containsExactly(QuickLaunchAction.Carbs, QuickLaunchAction.Wizard, QuickLaunchAction.QuickLaunchConfig).inOrder()
+        assertThat(storedActions()).containsExactly(QuickLaunchAction.Carbs, QuickLaunchAction.Wizard).inOrder()
     }
 
     // ---------------------------------------------------------------------------------------------

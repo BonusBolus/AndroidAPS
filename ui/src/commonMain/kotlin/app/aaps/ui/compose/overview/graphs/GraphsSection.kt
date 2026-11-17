@@ -744,7 +744,6 @@ fun GraphsSection(
                         current.remove(type)
                     } else {
                         current.add(type)
-                        if (current.size > 2) current.removeAt(0) // FIFO: drop oldest
                     }
                     if (current.isEmpty()) {
                         // Auto-remove graph when all series deselected
@@ -794,7 +793,6 @@ fun GraphsSection(
                         current.remove(type)
                     } else {
                         current.add(type)
-                        if (current.size > 2) current.removeAt(0)
                     }
                     newGraphSeries = current
                 },
@@ -982,7 +980,7 @@ private fun GraphSeriesBottomSheet(
                 labelRef = CoreUiStrings.graph_height,
                 value = height.toDouble(),
                 onValueChange = { onHeightChange(it.toInt()) },
-                valueRange = GraphConfig.DEFAULT_GRAPH_HEIGHT_DP.toDouble()..GraphConfig.MAX_GRAPH_HEIGHT_DP.toDouble(),
+                valueRange = GraphConfig.MIN_GRAPH_HEIGHT_DP.toDouble()..GraphConfig.MAX_GRAPH_HEIGHT_DP.toDouble(),
                 step = 10.0,
                 formatAsInt = true
             )

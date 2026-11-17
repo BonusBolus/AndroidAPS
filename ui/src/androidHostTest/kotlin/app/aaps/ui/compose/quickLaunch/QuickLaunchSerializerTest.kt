@@ -49,14 +49,17 @@ class QuickLaunchSerializerTest {
     }
 
     @Test
-    fun `the config entry is always present and always last`() {
+    fun `the config entry keeps its configured position`() {
         val json = QuickLaunchSerializer.toJson(
             listOf(QuickLaunchAction.QuickLaunchConfig, QuickLaunchAction.QuickWizardAction("g"))
         )
 
         val restored = QuickLaunchSerializer.fromJson(json)
 
-        assertThat(restored.last()).isEqualTo(QuickLaunchAction.QuickLaunchConfig)
+        assertThat(restored).containsExactly(
+            QuickLaunchAction.QuickLaunchConfig,
+            QuickLaunchAction.QuickWizardAction("g")
+        ).inOrder()
         assertThat(restored.count { it == QuickLaunchAction.QuickLaunchConfig }).isEqualTo(1)
     }
 
@@ -80,11 +83,11 @@ class QuickLaunchSerializerTest {
         // as something half formed.
         val restored = QuickLaunchSerializer.fromJson("""[{"type":"quick_wizard"}]""")
 
-        assertThat(restored).isEqualTo(listOf(QuickLaunchAction.QuickLaunchConfig))
+        assertThat(restored).isEmpty()
     }
 
     @Test
-    fun `an empty array still yields the config entry`() {
-        assertThat(QuickLaunchSerializer.fromJson("[]")).isEqualTo(listOf(QuickLaunchAction.QuickLaunchConfig))
+    fun `an empty array keeps the toolbar empty`() {
+        assertThat(QuickLaunchSerializer.fromJson("[]")).isEmpty()
     }
 }

@@ -4,6 +4,7 @@ import app.aaps.core.interfaces.concurrent.aapsIoDispatcher
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.overview.graph.GraphConfig
+import app.aaps.core.interfaces.overview.graph.GraphConfig.Companion.MIN_GRAPH_HEIGHT_DP
 import app.aaps.core.interfaces.overview.graph.GraphConfigRepository
 import app.aaps.core.interfaces.overview.graph.SecondaryGraph
 import app.aaps.core.interfaces.overview.graph.SeriesType
@@ -128,7 +129,7 @@ class GraphConfigRepositoryImpl(
                 if (type == SeriesType.IOB) continue
                 if (type !in series) series.add(type)
             }
-            return series.take(2)
+            return series
         }
 
         fun fromJson(json: String): GraphConfig {
@@ -160,10 +161,10 @@ class GraphConfigRepositoryImpl(
         /** The named array, or null when it is absent or is something other than an array. */
         private fun JsonObject.array(key: String): JsonArray? = this[key] as? JsonArray
 
-        /** A stored height, defaulted when absent and always brought inside the allowed range. */
+        /** A stored height, defaulted when absent and kept positive. */
         private fun JsonObject.height(key: String): Int =
             ((this[key] as? JsonPrimitive)?.let { runCatching { it.int }.getOrNull() } ?: GraphConfig.DEFAULT_GRAPH_HEIGHT_DP)
-                .coerceIn(GraphConfig.DEFAULT_GRAPH_HEIGHT_DP, GraphConfig.MAX_GRAPH_HEIGHT_DP)
+                .coerceAtLeast(MIN_GRAPH_HEIGHT_DP)
 
         /** The series this element names, or null if it is not a name this version knows. */
         private fun JsonElement.seriesTypeOrNull(): SeriesType? =

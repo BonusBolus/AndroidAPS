@@ -104,6 +104,7 @@ fun OverviewScreen(
     queueStatusText: AnnotatedString? = null,
     isPumpCommunicating: Boolean = false,
     onStopBolus: () -> Unit = {},
+    onScrollAtTopChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showNotificationSheet by remember { mutableStateOf(false) }
@@ -188,7 +189,8 @@ fun OverviewScreen(
                     commandsAllowed = commandsAllowed,
                     formatDuration = formatDuration,
                     eatReminderBanner = eatReminderBanner,
-                    overlaidBarsHeight = overlaidBarsHeight
+                    overlaidBarsHeight = overlaidBarsHeight,
+                    onScrollAtTopChange = onScrollAtTopChange
                 )
             } else if (twoColumns) {
                 OverviewScreenSplit(
@@ -227,7 +229,8 @@ fun OverviewScreen(
                     commandsAllowed = commandsAllowed,
                     formatDuration = formatDuration,
                     eatReminderBanner = eatReminderBanner,
-                    overlaidBarsHeight = overlaidBarsHeight
+                    overlaidBarsHeight = overlaidBarsHeight,
+                    onScrollAtTopChange = onScrollAtTopChange
                 )
             } else {
                 OverviewScreenStacked(
@@ -266,7 +269,8 @@ fun OverviewScreen(
                     commandsAllowed = commandsAllowed,
                     formatDuration = formatDuration,
                     eatReminderBanner = eatReminderBanner,
-                    overlaidBarsHeight = overlaidBarsHeight
+                    overlaidBarsHeight = overlaidBarsHeight,
+                    onScrollAtTopChange = onScrollAtTopChange
                 )
             }
         }

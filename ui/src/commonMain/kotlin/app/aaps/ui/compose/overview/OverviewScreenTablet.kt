@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -87,6 +88,7 @@ fun OverviewScreenTablet(
     eatReminderBanner: @Composable () -> Unit = {},
     /** Height of the bars drawn over the content in preview mode; both columns need it as extra space at their end. */
     overlaidBarsHeight: Dp = 0.dp,
+    onScrollAtTopChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val config = LocalConfig.current
@@ -97,6 +99,27 @@ fun OverviewScreenTablet(
     val statusState by statusViewModel.uiState.collectAsStateWithLifecycle()
 
     var statusExpanded by rememberSaveable { mutableStateOf(true) }
+    val leftScrollState = rememberScrollState()
+    val rightScrollState = rememberScrollState()
+    var hasScrolled by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(leftScrollState.value) {
+        if (leftScrollState.value > 0) {
+            hasScrolled = true
+            onScrollAtTopChange(false)
+        } else if (hasScrolled && rightScrollState.value == 0) {
+            onScrollAtTopChange(true)
+        }
+    }
+
+    LaunchedEffect(rightScrollState.value) {
+        if (rightScrollState.value > 0) {
+            hasScrolled = true
+            onScrollAtTopChange(false)
+        } else if (hasScrolled && leftScrollState.value == 0) {
+            onScrollAtTopChange(true)
+        }
+    }
 
     Column(
         modifier = modifier
@@ -124,7 +147,7 @@ fun OverviewScreenTablet(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(leftScrollState)
                     .padding(end = AapsSpacing.small),
                 verticalArrangement = Arrangement.spacedBy(AapsSpacing.small)
             ) {
@@ -216,7 +239,7 @@ fun OverviewScreenTablet(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(rightScrollState)
                     .padding(start = AapsSpacing.small)
             ) {
                 GraphsSection(

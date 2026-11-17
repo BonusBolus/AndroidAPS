@@ -3,9 +3,9 @@ package app.aaps.ui.compose.overview.graphs
 import app.aaps.core.interfaces.overview.graph.SeriesType
 
 // The axes of a graph below BG, from a few rules that hold for every series:
-// - the first series is drawn against the left axis, the second against the right one, unless the
-//   two have the same unit and so share one axis ([graphSides]);
-// - every series type has one axis rule, the same alone and in a pair ([axisRuleOf], [axisRange]);
+// - the first series is drawn against the left axis, every later series against the right one
+//   ([graphSides]);
+// - every series type has one axis rule wherever it appears ([axisRuleOf], [axisRange]);
 // - two axes keep their own ranges, only their zeros are put on one height ([alignReferences]);
 // - the IOB graph alone leaves the top of its height to the basal band ([graphAxes]).
 
@@ -29,21 +29,13 @@ internal fun axisRuleOf(type: SeriesType): AxisRule = when (type) {
     else                                              -> AxisRule.ZeroFloor
 }
 
-/** The series that are measured in the same unit, and so are drawn against one axis. */
-private val SHARED_UNITS = listOf(
-    setOf(SeriesType.IOB, SeriesType.ABS_IOB),
-    setOf(SeriesType.BGI, SeriesType.DEVIATIONS)
-)
-
 /** The series of one graph, by axis. A side is empty when it has no series. */
 internal data class GraphSides(val left: List<SeriesType>, val right: List<SeriesType>)
 
-/** The first series on the left axis, the second on the right one, or on the left as well when the two have the same unit. */
+/** The first series on the left axis; every later series is drawn against the right axis. */
 internal fun graphSides(types: List<SeriesType>): GraphSides {
     val first = types.firstOrNull() ?: return GraphSides(emptyList(), emptyList())
-    val second = types.getOrNull(1) ?: return GraphSides(listOf(first), emptyList())
-    val sameUnit = SHARED_UNITS.any { first in it && second in it }
-    return if (sameUnit) GraphSides(listOf(first, second), emptyList()) else GraphSides(listOf(first), listOf(second))
+    return GraphSides(listOf(first), types.drop(1))
 }
 
 /**
