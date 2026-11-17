@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -75,6 +76,7 @@ fun OverviewScreenStacked(
     eatReminderBanner: @Composable () -> Unit = {},
     /** Height of the bars drawn over the content in preview mode (a short window, e.g. split screen); added to the end space. */
     overlaidBarsHeight: Dp = 0.dp,
+    onScrollAtTopChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val config = LocalConfig.current
@@ -85,12 +87,23 @@ fun OverviewScreenStacked(
     val statusState by statusViewModel.uiState.collectAsStateWithLifecycle()
 
     var statusExpanded by rememberSaveable { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+    var hasScrolled by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(scrollState.value) {
+        if (scrollState.value > 0) {
+            hasScrolled = true
+            onScrollAtTopChange(false)
+        } else if (hasScrolled) {
+            onScrollAtTopChange(true)
+        }
+    }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(paddingValues)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
     ) {
         ActiveSceneBanner(
             activeState = activeSceneState,

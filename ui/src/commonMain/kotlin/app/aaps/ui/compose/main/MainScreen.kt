@@ -205,7 +205,7 @@ fun MainScreen(
             val density = LocalDensity.current
             val previewMode = maxHeight < PREVIEW_MODE_MIN_HEIGHT
             var chromeVisible by remember { mutableStateOf(false) }
-            val showChrome = !previewMode || chromeVisible
+            val showChrome = chromeVisible
             val interactionSource = remember { MutableInteractionSource() }
             val accessibilityManager = LocalAccessibilityManager.current
 
@@ -214,12 +214,12 @@ fun MainScreen(
             var bottomBarHeightPx by remember { mutableIntStateOf(0) }
 
             // Auto-hide chrome after timeout, reset when leaving preview mode
+            LaunchedEffect(previewMode) {
+                chromeVisible = false
+            }
+
             LaunchedEffect(chromeVisible, previewMode) {
-                if (!previewMode) {
-                    chromeVisible = false
-                    return@LaunchedEffect
-                }
-                if (chromeVisible) {
+                if (previewMode && chromeVisible) {
                     // Honours the system "Time to take action" setting: a screen reader user moving
                     // through the bars needs longer than 3 s before they hide again.
                     delay(accessibilityManager?.calculateRecommendedTimeoutMillis(AUTO_HIDE_DELAY_MS, containsIcons = true, containsControls = true) ?: AUTO_HIDE_DELAY_MS)
@@ -318,7 +318,10 @@ fun MainScreen(
                         pumpStatusText = pumpStatusText,
                         queueStatusText = queueStatusText,
                         isPumpCommunicating = isPumpCommunicating,
-                        onStopBolus = onStopBolus
+                        onStopBolus = onStopBolus,
+                        onScrollAtTopChange = { atTop ->
+                            chromeVisible = atTop
+                        }
                     )
 
                     // Search results overlay
