@@ -67,11 +67,14 @@ data class GraphConfig(
         /** Maximum number of secondary graphs allowed */
         const val MAX_SECONDARY_GRAPHS = 5
 
-        /** Default graph height in dp (minimum value — user-adjustable up to [MAX_GRAPH_HEIGHT_DP]) */
+        /** Default graph height in dp. */
         const val DEFAULT_GRAPH_HEIGHT_DP = 100
 
-        /** Maximum graph height in dp (2.5x default) */
-        const val MAX_GRAPH_HEIGHT_DP = 250
+        /** Minimum graph height in dp. */
+        const val MIN_GRAPH_HEIGHT_DP = 1
+
+        /** Maximum graph height supported by the stored Int value. */
+        const val MAX_GRAPH_HEIGHT_DP = Int.MAX_VALUE
     }
 }
 

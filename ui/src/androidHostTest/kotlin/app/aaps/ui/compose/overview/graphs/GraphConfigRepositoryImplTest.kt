@@ -78,11 +78,11 @@ class GraphConfigRepositoryImplTest {
     }
 
     @Test
-    fun `heights are clamped to the allowed range`() {
-        val restored = GraphConfigRepositoryImpl.fromJson("""{"bgHeight":10,"iobHeight":100000}""")
+    fun `heights below one are clamped and larger heights are kept`() {
+        val restored = GraphConfigRepositoryImpl.fromJson("""{"bgHeight":0,"iobHeight":100000}""")
 
-        assertThat(restored.bgHeight).isEqualTo(GraphConfig.DEFAULT_GRAPH_HEIGHT_DP)
-        assertThat(restored.iobHeight).isEqualTo(GraphConfig.MAX_GRAPH_HEIGHT_DP)
+        assertThat(restored.bgHeight).isEqualTo(GraphConfig.MIN_GRAPH_HEIGHT_DP)
+        assertThat(restored.iobHeight).isEqualTo(100000)
     }
 
     @Test

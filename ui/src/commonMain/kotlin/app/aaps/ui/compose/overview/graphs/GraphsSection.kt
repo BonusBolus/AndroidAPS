@@ -980,7 +980,7 @@ private fun GraphSeriesBottomSheet(
                 labelRef = CoreUiStrings.graph_height,
                 value = height.toDouble(),
                 onValueChange = { onHeightChange(it.toInt()) },
-                valueRange = GraphConfig.DEFAULT_GRAPH_HEIGHT_DP.toDouble()..GraphConfig.MAX_GRAPH_HEIGHT_DP.toDouble(),
+                valueRange = GraphConfig.MIN_GRAPH_HEIGHT_DP.toDouble()..GraphConfig.MAX_GRAPH_HEIGHT_DP.toDouble(),
                 step = 10.0,
                 formatAsInt = true
             )
