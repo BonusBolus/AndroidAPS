@@ -103,12 +103,20 @@ fun OverviewScreenTablet(
     val rightScrollState = rememberScrollState()
     var hasScrolled by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(leftScrollState.value, rightScrollState.value) {
-        val atTop = leftScrollState.value == 0 && rightScrollState.value == 0
-        if (!atTop) {
+    LaunchedEffect(leftScrollState.value) {
+        if (leftScrollState.value > 0) {
             hasScrolled = true
             onScrollAtTopChange(false)
-        } else if (hasScrolled) {
+        } else if (hasScrolled && rightScrollState.value == 0) {
+            onScrollAtTopChange(true)
+        }
+    }
+
+    LaunchedEffect(rightScrollState.value) {
+        if (rightScrollState.value > 0) {
+            hasScrolled = true
+            onScrollAtTopChange(false)
+        } else if (hasScrolled && leftScrollState.value == 0) {
             onScrollAtTopChange(true)
         }
     }

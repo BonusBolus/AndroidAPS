@@ -4,4 +4,4 @@
 - Overview graphs: use the first field on the left axis and later fields on the right axis.
 - Overview graphs: show `%sens` and VSENS with different colors.
 - Overview graphs: remove the 100 dp minimum and 250 dp maximum height limits.
-- Overview screen: hide the top and bottom controls until the content is scrolled back to the top.
+- Overview screen: hide the top controls until the content is scrolled back to the top; keep bottom controls visible.

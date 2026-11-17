@@ -204,8 +204,8 @@ fun MainScreen(
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val density = LocalDensity.current
             val previewMode = maxHeight < PREVIEW_MODE_MIN_HEIGHT
-            var chromeVisible by remember { mutableStateOf(false) }
-            val showChrome = chromeVisible
+            var topChromeVisible by remember { mutableStateOf(false) }
+            var overviewAtTop by remember { mutableStateOf(false) }
             val interactionSource = remember { MutableInteractionSource() }
             val accessibilityManager = LocalAccessibilityManager.current
 
@@ -213,23 +213,30 @@ fun MainScreen(
             var topBarHeightPx by remember { mutableIntStateOf(0) }
             var bottomBarHeightPx by remember { mutableIntStateOf(0) }
 
-            // Auto-hide chrome after timeout, reset when leaving preview mode
-            LaunchedEffect(previewMode) {
-                chromeVisible = false
-            }
-
-            LaunchedEffect(chromeVisible, previewMode) {
-                if (previewMode && chromeVisible) {
-                    // Honours the system "Time to take action" setting: a screen reader user moving
-                    // through the bars needs longer than 3 s before they hide again.
-                    delay(accessibilityManager?.calculateRecommendedTimeoutMillis(AUTO_HIDE_DELAY_MS, containsIcons = true, containsControls = true) ?: AUTO_HIDE_DELAY_MS)
-                    chromeVisible = false
+            LaunchedEffect(previewMode, searchUiState.isSearchActive) {
+                topChromeVisible = when {
+                    searchUiState.isSearchActive -> true
+                    previewMode                 -> false
+                    else                        -> overviewAtTop
                 }
             }
 
-            // topBar/bottomBar are intentionally absent — chrome is rendered as
-            // overlays inside the content (see AnimatedVisibility blocks below) so
-            // it can hide in preview mode without reflowing layout. The status-bar
+            LaunchedEffect(topChromeVisible, previewMode, searchUiState.isSearchActive) {
+                if (previewMode && topChromeVisible && !searchUiState.isSearchActive) {
+                    // Honours the system "Time to take action" setting: a screen reader user moving
+                    // through the bars needs longer than 3 s before they hide again.
+                    delay(accessibilityManager?.calculateRecommendedTimeoutMillis(AUTO_HIDE_DELAY_MS, containsIcons = true, containsControls = true) ?: AUTO_HIDE_DELAY_MS)
+                    topChromeVisible = false
+                }
+            }
+
+            LaunchedEffect(searchUiState.isSearchActive) {
+                topChromeVisible = if (searchUiState.isSearchActive) true else overviewAtTop
+            }
+
+            // topBar/bottomBar are intentionally absent — controls are rendered as
+            // overlays inside the content (see AnimatedVisibility blocks below) so the top
+            // controls can hide without reflowing layout. The status-bar
             // and navigation-bar protection scrims rely on this: they read raw
             // WindowInsets.statusBars / navigationBars, which would be consumed
             // (returning zero height) if those Scaffold slots were populated.
@@ -240,7 +247,7 @@ fun MainScreen(
                 // in normal mode add measured bar heights
                 val contentPadding = if (previewMode) scaffoldPadding
                 else {
-                    val topBarHeight = with(density) { topBarHeightPx.toDp() }
+                    val topBarHeight = if (topChromeVisible) with(density) { topBarHeightPx.toDp() } else 0.dp
                     val bottomBarHeight = with(density) { bottomBarHeightPx.toDp() }
                     PaddingValues(
                         top = scaffoldPadding.calculateTopPadding() + topBarHeight,
@@ -309,7 +316,7 @@ fun MainScreen(
                             )
                         },
                         paddingValues = contentPadding,
-                        fabBottomOffset = if (hasToolbar && showChrome) 56.dp else 0.dp,
+                        fabBottomOffset = if (hasToolbar) 56.dp else 0.dp,
                         // In preview mode the bottom bar lies over the content instead of above it, so the end of each
                         // column needs its height too. The height is kept once measured, so the columns do not move each
                         // time the bars show and hide.
@@ -320,7 +327,8 @@ fun MainScreen(
                         isPumpCommunicating = isPumpCommunicating,
                         onStopBolus = onStopBolus,
                         onScrollAtTopChange = { atTop ->
-                            chromeVisible = atTop
+                            overviewAtTop = atTop
+                            if (!searchUiState.isSearchActive) topChromeVisible = atTop
                         }
                     )
 
@@ -371,7 +379,7 @@ fun MainScreen(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(contentPadding)
-                            .offset(y = if (showChrome) -VERSION_LABEL_LIFT else 0.dp)
+                            .offset(y = if (topChromeVisible) -VERSION_LABEL_LIFT else 0.dp)
                     )
 
                     // Status bar protection scrim — keeps system icons legible
@@ -395,7 +403,7 @@ fun MainScreen(
 
                     // Top bar overlay
                     AnimatedVisibility(
-                        visible = showChrome,
+                        visible = topChromeVisible,
                         enter = slideInVertically { -it },
                         exit = slideOutVertically { -it },
                         modifier = Modifier
@@ -426,7 +434,7 @@ fun MainScreen(
 
                     // Bottom bar overlay
                     AnimatedVisibility(
-                        visible = showChrome,
+                        visible = true,
                         enter = slideInVertically { it },
                         exit = slideOutVertically { it },
                         modifier = Modifier
@@ -473,7 +481,7 @@ fun MainScreen(
 
                     // Quick launch toolbar overlay
                     AnimatedVisibility(
-                        visible = hasToolbar && showChrome,
+                        visible = hasToolbar,
                         enter = slideInVertically { it },
                         exit = slideOutVertically { it },
                         modifier = Modifier
@@ -490,17 +498,22 @@ fun MainScreen(
                     }
 
                     // Tap overlay to restore chrome in preview mode (only when hidden)
-                    if (previewMode && !chromeVisible) {
+                    if (previewMode && !topChromeVisible) {
                         // Named: the top bar, menu and toolbar come back only through this, and a
                         // screen reader announced it as a nameless control.
                         val showControls = stringResource(UiStrings.a11y_show_controls)
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .padding(
+                                    bottom = scaffoldPadding.calculateBottomPadding() +
+                                        with(density) { bottomBarHeightPx.toDp() } +
+                                        if (hasToolbar) 56.dp else 0.dp
+                                )
                                 .clickable(
                                     interactionSource = interactionSource,
                                     indication = null
-                                ) { chromeVisible = true }
+                                ) { topChromeVisible = true }
                                 .semantics { contentDescription = showControls }
                         )
                     }
