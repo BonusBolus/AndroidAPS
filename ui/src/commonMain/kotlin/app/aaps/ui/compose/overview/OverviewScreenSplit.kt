@@ -141,6 +141,10 @@ fun OverviewScreenSplit(
                     .weight(1f)
                     .fillMaxHeight()
                     .verticalScroll(leftScrollState)
+                    .revealTopChromeOnPull(
+                        atTop = { leftScrollState.value == 0 && rightScrollState.value == 0 },
+                        onReveal = { onScrollAtTopChange(true) }
+                    )
                     .padding(end = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -235,6 +239,10 @@ fun OverviewScreenSplit(
                     .weight(1f)
                     .fillMaxHeight()
                     .verticalScroll(rightScrollState)
+                    .revealTopChromeOnPull(
+                        atTop = { leftScrollState.value == 0 && rightScrollState.value == 0 },
+                        onReveal = { onScrollAtTopChange(true) }
+                    )
                     .padding(start = 4.dp)
             ) {
                 GraphsSection(

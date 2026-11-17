@@ -148,6 +148,10 @@ fun OverviewScreenTablet(
                     .weight(1f)
                     .fillMaxHeight()
                     .verticalScroll(leftScrollState)
+                    .revealTopChromeOnPull(
+                        atTop = { leftScrollState.value == 0 && rightScrollState.value == 0 },
+                        onReveal = { onScrollAtTopChange(true) }
+                    )
                     .padding(end = AapsSpacing.small),
                 verticalArrangement = Arrangement.spacedBy(AapsSpacing.small)
             ) {
@@ -240,6 +244,10 @@ fun OverviewScreenTablet(
                     .weight(1f)
                     .fillMaxHeight()
                     .verticalScroll(rightScrollState)
+                    .revealTopChromeOnPull(
+                        atTop = { leftScrollState.value == 0 && rightScrollState.value == 0 },
+                        onReveal = { onScrollAtTopChange(true) }
+                    )
                     .padding(start = AapsSpacing.small)
             ) {
                 GraphsSection(
