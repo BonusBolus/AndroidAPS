@@ -66,6 +66,15 @@ When using code written by others:
 * Clearly identify externally sourced code where appropriate.
  
 ### Development Workflow
+
+When the app's Gradle build guard blocks an intentional build on an uncommitted
+feature branch, agents may pass `-PallowUncommitted` to run the build or test.
+This does not change source files or bypass safety code.
+
+Examples:
+
+- Windows: `./gradlew.bat :ui:androidHostTest -PallowUncommitted --no-daemon`
+- macOS: `./gradlew :ui:androidHostTest -PallowUncommitted --no-daemon`
  
 Before implementing a change:
  
