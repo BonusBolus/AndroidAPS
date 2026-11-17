@@ -97,8 +97,10 @@ class SensitivityOverviewImpl(
         var asText = ""
         var isfFrom = ""
         var isfTo = ""
+        var wizardIsf = ""
         var isfStep = IsfStep.SAME
         val lines = ArrayList<String>()
+        val now = dateUtil.now()
 
         if (variableSens != isfMgdl && variableSens != 0.0 && isfMgdl != null) {
             // Variable ISF branch — hide "AS: 100%" from overview when ratio is exactly 100%
@@ -116,8 +118,8 @@ class SensitivityOverviewImpl(
             lines.add(rh.gs(CoreUiStrings.isf_variable, variableIsfDisplayed))
             if (namesOwnRatio)
                 lines.add(rh.gs(CoreUiStrings.algorithm_long, ratioUsed * 100))
-            val now = dateUtil.now()
             val isfForCarbs = IsfForCarbs.load(persistenceLayer, now, now).isfMgdl(profile, now)
+            wizardIsf = decimalFormatter.to1Decimal(profileUtil.fromMgdlToUnits(isfForCarbs, units))
             lines.add(rh.gs(CoreUiStrings.isf_for_carbs, profileUtil.fromMgdlToUnits(isfForCarbs, units)))
             if (config.APS) {
                 activePlugin.activeAPS?.getSensitivityOverviewString()?.let { lines.add(it) }
@@ -147,6 +149,8 @@ class SensitivityOverviewImpl(
                     isfStep = isfStep(isfFrom, isfTo, profileIsfDisplayed, effectiveIsfDisplayed)
                     lines.add(rh.gs(CoreUiStrings.isf_effective, effectiveIsfDisplayed))
                 }
+                val isfForCarbs = IsfForCarbs.load(persistenceLayer, now, now).isfMgdl(profile, now)
+                wizardIsf = decimalFormatter.to1Decimal(profileUtil.fromMgdlToUnits(isfForCarbs, units))
             }
             // A client computes its own autosens, and a temp target can take sensitivity over from
             // autosens on the master. Either way the effective ISF above was worked out from this
@@ -159,6 +163,7 @@ class SensitivityOverviewImpl(
             asText = asText,
             isfFrom = isfFrom,
             isfTo = isfTo,
+            wizardIsf = wizardIsf,
             isfStep = isfStep,
             lines = lines,
             ratio = lastAutosensRatio ?: 1.0,

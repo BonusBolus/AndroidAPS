@@ -35,6 +35,7 @@ data class MainUiState(
     val profileProgress: Float = 0f, // 0-1 progress for temporary profile switch
     // TempTarget state for chip
     val tempTargetText: String = "",
+    val profileTargetText: String = "",
     val tempTargetState: TempTargetChipState = TempTargetChipState.None,
     val tempTargetProgress: Float = 0f, // 0-1 progress for active temp target
     val tempTargetReason: TT.Reason? = null, // TT reason for icon coloring
@@ -49,6 +50,7 @@ data class MainUiState(
     val tbrState: TbrState = TbrState.NONE,
     // SMB enabled in APS preferences — drives a small triangle marker on the running-mode chip
     val smbEnabled: Boolean = false,
+    val smbMaxMinutes: Int = 0,
     // QuickWizard entries for treatment bottom sheet
     val quickWizardItems: List<QuickWizardItem> = emptyList(),
     // Navigation-triggered dialogs

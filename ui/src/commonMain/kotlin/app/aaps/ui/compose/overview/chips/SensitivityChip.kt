@@ -18,8 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.aaps.core.interfaces.navigation.ElementType
+import app.aaps.core.interfaces.InterfacesStrings
 import app.aaps.core.interfaces.overview.IsfStep
 import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.core.ui.CoreUiStrings
@@ -103,6 +105,20 @@ internal fun SensitivityChip(
                 Text(
                     text = state.isfTo,
                     style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
+            }
+            if (state.wizardIsf.isNotEmpty()) {
+                Spacer(Modifier.width(AapsSpacing.medium))
+                Text(
+                    text = stringResource(
+                        InterfacesStrings.confirmation_line,
+                        stringResource(CoreUiStrings.wizard_calculation),
+                        state.wizardIsf
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
                     color = textColor
                 )
             }

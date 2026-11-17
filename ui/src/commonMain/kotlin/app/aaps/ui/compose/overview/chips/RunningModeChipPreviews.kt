@@ -37,7 +37,22 @@ internal fun RunningModeChipClosedLoopSmbPreview() {
             mode = RM.Mode.CLOSED_LOOP,
             text = "Closed Loop",
             progress = 0f,
-            smbEnabled = true
+            smbEnabled = true,
+            smbMaxMinutes = 30
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+internal fun RunningModeChipClosedLoopSmbDisabledPreview() {
+    MaterialTheme {
+        RunningModeChip(
+            mode = RM.Mode.CLOSED_LOOP,
+            text = "Closed Loop",
+            progress = 0f,
+            smbEnabled = false,
+            smbMaxMinutes = 30
         )
     }
 }

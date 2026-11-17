@@ -22,7 +22,11 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import app.aaps.core.data.model.TT
 import app.aaps.core.interfaces.navigation.ElementType
 import app.aaps.core.keys.interfaces.TextRef
@@ -49,6 +53,7 @@ import app.aaps.ui.compose.main.TempTargetChipState
 @Composable
 fun TempTargetChip(
     targetText: String,
+    profileTargetText: String = "",
     state: TempTargetChipState,
     progress: Float,
     reason: TT.Reason?,
@@ -110,7 +115,15 @@ fun TempTargetChip(
                 )
                 // One line, like the profile chip: a second line did not fit the chip's height.
                 Text(
-                    text = targetText,
+                    text = buildAnnotatedString {
+                        append(profileTargetText.ifEmpty { targetText })
+                        if (state == TempTargetChipState.Adjusted && profileTargetText.isNotEmpty()) {
+                            append(" → ")
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append(targetText)
+                            }
+                        }
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = textColor,
                     maxLines = 1,
