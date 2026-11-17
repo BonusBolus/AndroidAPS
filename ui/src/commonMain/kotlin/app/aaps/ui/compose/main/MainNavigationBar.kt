@@ -41,12 +41,9 @@ fun MainNavigationBar(
     modifier: Modifier = Modifier,
     /** On a client, hide the mutating nav buttons (Treatments + Scenes) until paired. Always true on master. */
     masterOrPairedClient: Boolean = true,
-    quickWizardCount: Int = 0,
     onAutomationClick: () -> Unit = {},
     /** Total scenes + automation items defined — drives whether the nav button is shown at all. */
     automationTotal: Int = 0,
-    /** Subset of [automationTotal] that the user can activate right now — drives the badge. */
-    automationCount: Int = 0,
     pumpSetupPlugin: PluginBase? = null,
     bgSetupPlugin: PluginBase? = null,
     bgQualityBadgeIcon: ImageVector? = null,
@@ -87,26 +84,13 @@ fun MainNavigationBar(
         if (masterOrPairedClient && role.allows(ElementType.TREATMENT.role)) {
             NavigationBarItem(
                 selected = false,
-                modifier = Modifier.badgeState(
-                    if (quickWizardCount > 0) stringResource(UiStrings.a11y_badge_available, quickWizardCount) else null
-                ),
                 onClick = onTreatmentClick,
                 icon = {
-                    BadgedBox(
-                        badge = {
-                            if (quickWizardCount > 0) {
-                                Badge(containerColor = AapsTheme.generalColors.statusNormal, contentColor = Color.Black) {
-                                    Text(text = quickWizardCount.toString())
-                                }
-                            }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Fastfood,
-                            contentDescription = stringResource(CoreUiStrings.treatments),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Fastfood,
+                        contentDescription = stringResource(CoreUiStrings.treatments),
+                        modifier = Modifier.size(24.dp)
+                    )
                 },
                 label = { Text(text = stringResource(CoreUiStrings.treatments), textAlign = TextAlign.Center) },
                 colors = navColors
@@ -119,26 +103,13 @@ fun MainNavigationBar(
         if (masterOrPairedClient && role.allows(ElementType.SCENE.role) && automationTotal > 0) {
             NavigationBarItem(
                 selected = false,
-                modifier = Modifier.badgeState(
-                    if (automationCount > 0) stringResource(UiStrings.a11y_badge_available, automationCount) else null
-                ),
                 onClick = onAutomationClick,
                 icon = {
-                    BadgedBox(
-                        badge = {
-                            if (automationCount > 0) {
-                                Badge(containerColor = AapsTheme.generalColors.statusNormal, contentColor = Color.Black) {
-                                    Text(text = automationCount.toString())
-                                }
-                            }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = IcAutomation,
-                            contentDescription = stringResource(CoreUiStrings.scenes),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = IcAutomation,
+                        contentDescription = stringResource(CoreUiStrings.scenes),
+                        modifier = Modifier.size(24.dp)
+                    )
                 },
                 label = { Text(text = stringResource(CoreUiStrings.scenes), textAlign = TextAlign.Center) },
                 colors = navColors

@@ -103,11 +103,11 @@ fun OverviewScreenStacked(
         modifier = modifier
             .fillMaxSize()
             .padding(paddingValues)
-            .verticalScroll(scrollState)
             .revealTopChromeOnPull(
                 atTop = { scrollState.value == 0 },
                 onReveal = { onScrollAtTopChange(true) }
             )
+            .verticalScroll(scrollState)
     ) {
         ActiveSceneBanner(
             activeState = activeSceneState,
