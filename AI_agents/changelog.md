@@ -1,5 +1,11 @@
 ## UI
 
+- Overview graphs: add a selectable Time in Range bar with Very Low, Low, In Range, High, and Very High ranges.
+- TIR graphs: support the current day from midnight or a rolling 24-hour view.
+- TIR graphs: keep TIR exclusive from other graph series and make it available in the history browser.
+- TIR graphs: move the Today and 24h choice into the graph edit screen.
+## UI
+
 - Bolus wizard: add the live BG, IOB, and COB overview bar used by the carb-entry screen.
 - Bolus wizard: restore colors for the BG, temp target, trend, IOB, and COB buttons.
 - Bolus wizard: order the extra settings as Use percentage, Carb time, BG, Correction, and Profile.## UI

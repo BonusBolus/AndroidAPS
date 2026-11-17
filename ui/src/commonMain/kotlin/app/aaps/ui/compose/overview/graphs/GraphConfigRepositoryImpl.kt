@@ -8,6 +8,7 @@ import app.aaps.core.interfaces.overview.graph.GraphConfig.Companion.MIN_GRAPH_H
 import app.aaps.core.interfaces.overview.graph.GraphConfigRepository
 import app.aaps.core.interfaces.overview.graph.SecondaryGraph
 import app.aaps.core.interfaces.overview.graph.SeriesType
+import app.aaps.core.interfaces.overview.graph.TirGraphMode
 import app.aaps.core.keys.StringNonKey
 import app.aaps.core.keys.interfaces.Preferences
 import dev.zacsweers.metro.AppScope
@@ -83,6 +84,7 @@ class GraphConfigRepositoryImpl(
         private const val KEY_IOB_HEIGHT = "iobHeight"
         private const val KEY_SERIES = "series"
         private const val KEY_HEIGHT = "height"
+        private const val KEY_TIR_MODE = "tirMode"
 
         private fun overlaysToJson(overlays: List<SeriesType>) = buildJsonArray {
             for (type in overlays) add(type.name)
@@ -115,6 +117,7 @@ class GraphConfigRepositoryImpl(
                             addJsonObject {
                                 put(KEY_SERIES, buildJsonArray { for (series in graph.series) add(series.name) })
                                 put(KEY_HEIGHT, graph.height)
+                                put(KEY_TIR_MODE, graph.tirMode.name)
                             }
                         }
                     }
@@ -127,6 +130,7 @@ class GraphConfigRepositoryImpl(
                 val type = element.seriesTypeOrNull() ?: continue // Skip unknown series (forward compat)
                 // IOB is now a fixed graph — strip it from configurable graphs (legacy migration)
                 if (type == SeriesType.IOB) continue
+                if (type == SeriesType.TIR) return listOf(SeriesType.TIR)
                 if (type !in series) series.add(type)
             }
             return series
@@ -142,12 +146,16 @@ class GraphConfigRepositoryImpl(
             for (raw in obj.array(KEY_SECONDARY_GRAPHS).orEmpty()) {
                 // Legacy format: element is an array of series names.
                 // New format: element is an object { series: [...], height: Int }.
-                val (series, height) = when (raw) {
-                    is JsonArray  -> parseSeriesArray(raw) to GraphConfig.DEFAULT_GRAPH_HEIGHT_DP
-                    is JsonObject -> (raw.array(KEY_SERIES)?.let { parseSeriesArray(it) } ?: emptyList()) to raw.height(KEY_HEIGHT)
-                    else          -> emptyList<SeriesType>() to GraphConfig.DEFAULT_GRAPH_HEIGHT_DP
+                val (series, height, tirMode) = when (raw) {
+                    is JsonArray  -> Triple(parseSeriesArray(raw), GraphConfig.DEFAULT_GRAPH_HEIGHT_DP, TirGraphMode.DAY)
+                    is JsonObject -> Triple(
+                        raw.array(KEY_SERIES)?.let { parseSeriesArray(it) } ?: emptyList(),
+                        raw.height(KEY_HEIGHT),
+                        raw.tirMode()
+                    )
+                    else -> Triple(emptyList<SeriesType>(), GraphConfig.DEFAULT_GRAPH_HEIGHT_DP, TirGraphMode.DAY)
                 }
-                if (series.isNotEmpty()) graphs.add(SecondaryGraph(series, height))
+                if (series.isNotEmpty()) graphs.add(SecondaryGraph(series, height, tirMode))
             }
             return GraphConfig(
                 bgOverlays = bgOverlays,
@@ -165,6 +173,11 @@ class GraphConfigRepositoryImpl(
         private fun JsonObject.height(key: String): Int =
             ((this[key] as? JsonPrimitive)?.let { runCatching { it.int }.getOrNull() } ?: GraphConfig.DEFAULT_GRAPH_HEIGHT_DP)
                 .coerceAtLeast(MIN_GRAPH_HEIGHT_DP)
+
+        private fun JsonObject.tirMode(): TirGraphMode =
+            (this[KEY_TIR_MODE] as? JsonPrimitive)?.takeIf { it.isString }?.content
+                ?.let { name -> TirGraphMode.entries.firstOrNull { it.name == name } }
+                ?: TirGraphMode.DAY
 
         /** The series this element names, or null if it is not a name this version knows. */
         private fun JsonElement.seriesTypeOrNull(): SeriesType? =

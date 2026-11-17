@@ -127,13 +127,7 @@ internal fun calculateAgpStatsData(
         eA1cPercent = (average + 46.7) / 28.7,
         gmiPercent = 3.31 + 0.02392 * average,
         tightRangePercent = percentage(values.count { it in TIGHT_LOW_MGDL..TIGHT_HIGH_MGDL }, values.size),
-        tir = AgpTirBreakdown(
-            veryLow = percentage(values.count { it < minOf(VERY_LOW_MGDL, lowMgdl) }, values.size),
-            low = percentage(values.count { it >= VERY_LOW_MGDL && it < lowMgdl }, values.size),
-            inRange = percentage(values.count { it in lowMgdl..highMgdl }, values.size),
-            high = percentage(values.count { it > highMgdl && it <= VERY_HIGH_MGDL }, values.size),
-            veryHigh = percentage(values.count { it > maxOf(VERY_HIGH_MGDL, highMgdl) }, values.size)
-        ),
+        tir = calculateAgpTirBreakdown(values, lowMgdl, highMgdl),
         hourlyPercentiles = valid
             .groupBy { Instant.fromEpochMilliseconds(it.timestamp).toLocalDateTime(zone).hour }
             .entries
@@ -149,6 +143,21 @@ internal fun calculateAgpStatsData(
                     p90Mgdl = percentile(hourlyValues, 0.90)
                 )
             }
+    )
+}
+
+internal fun calculateAgpTirBreakdown(
+    valuesMgdl: List<Double>,
+    lowMgdl: Double,
+    highMgdl: Double
+): AgpTirBreakdown {
+    if (valuesMgdl.isEmpty()) return AgpTirBreakdown()
+    return AgpTirBreakdown(
+        veryLow = percentage(valuesMgdl.count { it < minOf(VERY_LOW_MGDL, lowMgdl) }, valuesMgdl.size),
+        low = percentage(valuesMgdl.count { it >= VERY_LOW_MGDL && it < lowMgdl }, valuesMgdl.size),
+        inRange = percentage(valuesMgdl.count { it in lowMgdl..highMgdl }, valuesMgdl.size),
+        high = percentage(valuesMgdl.count { it > highMgdl && it <= VERY_HIGH_MGDL }, valuesMgdl.size),
+        veryHigh = percentage(valuesMgdl.count { it > maxOf(VERY_HIGH_MGDL, highMgdl) }, valuesMgdl.size)
     )
 }
 

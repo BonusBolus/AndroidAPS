@@ -114,7 +114,7 @@ fun DexcomTirStatsCompose(
                     .padding(top = 8.dp)
             )
 
-            DexcomTirBarCompose(
+            TirBarCompose(
                 veryLowPct = dexcomTir.veryLowPct(),
                 lowPct = dexcomTir.lowPct(),
                 inRangePct = dexcomTir.inRangePct(),
@@ -129,7 +129,7 @@ fun DexcomTirStatsCompose(
 }
 
 @Composable
-private fun DexcomTirBarCompose(
+internal fun TirBarCompose(
     veryLowPct: Double,
     lowPct: Double,
     inRangePct: Double,

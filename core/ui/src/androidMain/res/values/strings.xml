@@ -1230,6 +1230,7 @@
     <string name="graph_series_heart_rate">Heart Rate</string>
     <string name="graph_series_steps">Steps</string>
     <string name="graph_series_activity" comment="Insulin activity: how fast insulin is working now. Not physical exercise.">Activity</string>
+    <string name="graph_series_tir">Time in range</string>
     <string name="graph_series_predictions">Predictions</string>
 
 
