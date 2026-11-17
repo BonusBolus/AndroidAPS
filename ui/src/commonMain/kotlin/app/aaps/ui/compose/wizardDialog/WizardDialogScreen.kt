@@ -117,18 +117,29 @@ import app.aaps.core.ui.compose.rememberBringIntoViewOnExpand
 import app.aaps.core.ui.compose.stringResource
 import app.aaps.core.ui.compose.stringResourceOrNull
 import app.aaps.ui.UiStrings
+import app.aaps.ui.compose.components.DialogStatusBar
 import app.aaps.ui.compose.components.RecordOnlyBanner
 import app.aaps.ui.compose.components.SmbBeingDeliveredBanner
+import app.aaps.ui.compose.overview.chips.CobUiState
+import app.aaps.ui.compose.overview.chips.IobUiState
+import app.aaps.ui.compose.overview.graphs.BgInfoUiState
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 @Composable
 fun WizardDialogScreen(
     viewModel: WizardDialogViewModel = metroViewModel(),
     wizardSettingsDef: PreferenceSubScreenDef,
+    bgInfoState: StateFlow<BgInfoUiState>,
+    iobUiState: StateFlow<IobUiState>,
+    cobUiState: StateFlow<CobUiState>,
     onNavigateBack: () -> Unit,
     onShowDeliveryError: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val bgInfo by bgInfoState.collectAsStateWithLifecycle()
+    val iob by iobUiState.collectAsStateWithLifecycle()
+    val cob by cobUiState.collectAsStateWithLifecycle()
 
     // Observe side effects
     LaunchedEffect(Unit) {
@@ -207,6 +218,9 @@ fun WizardDialogScreen(
 
     WizardDialogContent(
         uiState = uiState,
+        bgInfo = bgInfo,
+        iob = iob,
+        cob = cob,
         decimalFormatter = viewModel.decimalFormatter,
         unitsLabel = uiState.units.displayLabel,
         onBgChange = { viewModel.updateBg(it) },
@@ -235,6 +249,9 @@ fun WizardDialogScreen(
 @Composable
 internal fun WizardDialogContent(
     uiState: WizardDialogUiState,
+    bgInfo: BgInfoUiState = BgInfoUiState(bgInfo = null, timeAgoText = ""),
+    iob: IobUiState = IobUiState(),
+    cob: CobUiState = CobUiState(),
     decimalFormatter: DecimalFormatter,
     unitsLabel: String,
     onBgChange: (Double) -> Unit,
@@ -338,6 +355,12 @@ internal fun WizardDialogContent(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            DialogStatusBar(
+                bgInfo = bgInfo,
+                iob = iob,
+                cob = cob
+            )
+
             // --- Calculation Card (expandable, at top) ---
             val calculationExpandRequester = rememberBringIntoViewOnExpand(uiState.calculationExpanded)
             Card(
@@ -452,6 +475,7 @@ internal fun WizardDialogContent(
                                 Icon(
                                     imageVector = ElementType.BG_CHECK.icon(),
                                     contentDescription = stringResource(CoreUiStrings.wizard_include_bg),
+                                    tint = ElementType.BG_CHECK.color(),
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -466,6 +490,7 @@ internal fun WizardDialogContent(
                                 Icon(
                                     imageVector = IcTtManual,
                                     contentDescription = stringResource(CoreUiStrings.wizard_include_tt),
+                                    tint = ElementType.TEMP_TARGET_MANAGEMENT.color(),
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -479,6 +504,7 @@ internal fun WizardDialogContent(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                                     contentDescription = stringResource(CoreUiStrings.wizard_include_trend),
+                                    tint = ElementType.BG_CHECK.color(),
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -492,6 +518,7 @@ internal fun WizardDialogContent(
                                 Icon(
                                     imageVector = ElementType.INSULIN.icon(),
                                     contentDescription = stringResource(CoreUiStrings.wizard_include_iob),
+                                    tint = ElementType.INSULIN.color(),
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -505,6 +532,7 @@ internal fun WizardDialogContent(
                                 Icon(
                                     imageVector = ElementType.COB.icon(),
                                     contentDescription = stringResource(CoreUiStrings.wizard_include_cob),
+                                    tint = ElementType.COB.color(),
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -748,19 +776,27 @@ internal fun WizardDialogContent(
                         }
                     }
 
-                    // Direct Correction: collapsed, so there is no second open field under the carbs
-                    // one. They looked alike, and grams typed into this one were bolused as units
-                    // (reported on Discord). Nudging still works from the collapsed row; the pencil
-                    // opens the field for a value that would take too many steps.
+                    // Percentage (collapsible)
+                    val percentageExpandRequester = rememberBringIntoViewOnExpand(percentageExpanded)
                     ExpandableNumberInputRow(
-                        labelRef = CoreUiStrings.wizard_correction,
-                        value = uiState.directCorrection,
-                        onValueChange = onDirectCorrectionChange,
-                        valueRange = -uiState.maxBolus..uiState.maxBolus,
-                        step = uiState.bolusStep,
-                        unitLabel = CoreUiStrings.insulin_unit_shortname,
-                        decimalPlaces = 2,
-                        modifier = itemModifier
+                        labelRef = CoreUiStrings.wizard_use_percentage,
+                        value = uiState.percentage.toDouble(),
+                        onValueChange = onPercentageChange,
+                        valueRange = Constants.WIZARD_PERCENTAGE_RANGE,
+                        step = 5.0,
+                        unitLabel = TextRef.Literal("%"),
+                        decimalPlaces = 0,
+                        expanded = percentageExpanded,
+                        onExpandedChange = { percentageExpanded = it },
+                        modifier = itemModifier.bringIntoViewRequester(percentageExpandRequester),
+                        // The percent sign sits in its own format resource here, not after the number.
+                        valueContent = {
+                            Text(
+                                text = stringResource(CoreUiStrings.units_format_percent, uiState.percentage),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     )
 
                     // Carb Time (compact row with popup dialog)
@@ -818,27 +854,19 @@ internal fun WizardDialogContent(
                         }
                     )
 
-                    // Percentage (collapsible)
-                    val percentageExpandRequester = rememberBringIntoViewOnExpand(percentageExpanded)
+                    // Direct Correction: collapsed, so there is no second open field under the carbs
+                    // one. They looked alike, and grams typed into this one were bolused as units
+                    // (reported on Discord). Nudging still works from the collapsed row; the pencil
+                    // opens the field for a value that would take too many steps.
                     ExpandableNumberInputRow(
-                        labelRef = CoreUiStrings.wizard_use_percentage,
-                        value = uiState.percentage.toDouble(),
-                        onValueChange = onPercentageChange,
-                        valueRange = Constants.WIZARD_PERCENTAGE_RANGE,
-                        step = 5.0,
-                        unitLabel = TextRef.Literal("%"),
-                        decimalPlaces = 0,
-                        expanded = percentageExpanded,
-                        onExpandedChange = { percentageExpanded = it },
-                        modifier = itemModifier.bringIntoViewRequester(percentageExpandRequester),
-                        // The percent sign sits in its own format resource here, not after the number.
-                        valueContent = {
-                            Text(
-                                text = stringResource(CoreUiStrings.units_format_percent, uiState.percentage),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                        labelRef = CoreUiStrings.wizard_correction,
+                        value = uiState.directCorrection,
+                        onValueChange = onDirectCorrectionChange,
+                        valueRange = -uiState.maxBolus..uiState.maxBolus,
+                        step = uiState.bolusStep,
+                        unitLabel = CoreUiStrings.insulin_unit_shortname,
+                        decimalPlaces = 2,
+                        modifier = itemModifier
                     )
 
                     // Profile (hidden in simple mode)

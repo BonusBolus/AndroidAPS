@@ -1,5 +1,9 @@
 ## UI
 
+- Bolus wizard: add the live BG, IOB, and COB overview bar used by the carb-entry screen.
+- Bolus wizard: restore colors for the BG, temp target, trend, IOB, and COB buttons.
+- Bolus wizard: order the extra settings as Use percentage, Carb time, BG, Correction, and Profile.## UI
+
 - Overview graphs: allow more than two data fields on one graph.
 - Overview graphs: use the first field on the left axis and later fields on the right axis.
 - Overview graphs: show `%sens` and VSENS with different colors.
