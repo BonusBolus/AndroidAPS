@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -111,14 +112,13 @@ fun RunningModeChip(
                             modifier = Modifier.size(AapsSpacing.chipIconSize)
                         )
                         if (smbMaxMinutes > 0) {
-                            Box {
+                            Spacer(modifier = Modifier.width(AapsSpacing.small))
+                            Box(modifier = Modifier.size(AapsSpacing.chipIconSize)) {
                                 Icon(
                                     imageVector = IcSmb,
                                     contentDescription = stringResource(CoreUiStrings.smb_shortname),
                                     tint = if (smbEnabled) AapsTheme.elementColors.insulin else MaterialTheme.colorScheme.error,
-                                    modifier = Modifier
-                                        .padding(start = AapsSpacing.small)
-                                        .size(AapsSpacing.chipIconSize)
+                                    modifier = Modifier.fillMaxSize()
                                 )
                                 if (!smbEnabled) {
                                     Icon(
