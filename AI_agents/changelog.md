@@ -5,3 +5,5 @@
 - Overview graphs: show `%sens` and VSENS with different colors.
 - Overview graphs: remove the 100 dp minimum and 250 dp maximum height limits.
 - Overview screen: hide the top controls until the content is scrolled back to the top; keep bottom controls visible.
+- Overview screen: hide the top controls after 3 seconds of inactivity and keep them hidden when returning from another screen.
+- Quick Launch: make the settings action optional and configurable instead of always adding it.

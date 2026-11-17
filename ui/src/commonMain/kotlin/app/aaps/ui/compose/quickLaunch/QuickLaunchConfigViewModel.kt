@@ -69,7 +69,6 @@ class QuickLaunchConfigViewModel(
     fun loadState() {
         val json = preferences.get(StringNonKey.QuickLaunchActions)
         val selectedActions = QuickLaunchSerializer.fromJson(json)
-            .filter { it != QuickLaunchAction.QuickLaunchConfig } // Config button managed separately
 
         val selectedSet = selectedActions.map { actionKey(it) }.toSet()
 
@@ -179,13 +178,10 @@ class QuickLaunchConfigViewModel(
     private fun currentActions(): List<QuickLaunchAction> {
         val json = preferences.get(StringNonKey.QuickLaunchActions)
         return QuickLaunchSerializer.fromJson(json)
-            .filter { it != QuickLaunchAction.QuickLaunchConfig }
     }
 
     private fun saveAndReload(actions: List<QuickLaunchAction>) {
-        // Always append ToolbarConfig at the end
-        val withConfig = actions + QuickLaunchAction.QuickLaunchConfig
-        preferences.put(StringNonKey.QuickLaunchActions, QuickLaunchSerializer.toJson(withConfig))
+        preferences.put(StringNonKey.QuickLaunchActions, QuickLaunchSerializer.toJson(actions))
         loadState()
     }
 

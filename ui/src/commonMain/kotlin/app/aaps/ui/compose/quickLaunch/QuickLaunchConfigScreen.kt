@@ -219,6 +219,22 @@ fun QuickLauchConfigScreen(
                 }
             }
 
+            // ── Available: Settings ── (hidden when empty)
+            val settingsItems = state.availableStaticItems.filter {
+                it.action.elementType?.category == ElementCategory.SYSTEM
+            }
+            if (settingsItems.isNotEmpty()) {
+                item(key = "divider_settings") {
+                    HorizontalDivider()
+                }
+                item(key = "header_settings") {
+                    SectionHeader(stringResource(CoreUiStrings.settings))
+                }
+                items(settingsItems, key = { "avail_${it.action.typeId}" }) { item ->
+                    AvailableActionItem(item = item, onAdd = { viewModel.addAction(item.action) }, modifier = Modifier.animateItem())
+                }
+            }
+
             // ── Dynamic: Quick Wizard ── (hidden when empty)
             if (state.availableQuickWizardItems.isNotEmpty()) {
                 item(key = "divider_qw") {

@@ -24,6 +24,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -43,6 +44,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.aaps.core.interfaces.navigation.ElementType
 import app.aaps.core.interfaces.notifications.AapsNotification
@@ -208,6 +212,17 @@ fun MainScreen(
             var overviewAtTop by remember { mutableStateOf(false) }
             val interactionSource = remember { MutableInteractionSource() }
             val accessibilityManager = LocalAccessibilityManager.current
+            val lifecycleOwner = LocalLifecycleOwner.current
+
+            DisposableEffect(lifecycleOwner, searchUiState.isSearchActive) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME && !searchUiState.isSearchActive) {
+                        topChromeVisible = false
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+            }
 
             // Measure actual bar heights for content padding in non-preview mode
             var topBarHeightPx by remember { mutableIntStateOf(0) }
@@ -221,17 +236,13 @@ fun MainScreen(
                 }
             }
 
-            LaunchedEffect(topChromeVisible, previewMode, searchUiState.isSearchActive) {
-                if (previewMode && topChromeVisible && !searchUiState.isSearchActive) {
+            LaunchedEffect(topChromeVisible, searchUiState.isSearchActive) {
+                if (topChromeVisible && !searchUiState.isSearchActive) {
                     // Honours the system "Time to take action" setting: a screen reader user moving
                     // through the bars needs longer than 3 s before they hide again.
                     delay(accessibilityManager?.calculateRecommendedTimeoutMillis(AUTO_HIDE_DELAY_MS, containsIcons = true, containsControls = true) ?: AUTO_HIDE_DELAY_MS)
                     topChromeVisible = false
                 }
-            }
-
-            LaunchedEffect(searchUiState.isSearchActive) {
-                topChromeVisible = if (searchUiState.isSearchActive) true else overviewAtTop
             }
 
             // topBar/bottomBar are intentionally absent — controls are rendered as

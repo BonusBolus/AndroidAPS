@@ -55,9 +55,6 @@ object QuickLaunchSerializer {
                 val obj = element as JsonObject
                 deserializeAction(obj.string(KEY_TYPE), obj.string(KEY_ID), obj)?.let { result.add(it) }
             }
-            // Ensure ToolbarConfig is always present and last
-            result.removeAll { it == QuickLaunchAction.QuickLaunchConfig }
-            result.add(QuickLaunchAction.QuickLaunchConfig)
             result
         } catch (_: Exception) {
             // A half written preference must not stop the toolbar from loading at all.

@@ -105,7 +105,7 @@ sealed class QuickLaunchAction {
         val QuickLaunchConfig = StaticAction(ElementType.QUICK_LAUNCH_CONFIG)
 
         /**
-         * All static actions available for the configuration screen (excluding QuickLaunchConfig).
+         * All static actions available for the configuration screen.
          *
          * The management block follows the order of the Manage sheet, so the two lists read the same
          * way, with `RUNNING_MODE` after it - that one is a management screen too, but the sheet does
@@ -120,14 +120,13 @@ sealed class QuickLaunchAction {
             SceneManagement, AutomationManagement, FoodManagement, RunningMode,
             AuthorizedClients,
             BgCheck, Note, Exercise, Question, Announcement,
-            SensorInsert, BatteryChange, CannulaChange, Fill, SiteRotation
+            SensorInsert, BatteryChange, CannulaChange, Fill, SiteRotation, QuickLaunchConfig
         )
 
         /** Default toolbar configuration */
-        val default: List<QuickLaunchAction> = listOf(Wizard, QuickLaunchConfig)
+        val default: List<QuickLaunchAction> = listOf(Wizard)
 
         /** Lookup static action by typeId */
         fun fromTypeId(typeId: String): QuickLaunchAction? = staticActions.find { it.typeId == typeId }
-            ?: if (typeId == QuickLaunchConfig.typeId) QuickLaunchConfig else null
     }
 }

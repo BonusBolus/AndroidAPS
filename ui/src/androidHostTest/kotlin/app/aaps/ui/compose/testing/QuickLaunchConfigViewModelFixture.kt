@@ -101,7 +101,7 @@ class QuickLaunchConfigViewModelFixture(private val screen: AapsScreenFixture) {
 
     /** Puts [selected] into the stored preference, through the real serializer the screen also uses. */
     fun givenSelected(selected: List<QuickLaunchAction>) {
-        storedJson = QuickLaunchSerializer.toJson(selected + QuickLaunchAction.QuickLaunchConfig)
+        storedJson = QuickLaunchSerializer.toJson(selected)
     }
 
     fun build(): QuickLaunchConfigViewModel = QuickLaunchConfigViewModel(
