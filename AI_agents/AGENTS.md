@@ -132,3 +132,30 @@ Skills live in `AI_agents/skills/<name>/SKILL.md`. Claude Code and Antigravity d
 ## Reference Material
 
 - `AI_agents/AndroidAPS_Feature_Backlog.md`: planned custom features (SMB max-minutes actions, BG notification icon, Garmin, AutoISF, FPU bolus). Read it when asked about the backlog or porting an upstream PR; re-verify against current upstream before starting an item.
+
+
+### AndroidAPS Build Commands
+
+Three GitHub Actions build options are available through the VS Code terminal (`gh`):
+
+1. **Official release build**
+   ```powershell
+   gh workflow run "AAPS CI" --ref master -f tagName=4.0.0 -f buildVariant=fullRelease
+   ```
+   Builds an official upstream version selected by tag.
+
+2. **Branch build**
+   ```powershell
+   gh workflow run "Branch CI" --ref dev -f buildVariant=fullRelease
+   ```
+   Builds the selected branch of the personal fork (e.g. `dev` or `master`).
+
+3. **Cherry-pick build**
+   ```powershell
+   gh workflow run "Cherry Pick CI" --ref dev -f cherry_pick="HASH1 HASH2" -f buildVariant=fullRelease
+   ```
+   Builds the selected branch with specified upstream commits applied temporarily.
+
+**Permission requirement:** The AI agent must explicitly ask for user permission before triggering any build workflow. Never execute a build without confirmation.
+
+The user can change `--ref`, version tags, commit hashes, and build variants as needed.
