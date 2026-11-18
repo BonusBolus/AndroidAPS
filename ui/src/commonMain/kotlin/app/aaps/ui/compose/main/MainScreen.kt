@@ -1,6 +1,9 @@
 package app.aaps.ui.compose.main
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -417,8 +420,10 @@ fun MainScreen(
                     // Top bar overlay
                     AnimatedVisibility(
                         visible = topChromeVisible,
-                        enter = slideInVertically { -it },
-                        exit = slideOutVertically { -it },
+                        enter = slideInVertically(animationSpec = tween(durationMillis = 500)) { -it } +
+                            fadeIn(animationSpec = tween(durationMillis = 500)),
+                        exit = slideOutVertically(animationSpec = tween(durationMillis = 500)) { -it } +
+                            fadeOut(animationSpec = tween(durationMillis = 500)),
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .padding(top = scaffoldPadding.calculateTopPadding())
