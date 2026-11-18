@@ -78,6 +78,7 @@ class GraphConfigRepositoryImpl(
 
         private const val KEY_SECONDARY_GRAPHS = "secondaryGraphs"
         private const val KEY_BG_OVERLAYS = "bgOverlays"
+        private const val KEY_IOB_SERIES = "iobSeries"
         private const val KEY_IOB_OVERLAYS = "iobOverlays"
         private const val KEY_BG_HEIGHT = "bgHeight"
         private const val KEY_IOB_HEIGHT = "iobHeight"
@@ -105,6 +106,7 @@ class GraphConfigRepositoryImpl(
         fun toJson(config: GraphConfig): String =
             buildJsonObject {
                 put(KEY_BG_OVERLAYS, overlaysToJson(config.bgOverlays))
+                put(KEY_IOB_SERIES, overlaysToJson(config.iobSeries))
                 put(KEY_IOB_OVERLAYS, overlaysToJson(config.iobOverlays))
                 put(KEY_BG_HEIGHT, config.bgHeight)
                 put(KEY_IOB_HEIGHT, config.iobHeight)
@@ -135,6 +137,8 @@ class GraphConfigRepositoryImpl(
         fun fromJson(json: String): GraphConfig {
             val obj = Json.parseToJsonElement(json) as JsonObject
             val bgOverlays = overlaysFromJson(obj.array(KEY_BG_OVERLAYS), listOf(SeriesType.ACTIVITY, SeriesType.PREDICTIONS))
+            val iobSeries = overlaysFromJson(obj.array(KEY_IOB_SERIES), listOf(SeriesType.IOB, SeriesType.ACTIVITY))
+                .filter { it != SeriesType.PREDICTIONS }
             val iobOverlays = overlaysFromJson(obj.array(KEY_IOB_OVERLAYS), listOf(SeriesType.ACTIVITY))
             val bgHeight = obj.height(KEY_BG_HEIGHT)
             val iobHeight = obj.height(KEY_IOB_HEIGHT)
@@ -151,6 +155,7 @@ class GraphConfigRepositoryImpl(
             }
             return GraphConfig(
                 bgOverlays = bgOverlays,
+                iobSeries = iobSeries.ifEmpty { listOf(SeriesType.IOB, SeriesType.ACTIVITY) },
                 iobOverlays = iobOverlays,
                 bgHeight = bgHeight,
                 iobHeight = iobHeight,
