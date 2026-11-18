@@ -707,7 +707,9 @@ fun GraphsSection(
                     viewModel = graphViewModel,
                     inspect = inspect,
                     seriesTypes = secondary.series,
-                    tirMode = secondary.tirMode,
+                    // The history browser must always show the last 24 hours. A calendar day
+                    // includes hours that have not happened yet when the selected date is today.
+                    tirMode = if (fitWholeWindow) TirGraphMode.HOURS_24 else secondary.tirMode,
                     scrollState = secScrollStates[i],
                     zoomState = secZoomStates[i],
                     derivedTimeRange = derivedTimeRange,

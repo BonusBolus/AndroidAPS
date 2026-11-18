@@ -19,10 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.aaps.core.interfaces.InterfacesStrings
 import app.aaps.core.interfaces.overview.graph.BgDataPoint
 import app.aaps.core.interfaces.overview.graph.TirGraphMode
 import app.aaps.core.interfaces.profile.ProfileUtil
-import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.core.ui.CoreUiStrings
 import app.aaps.core.ui.compose.AapsTheme
 import app.aaps.core.ui.compose.LocalProfileUtil
@@ -76,7 +76,11 @@ internal fun TirGraphCompose(
                     .fillMaxWidth()
                     .padding(top = 8.dp)
             )
-            TirLegend(it)
+            TirLegend(
+                breakdown = it,
+                lowMark = chartConfig.lowMark,
+                highMark = chartConfig.highMark
+            )
         } ?: Text(
             text = stringResource(UiStrings.agp_no_data),
             style = MaterialTheme.typography.bodySmall,
@@ -112,25 +116,39 @@ private fun calculateTir(
 }
 
 @Composable
-private fun TirLegend(breakdown: AgpTirBreakdown) {
+private fun TirLegend(
+    breakdown: AgpTirBreakdown,
+    lowMark: Double,
+    highMark: Double
+) {
     val colors = AapsTheme.generalColors
+    val profileUtil = LocalProfileUtil.current
+    val inRange = stringResource(
+        InterfacesStrings.value_with_detail,
+        stringResource(CoreUiStrings.in_range),
+        stringResource(
+            InterfacesStrings.values_with_dash,
+            profileUtil.fromMgdlToStringInUnits(profileUtil.convertToMgdl(lowMark, profileUtil.units)),
+            profileUtil.fromMgdlToStringInUnits(profileUtil.convertToMgdl(highMark, profileUtil.units))
+        )
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp),
         verticalAlignment = Alignment.Top
     ) {
-        TirLegendItem(CoreUiStrings.veryLow, breakdown.veryLow, colors.bgVeryLow)
-        TirLegendItem(CoreUiStrings.low, breakdown.low, colors.bgLow)
-        TirLegendItem(CoreUiStrings.in_range, breakdown.inRange, colors.bgInRange)
-        TirLegendItem(CoreUiStrings.high, breakdown.high, colors.bgHigh)
-        TirLegendItem(CoreUiStrings.veryHigh, breakdown.veryHigh, colors.bgVeryHigh)
+        TirLegendItem(stringResource(CoreUiStrings.veryLow), breakdown.veryLow, colors.bgVeryLow)
+        TirLegendItem(stringResource(CoreUiStrings.low), breakdown.low, colors.bgLow)
+        TirLegendItem(inRange, breakdown.inRange, colors.bgInRange)
+        TirLegendItem(stringResource(CoreUiStrings.high), breakdown.high, colors.bgHigh)
+        TirLegendItem(stringResource(CoreUiStrings.veryHigh), breakdown.veryHigh, colors.bgVeryHigh)
     }
 }
 
 @Composable
 private fun RowScope.TirLegendItem(
-    label: TextRef,
+    label: String,
     value: Double,
     color: Color
 ) {
@@ -139,7 +157,7 @@ private fun RowScope.TirLegendItem(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = stringResource(label),
+            text = label,
             style = MaterialTheme.typography.labelSmall,
             maxLines = 1
         )
