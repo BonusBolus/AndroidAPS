@@ -22,19 +22,21 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
 import app.aaps.core.data.model.TT
 import app.aaps.core.interfaces.navigation.ElementType
+import app.aaps.core.interfaces.overview.IsfStep
 import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.core.ui.CoreUiStrings
 import app.aaps.core.ui.compose.AapsSpacing
 import app.aaps.core.ui.compose.AapsTheme
 import app.aaps.core.ui.compose.LocalAapsScale
 import app.aaps.core.ui.compose.icons.IcTarget
+import app.aaps.core.ui.compose.icons.IcArrowFlat
+import app.aaps.core.ui.compose.icons.IcArrowFortyfiveDown
+import app.aaps.core.ui.compose.icons.IcArrowFortyfiveUp
 import app.aaps.core.ui.compose.icons.IcTtActivity
 import app.aaps.core.ui.compose.icons.IcTtEatingSoon
 import app.aaps.core.ui.compose.icons.IcTtHypo
@@ -54,6 +56,7 @@ import app.aaps.ui.compose.main.TempTargetChipState
 fun TempTargetChip(
     targetText: String,
     profileTargetText: String = "",
+    tempTargetStep: IsfStep = IsfStep.SAME,
     state: TempTargetChipState,
     progress: Float,
     reason: TT.Reason?,
@@ -114,24 +117,43 @@ fun TempTargetChip(
                     modifier = Modifier.size(AapsSpacing.chipIconSize)
                 )
                 // One line, like the profile chip: a second line did not fit the chip's height.
-                Text(
-                    text = buildAnnotatedString {
-                        append(profileTargetText.ifEmpty { targetText })
-                        if (state == TempTargetChipState.Adjusted && profileTargetText.isNotEmpty()) {
-                            append(" → ")
-                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(targetText)
-                            }
-                        }
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = textColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .padding(start = AapsSpacing.medium)
-                )
+                if (state == TempTargetChipState.Adjusted && profileTargetText.isNotEmpty()) {
+                    Text(
+                        text = profileTargetText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .padding(start = AapsSpacing.medium)
+                    )
+                    Icon(
+                        imageVector = selectTempTargetArrow(tempTargetStep),
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = targetText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else {
+                    Text(
+                        text = profileTargetText.ifEmpty { targetText },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .padding(start = AapsSpacing.medium)
+                    )
+                }
                 if (sceneManaged) {
                     SceneBadge(modifier = Modifier.padding(start = AapsSpacing.small))
                 }
@@ -150,6 +172,13 @@ fun TempTargetChip(
         }
     }
 }
+
+private fun selectTempTargetArrow(step: IsfStep): ImageVector =
+    when (step) {
+        IsfStep.UP   -> IcArrowFortyfiveUp
+        IsfStep.DOWN -> IcArrowFortyfiveDown
+        IsfStep.SAME -> IcArrowFlat
+    }
 
 @Composable
 private fun TT.Reason?.toIconColor(): Color = ttReasonColor(AapsTheme.generalColors)

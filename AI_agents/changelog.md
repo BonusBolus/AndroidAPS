@@ -1,7 +1,7 @@
 ## UI
 
-- Overview: show the profile glucose target and the current sensitivity-adjusted target, with the active target highlighted.
-- Overview: show the effective algorithm ISF and the calculator ISF in the sensitivity section.
+- Overview: show the profile glucose target and the current sensitivity-adjusted target, with the active target highlighted. Use a direction arrow for the adjusted target.
+- Overview: show the effective algorithm ISF and Wizard ISF in the sensitivity section. Mark Wizard ISF with the bolus wizard icon.
 - Overview: show SMB on/off status and the configured SMB maximum basal minutes beside the loop indicator.## UI
 
 - Overview graphs: add a selectable Time in Range bar with Very Low, Low, In Range, High, and Very High ranges.

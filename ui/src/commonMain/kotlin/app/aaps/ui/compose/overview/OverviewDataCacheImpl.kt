@@ -72,6 +72,7 @@ import app.aaps.core.interfaces.overview.graph.TherapyEventType
 import app.aaps.core.interfaces.overview.graph.TimeRange
 import app.aaps.core.interfaces.overview.graph.TreatmentGraphData
 import app.aaps.core.interfaces.overview.graph.VarSensGraphData
+import app.aaps.core.interfaces.overview.IsfStep
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileUtil
@@ -686,7 +687,12 @@ class OverviewDataCacheImpl(
                         state = TempTargetState.ADJUSTED,
                         profileTargetRangeText = profileTarget,
                         timestamp = 0L,
-                        duration = 0L
+                        duration = 0L,
+                        targetStep = when {
+                            adjustedTarget > (profile.getTargetLowMgdl() + profile.getTargetHighMgdl()) / 2 -> IsfStep.UP
+                            adjustedTarget < (profile.getTargetLowMgdl() + profile.getTargetHighMgdl()) / 2 -> IsfStep.DOWN
+                            else -> IsfStep.SAME
+                        }
                     )
                 } else {
                     // Default profile target

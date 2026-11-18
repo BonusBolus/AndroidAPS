@@ -38,6 +38,7 @@ import app.aaps.core.interfaces.overview.graph.RunningModeDisplayData
 import app.aaps.core.interfaces.overview.graph.TbrDisplayData
 import app.aaps.core.interfaces.overview.graph.TbrState
 import app.aaps.core.interfaces.overview.graph.TempTargetDisplayData
+import app.aaps.core.interfaces.overview.IsfStep
 import app.aaps.core.interfaces.overview.graph.TempTargetState
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.Profile
@@ -259,6 +260,7 @@ class MainViewModel(
             profileProgress = chip.profileProgress,
             tempTargetText = chip.tempTargetText,
             profileTargetText = chip.profileTargetText,
+            tempTargetStep = chip.tempTargetStep,
             tempTargetState = chip.tempTargetState,
             tempTargetProgress = chip.tempTargetProgress,
             tempTargetReason = chip.tempTargetReason,
@@ -378,6 +380,7 @@ class MainViewModel(
             profileProgress = profileProgress,
             tempTargetText = ttText,
             profileTargetText = ttData?.profileTargetRangeText ?: "",
+            tempTargetStep = ttData?.targetStep ?: IsfStep.SAME,
             tempTargetState = if (ttExpired) TempTargetChipState.None
             else ttData?.state?.toChipState() ?: TempTargetChipState.None,
             tempTargetProgress = ttProgress,
@@ -1056,6 +1059,7 @@ private data class ChipState(
     val profileProgress: Float = 0f,
     val tempTargetText: String = "",
     val profileTargetText: String = "",
+    val tempTargetStep: IsfStep = IsfStep.SAME,
     val tempTargetState: TempTargetChipState = TempTargetChipState.None,
     val tempTargetProgress: Float = 0f,
     val tempTargetReason: TT.Reason? = null,

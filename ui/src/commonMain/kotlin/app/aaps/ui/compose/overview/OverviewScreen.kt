@@ -33,6 +33,7 @@ import app.aaps.core.data.model.ActiveSceneState
 import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.TT
 import app.aaps.core.interfaces.notifications.AapsNotification
+import app.aaps.core.interfaces.overview.IsfStep
 import app.aaps.core.interfaces.overview.graph.TbrState
 import app.aaps.core.interfaces.pump.BolusProgressState
 import app.aaps.core.ui.compose.PHONE_COLUMN_MIN_WIDTH_DP
@@ -62,6 +63,7 @@ fun OverviewScreen(
     profileProgress: Float,
     tempTargetText: String,
     profileTargetText: String,
+    tempTargetStep: IsfStep = IsfStep.SAME,
     tempTargetState: TempTargetChipState,
     tempTargetProgress: Float,
     tempTargetReason: TT.Reason?,
@@ -168,6 +170,7 @@ fun OverviewScreen(
                     profileSceneManaged = profileSceneManaged,
                     tempTargetText = tempTargetText,
                     profileTargetText = profileTargetText,
+                    tempTargetStep = tempTargetStep,
                     tempTargetState = tempTargetState,
                     tempTargetProgress = tempTargetProgress,
                     tempTargetReason = tempTargetReason,
@@ -210,6 +213,7 @@ fun OverviewScreen(
                     profileSceneManaged = profileSceneManaged,
                     tempTargetText = tempTargetText,
                     profileTargetText = profileTargetText,
+                    tempTargetStep = tempTargetStep,
                     tempTargetState = tempTargetState,
                     tempTargetProgress = tempTargetProgress,
                     tempTargetReason = tempTargetReason,
@@ -252,6 +256,7 @@ fun OverviewScreen(
                     profileSceneManaged = profileSceneManaged,
                     tempTargetText = tempTargetText,
                     profileTargetText = profileTargetText,
+                    tempTargetStep = tempTargetStep,
                     tempTargetState = tempTargetState,
                     tempTargetProgress = tempTargetProgress,
                     tempTargetReason = tempTargetReason,

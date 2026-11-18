@@ -287,6 +287,7 @@ fun MainScreen(
                         profileProgress = uiState.profileProgress,
                         tempTargetText = uiState.tempTargetText,
                         profileTargetText = uiState.profileTargetText,
+                        tempTargetStep = uiState.tempTargetStep,
                         tempTargetState = uiState.tempTargetState,
                         tempTargetProgress = uiState.tempTargetProgress,
                         tempTargetReason = uiState.tempTargetReason,

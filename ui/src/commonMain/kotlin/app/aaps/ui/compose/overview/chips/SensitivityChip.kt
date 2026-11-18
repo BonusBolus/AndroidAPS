@@ -36,6 +36,7 @@ import app.aaps.core.ui.compose.icons.IcAsBelow
 import app.aaps.core.ui.compose.icons.IcAsBelowX
 import app.aaps.core.ui.compose.icons.IcAsX
 import app.aaps.core.ui.compose.navigation.color
+import app.aaps.core.ui.compose.navigation.icon
 import app.aaps.core.ui.compose.navigation.label
 import app.aaps.core.ui.compose.stringResource
 import app.aaps.core.ui.compose.stringResourceOrNull
@@ -111,10 +112,16 @@ internal fun SensitivityChip(
             }
             if (state.wizardIsf.isNotEmpty()) {
                 Spacer(Modifier.width(AapsSpacing.medium))
+                Icon(
+                    imageVector = ElementType.BOLUS_WIZARD.icon(),
+                    contentDescription = stringResourceOrNull(ElementType.BOLUS_WIZARD.label()),
+                    tint = ElementType.SENSITIVITY.color(),
+                    modifier = Modifier.size(16.dp)
+                )
                 Text(
                     text = stringResource(
                         InterfacesStrings.confirmation_line,
-                        stringResource(CoreUiStrings.wizard_calculation),
+                        stringResource(CoreUiStrings.wizard_isf),
                         state.wizardIsf
                     ),
                     style = MaterialTheme.typography.bodySmall,
