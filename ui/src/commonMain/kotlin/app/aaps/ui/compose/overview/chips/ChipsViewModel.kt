@@ -112,6 +112,7 @@ class ChipsViewModel(
         val data = sensitivityOverview.build()
         return SensitivityUiState(
             asText = data.asText,
+            algorithmAutosens = data.algorithmAutosens,
             isfFrom = data.isfFrom,
             isfTo = data.isfTo,
             wizardIsf = data.wizardIsf,

@@ -29,10 +29,10 @@ class SensitivityChipTest {
     val compose = createComposeRule()
 
     @Test
-    fun showsSensitivityText() {
+    fun autosensChipShowsCurrentAutosens() {
         compose.setContent {
             MaterialTheme {
-                SensitivityChip(
+                AutosensChip(
                     state = SensitivityUiState(asText = "112%", ratio = 1.12, isEnabled = true, hasData = true),
                     onClick = {}
                 )
@@ -40,6 +40,21 @@ class SensitivityChipTest {
         }
 
         compose.onNodeWithText("112%").assertIsDisplayed()
+    }
+
+    @Test
+    fun autosensChipShowsAlgorithmValue() {
+        compose.setContent {
+            MaterialTheme {
+                AutosensChip(
+                    state = SensitivityUiState(asText = "112%", algorithmAutosens = "108%", ratio = 1.12, isEnabled = true, hasData = true),
+                    onClick = {}
+                )
+            }
+        }
+
+        compose.onNodeWithText("112%").assertIsDisplayed()
+        compose.onNodeWithText("108%").assertIsDisplayed()
     }
 
     @Test
@@ -80,7 +95,7 @@ class SensitivityChipTest {
         var clicks = 0
         compose.setContent {
             MaterialTheme {
-                SensitivityChip(
+                AutosensChip(
                     state = SensitivityUiState(asText = "88%", ratio = 0.88, isEnabled = false, hasData = true),
                     onClick = { clicks++ },
                     modifier = Modifier.testTag("sensChip")

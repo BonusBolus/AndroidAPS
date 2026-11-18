@@ -95,6 +95,9 @@ class SensitivityOverviewImpl(
         val units = profileFunction.getUnits()
 
         var asText = ""
+        // The autosens value the algorithm used, always shown beside the current autosens. A ratio
+        // of 1.0 means it applied no adjustment, and 100% is the honest way to say that.
+        val algorithmAutosens = rh.gs(CoreUiStrings.autosens_short, ratioUsed * 100)
         var isfFrom = ""
         var isfTo = ""
         var wizardIsf = ""
@@ -161,6 +164,7 @@ class SensitivityOverviewImpl(
 
         return SensitivityOverviewData(
             asText = asText,
+            algorithmAutosens = algorithmAutosens,
             isfFrom = isfFrom,
             isfTo = isfTo,
             wizardIsf = wizardIsf,

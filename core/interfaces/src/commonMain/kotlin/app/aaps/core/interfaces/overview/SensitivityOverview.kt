@@ -25,6 +25,7 @@ enum class IsfStep { UP, DOWN, SAME }
 
 /**
  * @param asText the autosens percentage for the chip, empty when it is exactly 100 or unknown
+ * @param algorithmAutosens the autosens percentage the algorithm used, 100% when it applied none
  * @param isfFrom the profile ISF for the chip, empty when the algorithm uses it unchanged
  * @param isfTo the ISF in use for the chip, empty when the algorithm uses the profile ISF unchanged
  * @param wizardIsf the average ISF used by the bolus wizard and carb absorption
@@ -36,6 +37,7 @@ enum class IsfStep { UP, DOWN, SAME }
  */
 data class SensitivityOverviewData(
     val asText: String = "",
+    val algorithmAutosens: String = "",
     val isfFrom: String = "",
     val isfTo: String = "",
     val wizardIsf: String = "",

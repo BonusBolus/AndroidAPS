@@ -134,7 +134,9 @@ fun RunningModeChip(
                             Text(
                                 text = "${smbMaxMinutes}m",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = if (smbEnabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                                // Same colour as the SMB icon beside it, so the minutes read as part
+                                // of the SMB state: blue when SMB is on, red when it is off.
+                                color = if (smbEnabled) AapsTheme.elementColors.insulin else MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(start = AapsSpacing.small)
                             )
                         }
