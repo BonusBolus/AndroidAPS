@@ -27,9 +27,11 @@ import app.aaps.core.ui.compose.AapsSpacing
 import app.aaps.core.ui.compose.icons.IcArrowFlat
 import app.aaps.core.ui.compose.icons.IcArrowFortyfiveDown
 import app.aaps.core.ui.compose.icons.IcArrowFortyfiveUp
+import app.aaps.core.ui.compose.navigation.color
 import app.aaps.core.ui.compose.navigation.icon
 import app.aaps.core.ui.compose.navigation.label
 import app.aaps.core.ui.compose.stringResourceOrNull
+
 
 /**
  * The ISF half of the overview sensitivity block: the profile ISF and the ISF in use, with the
