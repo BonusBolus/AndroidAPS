@@ -3,6 +3,7 @@ package app.aaps.core.interfaces.overview.graph
 import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.TT
 import app.aaps.core.data.model.TrendArrow
+import app.aaps.core.interfaces.overview.IsfStep
 
 /**
  * Domain models for calculated graph data.
@@ -366,7 +367,8 @@ data class TempTargetDisplayData(
     val duration: Long,                  // TT duration in ms (0 if not active)
     val reason: TT.Reason? = null,       // TT reason for icon coloring (null if no TT)
     val recordId: Long = 0,              // DB record ID (for scene override detection)
-    val profileTargetRangeText: String = "" // Profile target, used when APS adjusts the target
+    val profileTargetRangeText: String = "", // Profile target, used when APS adjusts the target
+    val targetStep: IsfStep = IsfStep.SAME
 )
 
 /**

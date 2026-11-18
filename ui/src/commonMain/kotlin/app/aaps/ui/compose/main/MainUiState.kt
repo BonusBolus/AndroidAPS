@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.TT
+import app.aaps.core.interfaces.overview.IsfStep
 import app.aaps.core.interfaces.overview.graph.TbrState
 
 /**
@@ -36,6 +37,7 @@ data class MainUiState(
     // TempTarget state for chip
     val tempTargetText: String = "",
     val profileTargetText: String = "",
+    val tempTargetStep: IsfStep = IsfStep.SAME,
     val tempTargetState: TempTargetChipState = TempTargetChipState.None,
     val tempTargetProgress: Float = 0f, // 0-1 progress for active temp target
     val tempTargetReason: TT.Reason? = null, // TT reason for icon coloring

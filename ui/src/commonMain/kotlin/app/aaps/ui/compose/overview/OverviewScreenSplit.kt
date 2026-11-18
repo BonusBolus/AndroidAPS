@@ -26,6 +26,7 @@ import app.aaps.core.data.model.ActiveSceneState
 import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.TT
 import app.aaps.core.interfaces.overview.graph.TbrState
+import app.aaps.core.interfaces.overview.IsfStep
 import app.aaps.core.ui.compose.AapsSpacing
 import app.aaps.core.ui.compose.AapsTheme
 import app.aaps.core.ui.compose.LocalConfig
@@ -48,6 +49,7 @@ fun OverviewScreenSplit(
     profileSceneManaged: Boolean = false,
     tempTargetText: String,
     profileTargetText: String = "",
+    tempTargetStep: IsfStep = IsfStep.SAME,
     tempTargetState: TempTargetChipState,
     tempTargetProgress: Float,
     tempTargetReason: TT.Reason?,
@@ -163,6 +165,7 @@ fun OverviewScreenSplit(
                             profileSceneManaged = profileSceneManaged,
                             tempTargetText = tempTargetText,
                             profileTargetText = profileTargetText,
+                            tempTargetStep = tempTargetStep,
                             tempTargetState = tempTargetState,
                             tempTargetProgress = tempTargetProgress,
                             tempTargetReason = tempTargetReason,
