@@ -39,6 +39,7 @@ import app.aaps.core.objects.extensions.round
 import app.aaps.core.ui.compose.navigation.DarkElementColors
 import app.aaps.core.ui.compose.navigation.ElementColors
 import app.aaps.core.ui.compose.navigation.LightElementColors
+import app.aaps.core.ui.extensions.generateCOBString
 import app.aaps.plugins.main.R as MainR
 import app.aaps.ui.widget.glance.BgGraphBitmapRenderer
 import app.aaps.ui.widget.glance.BgGraphColors
