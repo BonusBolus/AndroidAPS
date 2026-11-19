@@ -1,3 +1,4 @@
+#First check this file, then read: @AI_agents/AGENTS.md
 # Project Preferences
 
 ## CRITICAL: Bash Command Rules (applies to ALL agents too)
