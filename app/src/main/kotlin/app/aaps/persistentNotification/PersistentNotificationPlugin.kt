@@ -1,17 +1,22 @@
 package app.aaps.persistentNotification
 
+import android.app.KeyguardManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
 import android.os.Build
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.Metric
 import androidx.core.app.NotificationCompat.Metric.FixedFloat
 import androidx.core.app.NotificationCompat.Metric.FixedInt
 import androidx.core.app.NotificationCompat.MetricStyle
 import androidx.core.app.RemoteInput
+import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.TrendArrow
@@ -45,6 +50,8 @@ import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.interfaces.utils.TrendCalculator
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
+import app.aaps.core.keys.StringKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.core.objects.extensions.apsAdjustedTargetMgdl
 import app.aaps.core.objects.extensions.round
@@ -62,14 +69,20 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.math.round
 import kotlin.time.Duration.Companion.seconds
 import android.app.NotificationManager as AndroidNotificationManager
@@ -106,6 +119,8 @@ class PersistentNotificationPlugin(
     private val processedDeviceStatusData: ProcessedDeviceStatusData,
     private val dateUtil: DateUtil,
     private val trendCalculator: TrendCalculator,
+    private val preferences: Preferences,
+    private val detailedStatus: DetailedStatusRenderer,
     notificationManager: NotificationManager
 ) : PluginBase(
     PluginDescription()
@@ -148,6 +163,31 @@ class PersistentNotificationPlugin(
     private val deferredStart = DeferredForegroundStart()
     private var lastAutoNotificationContent: String = ""
 
+    private enum class StatusMode { CHIP, ICON, CHIP_LOCKED }
+
+    private fun statusMode(): StatusMode = when (val mode = preferences.get(StringKey.NotificationStatusMode)) {
+        "chip"        -> StatusMode.CHIP
+        "icon"        -> StatusMode.ICON
+        "chip_locked" -> StatusMode.CHIP_LOCKED
+        else          -> error("Unknown notification status mode: $mode")
+    }
+
+    // Lock screen handling adapted from nightscout/AndroidAPS pull request #5482 (AkiLetschne).
+    // With the chip on the lock screen only, the notification must change when the phone is locked or
+    // unlocked, not only on the next BG. Screen off, screen on and unlock are the moments that can change it.
+    private val screenEvents = Channel<Unit>(Channel.CONFLATED)
+    private val notificationMutex = Mutex()
+    private val screenStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (statusMode() != StatusMode.CHIP_LOCKED) return
+            screenEvents.trySend(Unit)
+        }
+    }
+
+    // One-shot redraw for the moment the reading turns stale. Nothing else would redraw the strike-through
+    // when no new reading comes in, because the notification is only updated on events.
+    private var staleJob: Job? = null
+
     @OptIn(FlowPreview::class)
     override suspend fun onStart() {
         super.onStart()
@@ -178,6 +218,19 @@ class PersistentNotificationPlugin(
         // DummyService is what keeps AAPS out of Android's background execution limits. Starting it here
         // is idempotent (startService on a running service is a no-op).
         startDummyService()
+        screenEvents.receiveAsFlow()
+            .collectResilient(newScope, aapsLogger, LTag.CORE) { updateNotification() }
+        val screenStateFilter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_USER_PRESENT)
+        }
+        // USER_PRESENT comes from SystemUI's separate UID, so NOT_EXPORTED drops the unlock event.
+        // All three actions are protected system broadcasts; ordinary apps cannot send them.
+        ContextCompat.registerReceiver(context, screenStateReceiver, screenStateFilter, ContextCompat.RECEIVER_EXPORTED)
+        // A change of the mode shows at once, not with the next reading
+        preferences.observe(StringKey.NotificationStatusMode).drop(1)
+            .collectResilient(newScope, aapsLogger, LTag.CORE) { updateNotification() }
     }
 
     /**
@@ -202,6 +255,13 @@ class PersistentNotificationPlugin(
     }
 
     override suspend fun onStop() {
+        try {
+            context.unregisterReceiver(screenStateReceiver)
+        } catch (_: IllegalArgumentException) {
+            // Not registered
+        }
+        staleJob?.cancel()
+        staleJob = null
         scope?.cancel()
         scope = null
         deferredStart.cancel()
@@ -235,7 +295,12 @@ class PersistentNotificationPlugin(
         startDummyService()
     }
 
-    private suspend fun updateNotification(includeAuto: Boolean = false) {
+    // Keeps an older, locked-screen update from overwriting the notification posted after unlocking.
+    private suspend fun updateNotification(includeAuto: Boolean = false) = notificationMutex.withLock {
+        updateNotificationContent(includeAuto)
+    }
+
+    private suspend fun updateNotificationContent(includeAuto: Boolean) {
         if (!config.appInitialized) return
         val pump = activePlugins.activePump
         var line1: String?
@@ -371,23 +436,33 @@ class PersistentNotificationPlugin(
         val content = "$line1|$line2|$line3"
         if (includeAuto && content == lastAutoNotificationContent) return
         if (includeAuto) lastAutoNotificationContent = content
+        // Android allows no custom views in a promoted (live chip) notification, so there the card is a styled
+        // text and the graph is left out. Without the chip the custom layout with the graph is used.
+        val liveChip = when (statusMode()) {
+            StatusMode.CHIP        -> true
+            StatusMode.ICON        -> false
+            StatusMode.CHIP_LOCKED -> isPhoneLocked()
+        }
+        val status = detailedStatus.build(withGraph = !liveChip)
         val builder = NotificationCompat.Builder(context, notificationHolder.channelID)
         builder.setOngoing(true)
-        applyLiveUpdate(
-            builder = builder,
-            bgStatusChipText = bgStatusChipText,
-            line1 = line1,
-            line1WithDelta = line1WithDelta,
-            bgMetric = bgMetric,
-            line2 = line2,
-            line3 = line3
-        )
+        if (liveChip) {
+            applyLiveUpdate(
+                builder = builder,
+                bgStatusChipText = bgStatusChipText,
+                line1 = line1,
+                line1WithDelta = line1WithDelta,
+                bgMetric = bgMetric,
+                line2 = line2,
+                line3 = line3
+            )
+        }
         builder.setOnlyAlertOnce(true)
         builder.setCategory(NotificationCompat.CATEGORY_STATUS)
-        builder.setSmallIcon(iconsProvider.getNotificationIcon())
         builder.setContentTitle(line1)
         if (line2 != null) builder.setContentText(line2)
         if (line3 != null) builder.setSubText(line3)
+        applyStatusContent(builder, status, liveChip, usesMetricStyle = Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN && bgMetric != null)
         /// Android Auto
         if (includeAuto && unreadConversationBuilder != null) {
             builder.extend(
@@ -402,6 +477,52 @@ class PersistentNotificationPlugin(
         val notification = builder.build()
         mNotificationManager.notify(notificationHolder.notificationID, notification)
         notificationHolder.notification = notification
+    }
+
+    private fun applyStatusContent(
+        builder: NotificationCompat.Builder,
+        status: DetailedStatusRenderer.Status?,
+        liveChip: Boolean,
+        usesMetricStyle: Boolean
+    ) {
+        staleJob?.cancel()
+        staleJob = null
+        if (status == null) {
+            builder.setSmallIcon(iconsProvider.getNotificationIcon())
+            return
+        }
+        if (!status.isStale) {
+            val delayMs = DetailedStatusRenderer.STALE_AFTER_MS - (dateUtil.now() - status.readingTimestamp) + 1_000L
+            staleJob = scope?.launch {
+                delay(delayMs)
+                // Drop the reference first: the update below cancels staleJob, which would be this very job.
+                staleJob = null
+                updateNotification()
+            }
+        }
+        if (liveChip) {
+            // The chip shows the AAPS icon with the glucose beside it.
+            builder.setSmallIcon(iconsProvider.getNotificationIcon())
+            // MetricStyle (Android 17) replaces the style, so the card has no place there.
+            if (!usesMetricStyle) builder.setStyle(NotificationCompat.BigTextStyle().bigText(detailedStatus.card(status)))
+        } else {
+            builder.setSmallIcon(BgNotificationIcon.create(status.bgText, strikeThrough = status.isStale))
+            val view = detailedStatus.remoteViews(status)
+            builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            builder.setCustomContentView(view)
+            builder.setCustomBigContentView(view)
+        }
+    }
+
+    /**
+     * True when the screen is off or the lock screen is shown. The screen off counts as locked, because
+     * Android may lock only some seconds after the screen goes off, and the chip must be ready when the
+     * user looks at the lock screen. Adapted from nightscout/AndroidAPS pull request #5482.
+     */
+    private fun isPhoneLocked(): Boolean {
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        return !powerManager.isInteractive || keyguardManager.isKeyguardLocked
     }
 
     private fun applyLiveUpdate(

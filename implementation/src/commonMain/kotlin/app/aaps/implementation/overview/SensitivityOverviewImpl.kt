@@ -103,11 +103,13 @@ class SensitivityOverviewImpl(
         var isfTo = ""
         var wizardIsf = ""
         var isfStep = IsfStep.SAME
+        var isVariableIsf = false
         val lines = ArrayList<String>()
         val now = dateUtil.now()
 
         if (variableSens != isfMgdl && variableSens != 0.0 && isfMgdl != null) {
             // Variable ISF branch — hide "AS: 100%" from overview when ratio is exactly 100%
+            isVariableIsf = true
             lastAutosensPercent?.let {
                 if (it != 100.0)
                     asText = rh.gs(CoreUiStrings.autosens_chip_value, it)
@@ -170,6 +172,7 @@ class SensitivityOverviewImpl(
             isfTo = isfTo,
             wizardIsf = wizardIsf,
             isfStep = isfStep,
+            isVariableIsf = isVariableIsf,
             lines = lines,
             ratio = lastAutosensRatio ?: 1.0,
             isEnabled = isEnabled,

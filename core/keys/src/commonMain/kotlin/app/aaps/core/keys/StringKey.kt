@@ -107,6 +107,20 @@ enum class StringKey(
         defaultedBySM = true
     ),
 
+    // Android only: how the ongoing status notification is shown. iOS has no such notification.
+    NotificationStatusMode(
+        key = "notification_status_mode",
+        defaultValue = "chip",
+        title = KeysStrings.pref_title_notification_status_mode,
+        summary = KeysStrings.pref_summary_notification_status_mode,
+        preferenceType = PreferenceType.LIST,
+        entriesRefs = mapOf(
+            "chip" to KeysStrings.pref_notification_status_mode_chip,
+            "icon" to KeysStrings.pref_notification_status_mode_icon,
+            "chip_locked" to KeysStrings.pref_notification_status_mode_chip_locked
+        )
+    ),
+
     AapsDirectoryUri(key = "aaps_directory", defaultValue = "", title = KeysStrings.pref_title_aaps_directory),
 
     ProtectionMasterPassword(key = "master_password", defaultValue = "", title = KeysStrings.pref_title_master_password, isPassword = true, isHashed = true),

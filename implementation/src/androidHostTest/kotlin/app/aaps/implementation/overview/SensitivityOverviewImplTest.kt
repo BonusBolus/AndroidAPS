@@ -130,6 +130,21 @@ class SensitivityOverviewImplTest : TestBaseWithProfile() {
     }
 
     @Test
+    fun `an ISF from a variable ISF algorithm is flagged, the autosens ISF is not`() = runBlocking {
+        autosensRatio(0.8)
+        ratioUsedByLoop(0.8)
+        assertThat(sut.build().isVariableIsf).isFalse()
+
+        val request = mock<APSResult>().also {
+            whenever(it.rawData()).thenReturn(RT(runningDynamicIsf = true, sensitivityRatio = 0.8))
+            whenever(it.variableSens).thenReturn(effectiveProfile.getProfileIsfMgdl() * 1.5)
+        }
+        whenever(loop.lastRun).thenReturn(Loop.LastRun().apply { this.request = request })
+
+        assertThat(sut.build().isVariableIsf).isTrue()
+    }
+
+    @Test
     fun `a ratio above 100 percent points the chip step down`() = runBlocking {
         autosensRatio(1.2)
         ratioUsedByLoop(1.2)
