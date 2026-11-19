@@ -122,11 +122,11 @@ class DetailedStatusRenderer(
         val percentage = profileFunction.getProfile()?.percentage ?: 100
         val profileText = profileFunction.getProfileName() + if (percentage != 100) " $percentage%" else ""
         val values = SpannableStringBuilder()
-            .add(iobText, color = palette.element.insulin)
+            .add(iobText, color = palette.element.insulin.toArgb())
             .add("  •  ")
-            .add(cobText, color = palette.element.cob)
+            .add(cobText, color = palette.element.cob.toArgb())
             .add("  •  ")
-            .add(profileText, color = palette.element.profileSwitch)
+            .add(profileText, color = palette.element.profileSwitch.toArgb())
 
         val smbMinutes = preferences.get(IntKey.ApsMaxMinutesOfBasalToLimitSmb)
         // Like the overview chip: nothing to show without a limit, red when SMB is switched off.
@@ -186,8 +186,8 @@ class DetailedStatusRenderer(
     private fun sensitivityLine(data: SensitivityOverviewData, palette: Palette): CharSequence? {
         if (!data.hasData) return null
         val line = SpannableStringBuilder()
-        val isfColor = if (data.isVariableIsf) palette.element.scene else palette.element.sensitivity
-        if (data.asText.isNotBlank()) line.add(data.asText, color = palette.element.sensitivity)
+        val isfColor = if (data.isVariableIsf) palette.element.scene.toArgb() else palette.element.sensitivity.toArgb()
+        if (data.asText.isNotBlank()) line.add(data.asText, color = palette.element.sensitivity.toArgb())
         if (data.isfFrom.isNotBlank() || data.isfTo.isNotBlank()) {
             if (line.isNotEmpty()) line.add("  ")
             val arrow = when (data.isfStep) {
@@ -201,7 +201,7 @@ class DetailedStatusRenderer(
         // The ISF the bolus wizard and carb absorption work with.
         if (data.wizardIsf.isNotBlank()) {
             if (line.isNotEmpty()) line.add("  ")
-            line.add("(${data.wizardIsf})", color = palette.element.sensitivity, bold = true)
+            line.add("(${data.wizardIsf})", color = palette.element.sensitivity.toArgb(), bold = true)
         }
         return line.takeIf { it.isNotEmpty() }
     }
