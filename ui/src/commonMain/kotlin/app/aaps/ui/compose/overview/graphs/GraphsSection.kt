@@ -287,13 +287,8 @@ fun GraphsSection(
     }
     // A sideways drag on a graph below BG scrolls BG, and they all follow it
     val bgScrollForwarder = rememberBgScrollForwarder(bgScrollState)
-    // A two-finger pinch on a graph below BG zooms BG, and they all follow it. Same limits as BG's own
-    // zoom: the fewest minutes it may show, and the most (the whole time range).
-    val bgZoomForwarder = rememberBgZoomForwarder(
-        bgZoomState = bgZoomState,
-        minZoomMinutes = MIN_GRAPH_ZOOM_MINUTES.toFloat(),
-        maxZoomMinutes = (Constants.GRAPH_TIME_RANGE_HOURS * 60).toFloat()
-    )
+    // A two-finger pinch on a graph below BG zooms BG, and they all follow it. BG's own zoom limits apply.
+    val bgZoomForwarder = rememberBgZoomForwarder(bgZoomState)
 
     // Pre-allocate secondary graph scroll/zoom states (up to MAX_SECONDARY_GRAPHS)
     // These are always created to keep Compose's remember slots stable

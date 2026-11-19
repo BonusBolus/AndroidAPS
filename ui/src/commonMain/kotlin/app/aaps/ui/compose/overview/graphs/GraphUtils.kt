@@ -288,11 +288,7 @@ fun rememberBgScrollForwarder(bgScrollState: VicoScrollState): BgScrollForwarder
  */
 @Stable
 class BgZoomForwarder internal constructor(
-    scope: CoroutineScope,
-    /** The fewest minutes the graphs may show, the most zoomed in they can be. */
-    private val minZoomMinutes: Float,
-    /** The most minutes the graphs may show, the whole time range being zoomed out. */
-    private val maxZoomMinutes: Float
+    scope: CoroutineScope
 ) {
 
     /** The BG graph's zoom state. It is recreated by a viewport reset, so it is set on every composition. */
@@ -308,8 +304,8 @@ class BgZoomForwarder internal constructor(
         scope.launch {
             for (factor in factors) {
                 val state = target ?: continue
-                val minutes = zoomAfterPinch(state.value, factor, minZoomMinutes, maxZoomMinutes) ?: continue
-                state.zoom(Zoom.fixed(minutes))
+                val zoom = zoomAfterPinch(state.value, factor, state.valueRange) ?: continue
+                state.zoom(Zoom.fixed(zoom))
             }
         }
     }
@@ -322,11 +318,9 @@ class BgZoomForwarder internal constructor(
 
 /** The [BgZoomForwarder] of the screen, zooming [bgZoomState]. */
 @Composable
-fun rememberBgZoomForwarder(bgZoomState: VicoZoomState, minZoomMinutes: Float, maxZoomMinutes: Float): BgZoomForwarder {
+fun rememberBgZoomForwarder(bgZoomState: VicoZoomState): BgZoomForwarder {
     val scope = rememberCoroutineScope()
-    val forwarder = remember(scope, minZoomMinutes, maxZoomMinutes) {
-        BgZoomForwarder(scope, minZoomMinutes, maxZoomMinutes)
-    }
+    val forwarder = remember(scope) { BgZoomForwarder(scope) }
     SideEffect { forwarder.target = bgZoomState }
     return forwarder
 }
@@ -337,23 +331,24 @@ fun rememberBgZoomForwarder(bgZoomState: VicoZoomState, minZoomMinutes: Float, m
  */
 private const val PINCH_TOLERANCE = 1e-4f
 
-/** The smallest change of the shown range, as a part of it, that is worth zooming the graphs for. */
+/** The smallest change of the zoom factor, as a part of it, that is worth zooming the graphs for. */
 private const val MIN_ZOOM_CHANGE = 1e-3f
 
 /**
- * The minutes the graphs show after a pinch that moved the fingers [factor] times further apart, on a
- * graph that showed [currentMinutes], or null when that would not change them.
+ * The zoom factor the graphs have after a pinch that moved the fingers [factor] times further apart, or
+ * null when that would not change the factor [currentZoom] they have within [range].
  *
- * The x axis is in whole minutes and the zoom of a graph is the width of the range it shows
- * ([DEFAULT_GRAPH_ZOOM_MINUTES]), so fingers moving apart (factor > 1) divide it: fewer minutes, more
- * detail. [minZoomMinutes] and [maxZoomMinutes] are the limits BG's own zoom keeps to, so a pinch cannot
- * go further than a gesture on BG could.
+ * Vico's zoom is a factor, not a number of shown minutes: the x axis is stretched by it, so the graphs
+ * show 1/factor of what they showed. A pinch is a ratio too, so fingers moving apart (factor > 1)
+ * multiply it: more detail, fewer minutes. [range] is BG's own [VicoZoomState.valueRange], the limits
+ * its [Zoom]s set, so a pinch cannot zoom further than a gesture on BG could.
  */
-internal fun zoomAfterPinch(currentMinutes: Float, factor: Float, minZoomMinutes: Float, maxZoomMinutes: Float): Float? {
-    if (!currentMinutes.isFinite() || currentMinutes <= 0f) return null
+internal fun zoomAfterPinch(currentZoom: Float, factor: Float, range: ClosedFloatingPointRange<Float>): Float? {
+    if (!currentZoom.isFinite() || currentZoom <= 0f) return null
     if (!factor.isFinite() || factor <= 0f) return null
-    val next = (currentMinutes / factor).coerceIn(minZoomMinutes, maxZoomMinutes)
-    return next.takeIf { abs(it - currentMinutes) > it * MIN_ZOOM_CHANGE }
+    if (range.start <= 0f || range.endInclusive < range.start) return null
+    val next = (currentZoom * factor).coerceIn(range)
+    return next.takeIf { abs(it - currentZoom) > it * MIN_ZOOM_CHANGE }
 }
 
 /**
