@@ -32,8 +32,6 @@ enum class IsfStep { UP, DOWN, SAME }
  * @param isfTo the ISF in use for the chip, empty when the algorithm uses the profile ISF unchanged
  * @param wizardIsf the average ISF used by the bolus wizard and carb absorption
  * @param isfStep which way the step from [isfFrom] to [isfTo] goes
- * @param isVariableIsf true when the ISF in use comes from a variable ISF algorithm (VSens), false for the
- *   profile ISF scaled by the autosens ratio
  * @param lines one translated line per value, in reading order; empty when nothing is known
  * @param ratio the last autosens ratio, 1.0 when unknown
  * @param isEnabled whether autosens is switched on, on this phone or, for a client, on the master
@@ -46,7 +44,6 @@ data class SensitivityOverviewData(
     val isfTo: String = "",
     val wizardIsf: String = "",
     val isfStep: IsfStep = IsfStep.SAME,
-    val isVariableIsf: Boolean = false,
     val lines: List<String> = emptyList(),
     val ratio: Double = 1.0,
     val isEnabled: Boolean = true,

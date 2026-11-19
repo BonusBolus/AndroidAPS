@@ -117,7 +117,8 @@ enum class StringKey(
         entriesRefs = mapOf(
             "chip" to KeysStrings.pref_notification_status_mode_chip,
             "icon" to KeysStrings.pref_notification_status_mode_icon,
-            "chip_locked" to KeysStrings.pref_notification_status_mode_chip_locked
+            "graph_locked" to KeysStrings.pref_notification_status_mode_graph_locked,
+            "standard" to KeysStrings.pref_notification_status_mode_standard
         )
     ),
 

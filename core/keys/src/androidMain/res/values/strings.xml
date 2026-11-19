@@ -39,10 +39,11 @@
 
     <!-- Ongoing status notification preferences -->
     <string name="pref_title_notification_status_mode">Ongoing status notification</string>
-    <string name="pref_summary_notification_status_mode">Live chip: the glucose chip stays in the status bar, the notification is a text card. Status bar icon: no chip, the glucose is the status bar icon and the notification shows the graph. Live chip on lock screen only: the chip shows only while the phone is locked, otherwise as status bar icon.</string>
+    <string name="pref_summary_notification_status_mode">Live chip: the glucose chip stays in the status bar, the notification is a text card. Status bar icon: no chip, the glucose is the status bar icon and the notification shows the graph. Graph on lock screen: the graph while the phone is locked; when unlocked the live chip, with the graph as a second notification. AAPS standard: the notification without changes.</string>
     <string name="pref_notification_status_mode_chip">Live chip</string>
     <string name="pref_notification_status_mode_icon">Status bar icon</string>
-    <string name="pref_notification_status_mode_chip_locked">Live chip on lock screen only</string>
+    <string name="pref_notification_status_mode_graph_locked">Graph on lock screen</string>
+    <string name="pref_notification_status_mode_standard">AAPS standard</string>
 
     <!-- BG Source preferences -->
     <string name="pref_title_bg_source_upload_to_ns">Upload BG data to NS</string>

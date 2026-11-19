@@ -34,8 +34,9 @@ data class BgGraphColors(
     val inRange: Int,
     val high: Int,
     /** Only used when the input has limit lines, a target or a temp target. */
-    val limitLine: Int = 0x88FFFFFF.toInt(),
-    val target: Int = 0xFFB0BEC5.toInt(),
+    val lowLine: Int = 0xFFC62828.toInt(),
+    val highLine: Int = 0xFFFFB300.toInt(),
+    val target: Int = 0x66FFFFFF,
     val tempTarget: Int = 0xFF6BD16B.toInt()
 ) {
 
@@ -60,11 +61,12 @@ data class BgGraphColors(
 
 /**
  * Minimal Canvas BG-graph renderer producing a transparent bitmap.
- * Draws only bucketed BG dots colored by [BgRange].
+ * Draws bucketed BG dots colored by [BgRange], and, when the input has them, the low and high lines and the target.
  */
 class BgGraphBitmapRenderer {
 
-    fun render(widthPx: Int, heightPx: Int, input: BgGraphInput, colors: BgGraphColors): Bitmap {
+    /** @param dotRadiusPx radius of one BG dot */
+    fun render(widthPx: Int, heightPx: Int, input: BgGraphInput, colors: BgGraphColors, dotRadiusPx: Float = BG_RADIUS_PX): Bitmap {
         val bitmap = Bitmap.createBitmap(widthPx.coerceAtLeast(1), heightPx.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
@@ -95,7 +97,7 @@ class BgGraphBitmapRenderer {
             val y = bottom - ((p.value - input.yMinUserUnits).toFloat() / ySpan) * (bottom - top)
             paint.color = colorForRange(p.range, colors)
             paint.alpha = if (p.filledGap) GAP_ALPHA else 255
-            canvas.drawCircle(x, y, BG_RADIUS_PX, paint)
+            canvas.drawCircle(x, y, dotRadiusPx, paint)
         }
 
         return bitmap
@@ -106,21 +108,27 @@ class BgGraphBitmapRenderer {
             isAntiAlias = true
             style = Paint.Style.STROKE
             strokeWidth = LIMIT_STROKE_PX
-            color = colors.limitLine
-            pathEffect = DashPathEffect(floatArrayOf(DASH_PX, DASH_PX), 0f)
         }
-        listOfNotNull(input.lowUserUnits, input.highUserUnits)
-            .filter { it >= input.yMinUserUnits && it <= input.yMaxUserUnits }
-            .forEach { canvas.drawLine(left, yOf(it), right, yOf(it), paint) }
+        fun line(value: Double?, color: Int) {
+            if (value == null || value < input.yMinUserUnits || value > input.yMaxUserUnits) return
+            paint.color = color
+            canvas.drawLine(left, yOf(value), right, yOf(value), paint)
+        }
+        line(input.lowUserUnits, colors.lowLine)
+        line(input.highUserUnits, colors.highLine)
     }
 
-    /** Draws the target step line, in the temp target colour and thicker where a temp target is active. */
+    /**
+     * Draws the target step line: faint and dashed, but solid, thicker and in the temp target colour where a
+     * temp target is active.
+     */
     private fun drawTarget(canvas: Canvas, input: BgGraphInput, colors: BgGraphColors, xOf: (Long) -> Float, yOf: (Double) -> Float) {
         if (input.targets.isEmpty()) return
         val paint = Paint().apply {
             isAntiAlias = true
             style = Paint.Style.STROKE
         }
+        val dash = DashPathEffect(floatArrayOf(DASH_PX, DASH_PX), 0f)
         val ttFrom = input.tempTargetFromMs
         val ttTo = input.tempTargetToMs
         val sorted = input.targets.sortedBy { it.timestamp }
@@ -137,6 +145,7 @@ class BgGraphBitmapRenderer {
                 if (to <= from) return
                 paint.color = if (isTemp) colors.tempTarget else colors.target
                 paint.strokeWidth = if (isTemp) TEMP_TARGET_STROKE_PX else TARGET_STROKE_PX
+                paint.pathEffect = if (isTemp) null else dash
                 canvas.drawLine(xOf(from), y, xOf(to), y, paint)
             }
             if (hasTt) {
@@ -160,9 +169,9 @@ class BgGraphBitmapRenderer {
         private const val PADDING_PX = 4
         private const val BG_RADIUS_PX = 6.0f
         private const val GAP_ALPHA = 110
-        private const val LIMIT_STROKE_PX = 2.0f
+        private const val LIMIT_STROKE_PX = 3.0f
         private const val DASH_PX = 10.0f
-        private const val TARGET_STROKE_PX = 3.0f
+        private const val TARGET_STROKE_PX = 2.0f
         private const val TEMP_TARGET_STROKE_PX = 7.0f
     }
 }

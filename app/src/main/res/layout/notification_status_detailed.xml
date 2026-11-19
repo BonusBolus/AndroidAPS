@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Detailed ongoing status notification. One view for the collapsed and the expanded state, so it must stay
-     compact: the system limits the height of the collapsed state. Only views allowed in RemoteViews. -->
+     compact: the system limits the height of the collapsed state. Only views allowed in RemoteViews.
+     The text uses the notification text styles, so it is light on a dark notification and dark on a light one,
+     whatever the app theme is. Coloured values get their colour from spans. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -20,17 +22,17 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="15sp" />
 
         <Chronometer
             android:id="@+id/status_age"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="12sp" />
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="12sp"
+            android:textStyle="normal" />
 
         <TextView
             android:id="@+id/status_smb"
@@ -40,14 +42,15 @@
             android:ellipsize="end"
             android:gravity="end"
             android:maxLines="1"
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="12sp" />
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="12sp"
+            android:textStyle="normal" />
     </LinearLayout>
 
     <ImageView
         android:id="@+id/status_graph"
         android:layout_width="match_parent"
-        android:layout_height="36dp"
+        android:layout_height="48dp"
         android:scaleType="fitXY" />
 
     <TextView
@@ -56,15 +59,7 @@
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:maxLines="1"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="12sp" />
-
-    <TextView
-        android:id="@+id/status_sensitivity"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="12sp" />
+        android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+        android:textSize="12sp"
+        android:textStyle="normal" />
 </LinearLayout>

@@ -15,8 +15,10 @@ import android.view.View
 import android.widget.RemoteViews
 import androidx.compose.ui.graphics.toArgb
 import app.aaps.R as AppR
+import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.TrendArrow
+import app.aaps.core.data.time.T
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
 import app.aaps.core.interfaces.iob.IobCobCalculator
 import app.aaps.core.interfaces.overview.IsfStep
@@ -24,6 +26,7 @@ import app.aaps.core.interfaces.overview.LastBgData
 import app.aaps.core.interfaces.overview.SensitivityOverview
 import app.aaps.core.interfaces.overview.SensitivityOverviewData
 import app.aaps.core.interfaces.overview.graph.OverviewDataCache
+import app.aaps.core.interfaces.overview.graph.TempTargetDisplayData
 import app.aaps.core.interfaces.overview.graph.TempTargetState
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileUtil
@@ -36,22 +39,26 @@ import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.UnitDoubleKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.extensions.round
+import app.aaps.core.ui.compose.DarkGeneralColors
+import app.aaps.core.ui.compose.GeneralColors
+import app.aaps.core.ui.compose.LightGeneralColors
 import app.aaps.core.ui.compose.navigation.DarkElementColors
 import app.aaps.core.ui.compose.navigation.ElementColors
 import app.aaps.core.ui.compose.navigation.LightElementColors
+import app.aaps.core.ui.compose.ttReasonColor
 import app.aaps.core.ui.extensions.generateCOBString
 import app.aaps.plugins.main.R as MainR
 import app.aaps.ui.widget.glance.BgGraphBitmapRenderer
 import app.aaps.ui.widget.glance.BgGraphColors
 import app.aaps.ui.widget.glance.BgGraphInput
 import dev.zacsweers.metro.Inject
-import app.aaps.core.interfaces.R as InterfacesR
-import app.aaps.core.ui.R as CoreUiR
 
 /**
  * Everything the ongoing status notification shows besides the plain lines: glucose, trend, delta, age,
- * SMB state, IOB, COB, profile, sensitivity and the glucose graph - as a coloured text card (for the live
- * chip modes, where Android allows no custom views) or as a custom [RemoteViews] layout with the graph.
+ * SMB state, IOB, COB, profile, sensitivity, target and the glucose graph - as a coloured text card (for the
+ * live chip, where Android allows no custom views) or as a custom [RemoteViews] layout with the graph.
+ *
+ * The values carry no labels. Their colours say what they are, the same colours as in the overview.
  */
 @Inject
 class DetailedStatusRenderer(
@@ -77,9 +84,14 @@ class DetailedStatusRenderer(
         val deltaText: String?,
         val readingTimestamp: Long,
         val isStale: Boolean,
+        /** SMB state with its max minutes, null when SMB has no limit */
         val smb: CharSequence?,
-        val values: CharSequence,
-        val sensitivity: CharSequence?,
+        /** Chip card, first line: IOB • COB • SMB */
+        val cardValues: CharSequence,
+        /** Chip card, second line: profile • autosens • ISF */
+        val cardSensitivity: CharSequence,
+        /** Line under the graph: IOB • COB • autosens • ISF • target */
+        val graphValues: CharSequence,
         val graph: Bitmap?
     )
 
@@ -87,11 +99,15 @@ class DetailedStatusRenderer(
     private class Palette(night: Boolean) {
 
         val element: ElementColors = if (night) DarkElementColors else LightElementColors
+        val general: GeneralColors = if (night) DarkGeneralColors else LightGeneralColors
         val low = 0xFFE53935.toInt()
         val inRange = if (night) 0xFF66BB6A.toInt() else 0xFF2E7D32.toInt()
         val high = if (night) 0xFFFFCA28.toInt() else 0xFFF57F17.toInt()
-        val limitLine = if (night) 0x88FFFFFF.toInt() else 0x88000000.toInt()
-        val target = if (night) 0xFFB0BEC5.toInt() else 0xFF607D8B.toInt()
+
+        // Low and high lines in the colours xDrip uses, so they read the same as the xDrip notification.
+        val lowLine = 0xFFC62828.toInt()
+        val highLine = 0xFFFFB300.toInt()
+        val target = if (night) 0x66FFFFFF else 0x66000000
     }
 
     /**
@@ -117,24 +133,37 @@ class DetailedStatusRenderer(
 
         val bolusIob = iobCobCalculator.calculateIobFromBolus().round()
         val basalIob = iobCobCalculator.calculateIobFromTempBasalsIncludingConvertedExtended().round()
-        val iobText = rh.gs(CoreUiR.string.value_with_unit, rh.gs(CoreUiR.string.treatments_iob_label_string), rh.gs(MainR.string.notification_iob_short, bolusIob.iob + basalIob.basaliob))
-        val cobText = rh.gs(InterfacesR.string.confirmation_line, rh.gs(CoreUiR.string.cob), iobCobCalculator.getCobInfo("DetailedStatusRenderer").generateCOBString(decimalFormatter))
-        val percentage = profileFunction.getProfile()?.percentage ?: 100
-        val profileText = profileFunction.getProfileName() + if (percentage != 100) " $percentage%" else ""
-        val values = SpannableStringBuilder()
-            .add(iobText, color = palette.element.insulin.toArgb())
-            .add("  •  ")
-            .add(cobText, color = palette.element.cob.toArgb())
-            .add("  •  ")
-            .add(profileText, color = palette.element.profileSwitch.toArgb())
+        val iob = rh.gs(MainR.string.notification_iob_short, bolusIob.iob + basalIob.basaliob)
+        val cob = iobCobCalculator.getCobInfo("DetailedStatusRenderer").generateCOBString(decimalFormatter)
+        // The customised name already carries the percentage and time shift when they are not the default.
+        val profile = profileFunction.getProfileName()
 
         val smbMinutes = preferences.get(IntKey.ApsMaxMinutesOfBasalToLimitSmb)
-        // Like the overview chip: nothing to show without a limit, red when SMB is switched off.
+        // Like the overview chip: nothing to show without a limit. Blue when on, red and struck through when off.
         val smb = when {
-            smbMinutes <= 0                           -> null
-            preferences.get(BooleanKey.ApsUseSmb)     -> SpannableStringBuilder().add(rh.gs(AppR.string.notification_smb_on, smbMinutes))
-            else                                      -> SpannableStringBuilder().add(rh.gs(AppR.string.notification_smb_off), color = palette.low, bold = true)
+            smbMinutes <= 0                       -> null
+            preferences.get(BooleanKey.ApsUseSmb) -> SpannableStringBuilder().add(rh.gs(AppR.string.notification_smb, smbMinutes), color = palette.element.insulin.toArgb())
+            else                                  -> SpannableStringBuilder().add(rh.gs(AppR.string.notification_smb, smbMinutes), color = palette.low, strike = true)
         }
+        val sensitivity = sensitivityOverview.build()
+
+        val cardValues = SpannableStringBuilder()
+            .add(iob, color = palette.element.insulin.toArgb())
+            .dot()
+            .add(cob, color = palette.element.cob.toArgb())
+        smb?.let { cardValues.dot().append(it) }
+
+        val cardSensitivity = SpannableStringBuilder().add(profile, color = palette.element.profileSwitch.toArgb())
+        autosens(sensitivity, palette)?.let { cardSensitivity.dot().append(it) }
+        isf(sensitivity, palette)?.let { cardSensitivity.dot().append(it) }
+
+        val graphValues = SpannableStringBuilder()
+            .add(iob, color = palette.element.insulin.toArgb())
+            .dot()
+            .add(cob, color = palette.element.cob.toArgb())
+        autosens(sensitivity, palette)?.let { graphValues.dot().append(it) }
+        isf(sensitivity, palette)?.let { graphValues.dot().append(it) }
+        cacheProvider().tempTargetFlow.value?.let { target(it, palette) }?.let { graphValues.dot().append(it) }
 
         return Status(
             bgText = profileUtil.fromMgdlToStringInUnits(lastBg.recalculated),
@@ -142,68 +171,88 @@ class DetailedStatusRenderer(
             trendSymbol = trendSymbol,
             deltaText = deltaText,
             readingTimestamp = lastBg.timestamp,
-            isStale = now - lastBg.timestamp > STALE_AFTER_MS,
+            // The same limit the overview uses to strike the glucose through.
+            isStale = !lastBgData.isActualBg(),
             smb = smb,
-            values = values,
-            sensitivity = sensitivityLine(sensitivityOverview.build(), palette),
+            cardValues = cardValues,
+            cardSensitivity = cardSensitivity,
+            graphValues = graphValues,
             graph = if (withGraph) graph(now, palette) else null
         )
     }
 
-    /** The text card for the live chip modes. */
-    fun card(status: Status): CharSequence {
-        val card = headline(status, bgScale = 1.8f, deltaScale = 0.67f)
-        status.smb?.let { card.append("    ").append(it) }
-        card.append("\n").append(status.values)
-        status.sensitivity?.let { card.append("\n").append(it) }
-        return card
+    /**
+     * The notification title for the live chip: the coloured glucose, trend and delta, struck through together
+     * when the reading is stale, then [suffix] (the basal rate) as it is.
+     */
+    fun title(status: Status, suffix: String?): CharSequence {
+        val title = headline(status, deltaScale = 1.0f)
+        suffix?.let { title.append(it) }
+        return title
     }
+
+    /** The two lines of the live chip card under the title. */
+    fun card(status: Status): CharSequence =
+        SpannableStringBuilder(status.cardValues).append("\n").append(status.cardSensitivity)
 
     /** The custom layout, used as collapsed and expanded content alike. */
     fun remoteViews(status: Status): RemoteViews =
         RemoteViews(context.packageName, AppR.layout.notification_status_detailed).apply {
-            setTextViewText(AppR.id.status_bg, headline(status, bgScale = 1.0f, deltaScale = 0.65f))
+            setTextViewText(AppR.id.status_bg, headline(status, deltaScale = 0.85f))
             // Ticks by itself, so the age is right without a notification update every minute.
             setChronometer(AppR.id.status_age, SystemClock.elapsedRealtime() - (dateUtil.now() - status.readingTimestamp), null, true)
             if (status.smb != null) setTextViewText(AppR.id.status_smb, status.smb)
             else setViewVisibility(AppR.id.status_smb, View.GONE)
             status.graph?.let { setImageViewBitmap(AppR.id.status_graph, it) }
-            setTextViewText(AppR.id.status_values, status.values)
-            if (status.sensitivity != null) setTextViewText(AppR.id.status_sensitivity, status.sensitivity)
-            else setViewVisibility(AppR.id.status_sensitivity, View.GONE)
+            setTextViewText(AppR.id.status_values, status.graphValues)
         }
 
-    /** Glucose, trend and delta, struck through together when the reading is stale. */
-    private fun headline(status: Status, bgScale: Float, deltaScale: Float): SpannableStringBuilder {
+    /** Glucose and trend in the range colour, then the delta. All struck through together when the reading is stale. */
+    private fun headline(status: Status, deltaScale: Float): SpannableStringBuilder {
         val line = SpannableStringBuilder()
-            .add(status.bgText, color = status.bgColor, bold = true, scale = bgScale)
-        status.trendSymbol?.let { line.add(" $it", color = status.bgColor, bold = true, scale = bgScale) }
-        status.deltaText?.let { line.add("  $it", scale = bgScale * deltaScale) }
+            .add(status.bgText, color = status.bgColor, bold = true)
+        status.trendSymbol?.let { line.add(" $it", color = status.bgColor, bold = true) }
+        status.deltaText?.let { line.add(" $it", scale = deltaScale) }
         if (status.isStale) line.setSpan(StrikethroughSpan(), 0, line.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         return line
     }
 
-    private fun sensitivityLine(data: SensitivityOverviewData, palette: Palette): CharSequence? {
-        if (!data.hasData) return null
-        val line = SpannableStringBuilder()
-        val isfColor = if (data.isVariableIsf) palette.element.scene.toArgb() else palette.element.sensitivity.toArgb()
-        if (data.asText.isNotBlank()) line.add(data.asText, color = palette.element.sensitivity.toArgb())
-        if (data.isfFrom.isNotBlank() || data.isfTo.isNotBlank()) {
-            if (line.isNotEmpty()) line.add("  ")
-            val arrow = when (data.isfStep) {
-                IsfStep.UP   -> "↗"
-                IsfStep.DOWN -> "↘"
-                IsfStep.SAME -> "→"
+    private fun autosens(data: SensitivityOverviewData, palette: Palette): CharSequence? {
+        if (!data.hasData || data.asText.isBlank()) return null
+        return SpannableStringBuilder().add(data.asText, color = palette.element.scene.toArgb())
+    }
+
+    /** ISF from → to, the ISF in use in bold. */
+    private fun isf(data: SensitivityOverviewData, palette: Palette): CharSequence? {
+        if (!data.hasData || (data.isfFrom.isBlank() && data.isfTo.isBlank())) return null
+        val color = palette.element.sensitivity.toArgb()
+        return SpannableStringBuilder()
+            .add("${data.isfFrom} ${arrow(data.isfStep)} ", color = color)
+            .add(data.isfTo, color = color, bold = true)
+    }
+
+    /**
+     * The target as the overview target chip shows it: the profile target alone, profile → algorithm target when
+     * the algorithm adjusts it, or the temp target alone in the colour of its reason.
+     */
+    private fun target(data: TempTargetDisplayData, palette: Palette): CharSequence? {
+        if (data.targetRangeText.isBlank()) return null
+        return when (data.state) {
+            TempTargetState.NONE     -> SpannableStringBuilder().add(data.targetRangeText)
+            TempTargetState.ACTIVE   -> SpannableStringBuilder().add(data.targetRangeText, color = data.reason.ttReasonColor(palette.general).toArgb())
+            TempTargetState.ADJUSTED -> {
+                val color = palette.general.adjusted.toArgb()
+                val line = SpannableStringBuilder()
+                if (data.profileTargetRangeText.isNotBlank()) line.add("${data.profileTargetRangeText} ${arrow(data.targetStep)} ", color = color)
+                line.add(data.targetRangeText, color = color, bold = true)
             }
-            line.add("ISF ${data.isfFrom}$arrow", color = isfColor)
-            line.add(data.isfTo, color = isfColor, bold = true)
         }
-        // The ISF the bolus wizard and carb absorption work with.
-        if (data.wizardIsf.isNotBlank()) {
-            if (line.isNotEmpty()) line.add("  ")
-            line.add("(${data.wizardIsf})", color = palette.element.sensitivity.toArgb(), bold = true)
-        }
-        return line.takeIf { it.isNotEmpty() }
+    }
+
+    private fun arrow(step: IsfStep): String = when (step) {
+        IsfStep.UP   -> "↗"
+        IsfStep.DOWN -> "↘"
+        IsfStep.SAME -> "→"
     }
 
     private fun graph(now: Long, palette: Palette): Bitmap {
@@ -234,13 +283,14 @@ class DetailedStatusRenderer(
             low = palette.low,
             inRange = palette.inRange,
             high = palette.high,
-            limitLine = palette.limitLine,
+            lowLine = palette.lowLine,
+            highLine = palette.highLine,
             target = palette.target,
             tempTarget = palette.element.tempTarget.toArgb()
         )
         val density = context.resources.displayMetrics.density
         val widthPx = (context.resources.displayMetrics.widthPixels * GRAPH_WIDTH_FRACTION).toInt()
-        return BgGraphBitmapRenderer().render(widthPx, (GRAPH_HEIGHT_DP * density).toInt(), input, colors)
+        return BgGraphBitmapRenderer().render(widthPx, (GRAPH_HEIGHT_DP * density).toInt(), input, colors, dotRadiusPx = DOT_RADIUS_DP * density)
     }
 
     private fun palette(): Palette {
@@ -248,28 +298,33 @@ class DetailedStatusRenderer(
         return Palette(night)
     }
 
+    private fun SpannableStringBuilder.dot(): SpannableStringBuilder = append("  •  ")
+
     private fun SpannableStringBuilder.add(
         text: CharSequence,
         color: Int? = null,
         bold: Boolean = false,
-        scale: Float? = null
+        scale: Float? = null,
+        strike: Boolean = false
     ): SpannableStringBuilder {
         val start = length
         append(text)
         color?.let { setSpan(ForegroundColorSpan(it), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) }
         if (bold) setSpan(StyleSpan(Typeface.BOLD), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         scale?.takeIf { it != 1.0f }?.let { setSpan(RelativeSizeSpan(it), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) }
+        if (strike) setSpan(StrikethroughSpan(), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         return this
     }
 
     companion object {
 
-        /** A reading older than this is struck through. */
-        const val STALE_AFTER_MS = 5L * 60 * 1000
+        /** A reading older than this is struck through, the same limit the overview uses. */
+        val STALE_AFTER_MS = T.mins(Constants.OLD_BG_MINUTES).msecs()
 
         private const val HISTORY_WINDOW_MS = 3L * 60 * 60 * 1000
-        private const val GRAPH_HEIGHT_DP = 36
+        private const val GRAPH_HEIGHT_DP = 48
         private const val GRAPH_WIDTH_FRACTION = 0.9f
+        private const val DOT_RADIUS_DP = 2.2f
 
         private const val Y_MIN_MGDL = 40.0
         private const val Y_MAX_MGDL = 220.0

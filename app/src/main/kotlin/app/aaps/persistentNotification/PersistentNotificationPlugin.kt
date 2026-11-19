@@ -163,23 +163,47 @@ class PersistentNotificationPlugin(
     private val deferredStart = DeferredForegroundStart()
     private var lastAutoNotificationContent: String = ""
 
-    private enum class StatusMode { CHIP, ICON, CHIP_LOCKED }
+    /** The setting the user picks. */
+    private enum class StatusMode { CHIP, ICON, GRAPH_LOCKED, STANDARD }
+
+    /** What the notification looks like at this moment. In [StatusMode.GRAPH_LOCKED] it depends on the lock state. */
+    private enum class Look {
+
+        /** Live chip with the coloured text card. */
+        CHIP_CARD,
+
+        /** Live chip with a card of one line, and the graph as a second notification. */
+        CHIP_MINIMAL,
+
+        /** No chip: the glucose as status bar icon and the custom layout with the graph. */
+        GRAPH,
+
+        /** Like [GRAPH], with the content shown on the lock screen. */
+        GRAPH_LOCK_SCREEN,
+
+        /** The notification as AAPS shows it without the detailed status. */
+        STANDARD
+    }
 
     private fun statusMode(): StatusMode = when (val mode = preferences.get(StringKey.NotificationStatusMode)) {
-        "chip"        -> StatusMode.CHIP
-        "icon"        -> StatusMode.ICON
-        "chip_locked" -> StatusMode.CHIP_LOCKED
-        else          -> error("Unknown notification status mode: $mode")
+        "chip"         -> StatusMode.CHIP
+        "icon"         -> StatusMode.ICON
+        "graph_locked" -> StatusMode.GRAPH_LOCKED
+        "standard"     -> StatusMode.STANDARD
+        // A mode of a test build that no longer exists. It was a live chip, so it stays one.
+        "chip_locked"  -> StatusMode.CHIP
+        else           -> error("Unknown notification status mode: $mode")
     }
 
     // Lock screen handling adapted from nightscout/AndroidAPS pull request #5482 (AkiLetschne).
-    // With the chip on the lock screen only, the notification must change when the phone is locked or
-    // unlocked, not only on the next BG. Screen off, screen on and unlock are the moments that can change it.
+    // With the graph on the lock screen and the chip when unlocked, the notification must change when the
+    // phone is locked or unlocked, not only on the next BG. Screen off, screen on and unlock are the moments
+    // that can change it.
     private val screenEvents = Channel<Unit>(Channel.CONFLATED)
     private val notificationMutex = Mutex()
     private val screenStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (statusMode() != StatusMode.CHIP_LOCKED) return
+            if (statusMode() != StatusMode.GRAPH_LOCKED) return
             screenEvents.trySend(Unit)
         }
     }
@@ -262,6 +286,7 @@ class PersistentNotificationPlugin(
         }
         staleJob?.cancel()
         staleJob = null
+        cancelGraphNotification()
         scope?.cancel()
         scope = null
         deferredStart.cancel()
@@ -308,6 +333,7 @@ class PersistentNotificationPlugin(
         var line2: String? = null
         var line3: String? = null
         var bgStatusChipText: String? = null
+        var basalText: String? = null
         var bgMetric: Metric? = null
         var metricValue: Metric.MetricValue? = null
         var unreadConversationBuilder: NotificationCompat.CarExtender.UnreadConversation.Builder? = null
@@ -353,11 +379,12 @@ class PersistentNotificationPlugin(
                 line1WithDelta = rh.gs(CoreUiR.string.missed_bg_readings)
             }
             val activeTemp = processedTbrEbData.getTempBasalIncludingConvertedExtended(System.currentTimeMillis())
-            line1 += if (activeTemp != null) {
+            basalText = if (activeTemp != null) {
                 " • " + activeTemp.toStringShort(rh) + " "
             } else {
                 " • " + rh.gs(CoreUiR.string.pump_base_basal_rate, ch.fromPump(pump.baseBasalRate)) + " "
             }
+            line1 += basalText
             val profileName = profileFunction.getProfileName()
             //IOB
             val bolusIob = iobCobCalculator.calculateIobFromBolus().round()
@@ -438,16 +465,19 @@ class PersistentNotificationPlugin(
         if (includeAuto) lastAutoNotificationContent = content
         // Android allows no custom views in a promoted (live chip) notification, so there the card is a styled
         // text and the graph is left out. Without the chip the custom layout with the graph is used.
-        val liveChip = when (statusMode()) {
-            StatusMode.CHIP        -> true
-            StatusMode.ICON        -> false
-            StatusMode.CHIP_LOCKED -> isPhoneLocked()
+        val look = when (statusMode()) {
+            StatusMode.CHIP         -> Look.CHIP_CARD
+            StatusMode.ICON         -> Look.GRAPH
+            StatusMode.GRAPH_LOCKED -> if (isPhoneLocked()) Look.GRAPH_LOCK_SCREEN else Look.CHIP_MINIMAL
+            StatusMode.STANDARD     -> Look.STANDARD
         }
-        val status = detailedStatus.build(withGraph = !liveChip)
+        // Beside the small chip the graph goes into a second notification, so it is needed there too.
+        val status = if (look == Look.STANDARD) null
+        else detailedStatus.build(withGraph = look == Look.GRAPH || look == Look.GRAPH_LOCK_SCREEN || look == Look.CHIP_MINIMAL)
         val builder = NotificationCompat.Builder(context, notificationHolder.channelID)
         builder.setOngoing(true)
-        if (liveChip) {
-            applyLiveUpdate(
+        when (look) {
+            Look.CHIP_CARD, Look.STANDARD      -> applyLiveUpdate(
                 builder = builder,
                 bgStatusChipText = bgStatusChipText,
                 line1 = line1,
@@ -456,13 +486,24 @@ class PersistentNotificationPlugin(
                 line2 = line2,
                 line3 = line3
             )
+            // No MetricStyle and no second line: the card must stay one line, the graph notification has the rest.
+            Look.CHIP_MINIMAL                  -> applyLiveUpdate(
+                builder = builder,
+                bgStatusChipText = bgStatusChipText,
+                line1 = line1WithDelta,
+                line1WithDelta = line1WithDelta,
+                bgMetric = null,
+                line2 = null,
+                line3 = null
+            )
+            Look.GRAPH, Look.GRAPH_LOCK_SCREEN -> Unit
         }
         builder.setOnlyAlertOnce(true)
         builder.setCategory(NotificationCompat.CATEGORY_STATUS)
         builder.setContentTitle(line1)
         if (line2 != null) builder.setContentText(line2)
         if (line3 != null) builder.setSubText(line3)
-        applyStatusContent(builder, status, liveChip, usesMetricStyle = Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN && bgMetric != null)
+        applyStatusContent(builder, status, look, basalText, usesMetricStyle = Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN && bgMetric != null)
         /// Android Auto
         if (includeAuto && unreadConversationBuilder != null) {
             builder.extend(
@@ -482,11 +523,13 @@ class PersistentNotificationPlugin(
     private fun applyStatusContent(
         builder: NotificationCompat.Builder,
         status: DetailedStatusRenderer.Status?,
-        liveChip: Boolean,
+        look: Look,
+        basalText: String?,
         usesMetricStyle: Boolean
     ) {
         staleJob?.cancel()
         staleJob = null
+        if (look != Look.CHIP_MINIMAL || status == null) cancelGraphNotification()
         if (status == null) {
             builder.setSmallIcon(iconsProvider.getNotificationIcon())
             return
@@ -500,19 +543,69 @@ class PersistentNotificationPlugin(
                 updateNotification()
             }
         }
-        if (liveChip) {
-            // The chip shows the AAPS icon with the glucose beside it.
-            builder.setSmallIcon(iconsProvider.getNotificationIcon())
-            // MetricStyle (Android 17) replaces the style, so the card has no place there.
-            if (!usesMetricStyle) builder.setStyle(NotificationCompat.BigTextStyle().bigText(detailedStatus.card(status)))
-        } else {
-            builder.setSmallIcon(BgNotificationIcon.create(status.bgText, strikeThrough = status.isStale))
-            val view = detailedStatus.remoteViews(status)
-            builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
-            builder.setCustomContentView(view)
-            builder.setCustomBigContentView(view)
+        when (look) {
+            Look.CHIP_CARD                     -> {
+                // The chip shows the AAPS icon with the glucose beside it.
+                builder.setSmallIcon(iconsProvider.getNotificationIcon())
+                builder.setContentTitle(detailedStatus.title(status, basalText))
+                builder.setContentText(status.cardValues)
+                // The card shows the profile, so the sub text would only repeat it.
+                builder.setSubText(null)
+                // MetricStyle (Android 17) replaces the style, so the card has no place there.
+                if (!usesMetricStyle) builder.setStyle(NotificationCompat.BigTextStyle().bigText(detailedStatus.card(status)))
+            }
+
+            Look.CHIP_MINIMAL                  -> {
+                // Android needs a title to show the chip, so the card keeps one line: the glucose.
+                builder.setSmallIcon(iconsProvider.getNotificationIcon())
+                builder.setContentTitle(detailedStatus.title(status, null))
+                builder.setContentText(null)
+                builder.setSubText(null)
+                postGraphNotification(status)
+            }
+
+            Look.GRAPH, Look.GRAPH_LOCK_SCREEN -> {
+                builder.setSmallIcon(BgNotificationIcon.create(status.bgText, strikeThrough = status.isStale))
+                val view = detailedStatus.remoteViews(status)
+                builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+                builder.setCustomContentView(view)
+                builder.setCustomBigContentView(view)
+                if (look == Look.GRAPH_LOCK_SCREEN) builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            }
+
+            Look.STANDARD                      -> builder.setSmallIcon(iconsProvider.getNotificationIcon())
         }
     }
+
+    /**
+     * The graph beside the small chip. A promoted notification may not have a custom view, so the graph needs a
+     * notification of its own. It is not the foreground service notification, so Android 14 and newer let the user
+     * swipe it away. It then comes back with the next update.
+     */
+    private fun postGraphNotification(status: DetailedStatusRenderer.Status) {
+        val view = detailedStatus.remoteViews(status)
+        val notification = NotificationCompat.Builder(context, notificationHolder.channelID)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            // The chip already shows the glucose, so the status bar does not get a second glucose icon.
+            .setSmallIcon(iconsProvider.getNotificationIcon())
+            .setContentTitle(status.bgText)
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setCustomContentView(view)
+            .setCustomBigContentView(view)
+            .setContentIntent(notificationHolder.openAppIntent())
+            .build()
+        androidNotificationManager().notify(GRAPH_NOTIFICATION_ID, notification)
+    }
+
+    private fun cancelGraphNotification() {
+        androidNotificationManager().cancel(GRAPH_NOTIFICATION_ID)
+    }
+
+    private fun androidNotificationManager(): AndroidNotificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as AndroidNotificationManager
 
     /**
      * True when the screen is off or the lock screen is shown. The screen off counts as locked, because
@@ -597,6 +690,9 @@ class PersistentNotificationPlugin(
     )
 
     internal companion object {
+
+        /** The second notification with the graph, beside the small chip. Not used by any other notification. */
+        const val GRAPH_NOTIFICATION_ID = 4740
 
         /** Short, so the notification shows a new BG at once, but long enough for one BG's burst. */
         val UPDATE_DEBOUNCE = 1.seconds
