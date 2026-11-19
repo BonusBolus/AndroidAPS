@@ -646,7 +646,7 @@ private val PREVIEW_MODE_MIN_HEIGHT: Dp = 500.dp
 private const val AUTO_HIDE_DELAY_MS = 3000L
 
 /** Duration of the top controls' slide, and of the content following it. One value, so they stay in step. */
-private const val TOP_CHROME_ANIMATION_MS = 500
+private const val TOP_CHROME_ANIMATION_MS = 350
 
 /**
  * How far the version label is lifted above the content's top edge while the top bar is shown. The
