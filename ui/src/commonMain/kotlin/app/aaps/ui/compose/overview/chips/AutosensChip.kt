@@ -38,8 +38,8 @@ import app.aaps.core.ui.compose.stringResourceOrNull
 
 /**
  * The autosens half of the overview sensitivity block: the autosens icon and the current autosens
- * value, then the value the algorithm used. Always shown, so the user can see the autosens state
- * even when there is no ISF step to show beside it.
+ * value, then the value the algorithm used when it reads differently. Always shown, so the user can
+ * see the autosens state even when there is no ISF step to show beside it.
  *
  * @see SensitivityChip
  * @see AutosensChipPreview
@@ -64,6 +64,11 @@ internal fun AutosensChip(
     // "Always show the current autosens": the text is empty only at exactly 100%, and a ratio of 1.0
     // is what 100% means, so it is formatted here instead of leaving the chip without a number.
     val autosensText = state.asText.ifEmpty { stringResource(CoreUiStrings.autosens_short, state.ratio * 100) }
+    // The algorithm's own ratio earns its room in the row only when it reads differently from the
+    // autosens above. Both print whole percent, so most of the time this would show the same number
+    // twice and take away from the ISF chip beside it. When the two really differ - autosens off,
+    // or a temp target that took sensitivity over - both numbers stay visible.
+    val algorithmAutosens = state.algorithmAutosens.takeIf { it.isNotEmpty() && it != autosensText }
     Surface(
         shape = RoundedCornerShape(AapsSpacing.chipCornerRadius),
         color = color.copy(alpha = 0.2f),
@@ -91,10 +96,12 @@ internal fun AutosensChip(
                 color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = AapsSpacing.medium)
+                // The gaps inside this chip are one step tighter than the ISF chip's, because two
+                // numbers and two icons have to fit where the ISF chip fits two numbers and one.
+                modifier = Modifier.padding(start = AapsSpacing.small)
             )
-            if (state.algorithmAutosens.isNotEmpty()) {
-                Spacer(Modifier.width(AapsSpacing.medium))
+            if (algorithmAutosens != null) {
+                Spacer(Modifier.width(AapsSpacing.small))
                 Icon(
                     imageVector = ElementType.BOLUS_WIZARD.icon(),
                     contentDescription = stringResourceOrNull(ElementType.BOLUS_WIZARD.label()),
@@ -102,7 +109,7 @@ internal fun AutosensChip(
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
-                    text = state.algorithmAutosens,
+                    text = algorithmAutosens,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = textColor,
