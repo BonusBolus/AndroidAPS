@@ -650,13 +650,12 @@ fun GraphsSection(
         ) {
             SecondaryGraphCompose(
                 viewModel = graphViewModel,
-                seriesTypes = graphConfig.iobSeries,
+                seriesTypes = listOf(SeriesType.IOB),
                 scrollState = iobScrollState,
                 zoomState = iobZoomState,
                 derivedTimeRange = derivedTimeRange,
                 nowTimestamp = nowTimestamp,
-                activityOverlay = false,
-                basalOverlay = true,
+                activityOverlay = SeriesType.ACTIVITY in graphConfig.iobOverlays,
                 onVisibleRangeChanged = { iobVisibleRange = it },
                 inspect = inspect,
                 modifier = Modifier
@@ -664,11 +663,7 @@ fun GraphsSection(
                     .height(graphConfig.iobHeight.dp - REMOVED_TIME_LABELS_HEIGHT)
             )
             GraphNameRow(
-                name = if (SeriesType.IOB in graphConfig.iobSeries) {
-                    stringResource(InterfacesStrings.values_with_slash, stringResource(CoreUiStrings.iob), stringResource(CoreUiStrings.basal_shortname))
-                } else {
-                    seriesListLabel(graphConfig.iobSeries)
-                },
+                name = stringResource(InterfacesStrings.values_with_slash, stringResource(CoreUiStrings.iob), stringResource(CoreUiStrings.basal_shortname)),
                 editName = stringResource(CoreUiStrings.iob),
                 onEdit = if (isSimpleMode) null else ({ editingIobOverlays = true }),
                 modifier = Modifier
@@ -678,21 +673,17 @@ fun GraphsSection(
         }
         if (editingIobOverlays) {
             GraphSeriesBottomSheet(
-                title = stringResource(CoreUiStrings.graph_series_iob),
-                selectedSeries = graphConfig.iobSeries,
-                availableSeries = SeriesType.entries.filter { it != SeriesType.PREDICTIONS },
+                title = stringResource(InterfacesStrings.values_with_slash, stringResource(CoreUiStrings.iob), stringResource(CoreUiStrings.basal_shortname)),
+                selectedSeries = graphConfig.iobOverlays,
+                availableSeries = listOf(SeriesType.ACTIVITY),
                 height = graphConfig.iobHeight,
                 onHeightChange = { h ->
                     graphViewModel.updateGraphConfig(graphConfig.copy(iobHeight = h))
                 },
                 onToggle = { type ->
-                    val current = graphConfig.iobSeries.toMutableList()
+                    val current = graphConfig.iobOverlays.toMutableList()
                     if (type in current) current.remove(type) else current.add(type)
-                    graphViewModel.updateGraphConfig(
-                        graphConfig.copy(
-                            iobSeries = if (current.isEmpty()) listOf(SeriesType.IOB) else current
-                        )
-                    )
+                    graphViewModel.updateGraphConfig(graphConfig.copy(iobOverlays = current))
                 },
                 onDismiss = { editingIobOverlays = false }
             )

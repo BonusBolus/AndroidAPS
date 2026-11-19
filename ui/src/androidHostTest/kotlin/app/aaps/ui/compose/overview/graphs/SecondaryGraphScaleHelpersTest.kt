@@ -376,16 +376,6 @@ internal class SecondaryGraphScaleHelpersTest {
             assertThat(axes.right).isNull()
         }
 
-        // The fixed IOB graph keeps the basal band when another data field is selected next to IOB.
-        // That field's axis keeps its own range: the band already moved the IOB zero up.
-        @Test
-        fun `a right axis next to the basal band keeps its own range`() {
-            val axes = graphAxes(AxisRange(0.0, 3.0, 0.0), AxisRange(0.0, 90.0, 0.0), basalBand = true)
-
-            assertThat(axes.left).isEqualTo(AxisBounds(0.0, 3.0 / IOB_HEIGHT_FRACTION))
-            assertThat(axes.right).isEqualTo(AxisBounds(0.0, 90.0))
-        }
-
         @Test
         fun `one series keeps its own range`() {
             assertThat(graphAxes(AxisRange(0.0, 90.0, 0.0), null, basalBand = false)).isEqualTo(GraphAxes(AxisBounds(0.0, 90.0), null))

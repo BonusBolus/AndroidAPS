@@ -77,33 +77,15 @@ private data class AxisScale(
     val endAxisItemPlacer: VerticalAxis.ItemPlacer
 )
 
-/** One chart layer of a graph. The order of the layers is the same for drawing and for the model. */
-private enum class ChartLayer { Left, Right, Basal }
-
-/**
- * The layers of a graph, bottom to top: the basal band is drawn last, over the lines it shares the
- * top of the height with. Columns first, so the line of another series stays on top of them.
- */
-private fun chartLayerOrder(hasBasalLayer: Boolean, hasRightAxis: Boolean, rightFirst: Boolean): List<ChartLayer> = when {
-    hasBasalLayer && hasRightAxis -> if (rightFirst) {
-        listOf(ChartLayer.Right, ChartLayer.Left, ChartLayer.Basal)
-    } else {
-        listOf(ChartLayer.Left, ChartLayer.Right, ChartLayer.Basal)
-    }
-
-    hasBasalLayer                 -> listOf(ChartLayer.Left, ChartLayer.Basal)
-    !hasRightAxis                 -> listOf(ChartLayer.Left)
-    rightFirst                    -> listOf(ChartLayer.Right, ChartLayer.Left)
-    else                          -> listOf(ChartLayer.Left, ChartLayer.Right)
-}
-
 /** Everything the chart model of a graph is built from. Equal values give the same model. */
 private data class ModelInput(
     val leftSpecs: List<SeriesSpec>,
     val rightSpecs: List<SeriesSpec>,
     val basalProfile: List<Pair<Double, Double>>,
     val basalActual: List<Pair<Double, Double>>,
-    val layerOrder: List<ChartLayer>,
+    val hasBasalLayer: Boolean,
+    val hasRightAxis: Boolean,
+    val rightFirst: Boolean,
     val maxX: Double,
     val axisScale: AxisScale,
     val maxManualBolus: Double?,
@@ -133,12 +115,6 @@ fun SecondaryGraphCompose(
     derivedTimeRange: Pair<Long, Long>?,
     nowTimestamp: Long,
     activityOverlay: Boolean = false,
-    /**
-     * Draws the flipped basal band in the top of the height, on the fixed IOB graph. It stays when
-     * other data fields are selected next to IOB: the band and the IOB line share one axis, so the
-     * band needs no axis of its own. Without an IOB series there is nothing to scale it against.
-     */
-    basalOverlay: Boolean = false,
     onVisibleRangeChanged: ((Pair<Double, Double>?) -> Unit)? = null,
     /** While holding the BG graph, a line at the inspected time. Null turns it off. */
     inspect: GraphInspectState? = null,
@@ -147,13 +123,7 @@ fun SecondaryGraphCompose(
     val dateUtil = LocalDateUtil.current
     if (seriesTypes.isEmpty()) return
 
-    // IOB takes the left axis of the fixed IOB graph, whatever other data fields are selected:
-    // the basal band is laid out against that axis and stretches it to make room for itself.
-    val shownSeries = remember(seriesTypes, basalOverlay) {
-        if (basalOverlay && SeriesType.IOB in seriesTypes) listOf(SeriesType.IOB) + seriesTypes.filter { it != SeriesType.IOB }
-        else seriesTypes
-    }
-    val sides = remember(shownSeries) { graphSides(shownSeries) }
+    val sides = remember(seriesTypes) { graphSides(seriesTypes) }
 
     val hasRealTimeRange = derivedTimeRange != null
     val (minTimestamp, maxTimestamp) = derivedTimeRange ?: run {
@@ -179,10 +149,8 @@ fun SecondaryGraphCompose(
 
     val hasIob = SeriesType.IOB in seriesTypes
     val hasCob = SeriesType.COB in seriesTypes
-    // The basal band takes the top of the graph. It is tied to the IOB series, not to IOB being the
-    // only series: it is scaled against the IOB axis, which is the left axis of this graph (see
-    // shownSeries), so the band keeps its place when other data fields are selected.
-    val hasBasalLayer = basalOverlay && hasIob
+    // The basal band takes the top of the graph, so only when IOB is the graph's only series
+    val hasBasalLayer = sides.left == listOf(SeriesType.IOB) && sides.right.isEmpty()
 
     val iobData = if (hasIob) viewModel.iobGraphFlow.collectAsStateWithLifecycle().value else null
     val cobData = if (hasCob) viewModel.cobGraphFlow.collectAsStateWithLifecycle().value else null
@@ -454,7 +422,6 @@ fun SecondaryGraphCompose(
     val hasRightAxis = sides.right.isNotEmpty()
     // Columns are drawn first, so the line of the other axis stays on top of them
     val rightFirst = sides.right.any { it in COLUMN_SERIES }
-    val layerOrder = remember(hasBasalLayer, hasRightAxis, rightFirst) { chartLayerOrder(hasBasalLayer, hasRightAxis, rightFirst) }
 
     // =========================================================================
     // Line styles
@@ -585,13 +552,7 @@ fun SecondaryGraphCompose(
     // Rebuilt only when the data or the axes change, not on every scroll step
     val axisScale = AxisScale(leftRangeProvider, rightRangeProvider, basalRangeProvider, startAxisItemPlacer, endAxisItemPlacer)
     val modelInput = ModelInput(
-        leftSpecs = leftSpecs,
-        rightSpecs = rightSpecs,
-        basalProfile = processedBasalProfile,
-        basalActual = processedBasalActual,
-        layerOrder = layerOrder,
-        maxX = maxX,
-        axisScale = axisScale,
+        leftSpecs, rightSpecs, processedBasalProfile, processedBasalActual, hasBasalLayer, hasRightAxis, rightFirst, maxX, axisScale,
         maxManualBolus = processedIobTreatments.maxManualBolus,
         maxCarbs = processedCarbs.maxOfOrNull { it.second }
     )
@@ -613,17 +574,18 @@ fun SecondaryGraphCompose(
             // so the line styles (built from the same lists) map 1:1 to the series. The normalizer keeps
             // the maxPointSize the same across all charts, see leftLines.
             val normalizer = normalizerX(input.maxX) to NORMALIZER_Y
-            val basal = listOf(
-                if (input.basalActual.size >= 2) input.basalActual.map { it.first } to input.basalActual.map { it.second } else EMPTY_BASAL,
-                if (input.basalProfile.size >= 2) input.basalProfile.map { it.first } to input.basalProfile.map { it.second } else EMPTY_BASAL
-            )
-            val seriesByLayer = mapOf(
-                ChartLayer.Left to listOf(normalizer) + input.leftSpecs.map { it.x to it.y },
-                ChartLayer.Right to listOf(normalizer) + input.rightSpecs.map { it.x to it.y },
-                ChartLayer.Basal to basal
-            )
+            val left = listOf(normalizer) + input.leftSpecs.map { it.x to it.y }
+            val end = when {
+                input.hasBasalLayer -> listOf(
+                    if (input.basalActual.size >= 2) input.basalActual.map { it.first } to input.basalActual.map { it.second } else EMPTY_BASAL,
+                    if (input.basalProfile.size >= 2) input.basalProfile.map { it.first } to input.basalProfile.map { it.second } else EMPTY_BASAL
+                )
+
+                input.hasRightAxis  -> listOf(normalizer) + input.rightSpecs.map { it.x to it.y }
+                else                -> null
+            }
             // The same order as the layers handed to the chart below
-            val layerSeries = input.layerOrder.map { seriesByLayer.getValue(it) }
+            val layerSeries = if (end != null && input.rightFirst) listOf(end, left) else listOfNotNull(left, end)
             modelProducer.runTransaction {
                 for (seriesOfLayer in layerSeries) lineModel { seriesOfLayer.forEach { (x, y) -> series(x = x, y = y) } }
 
@@ -673,12 +635,11 @@ fun SecondaryGraphCompose(
     val defaultMarkerController = CartesianMarkerController.rememberShowOnPress()
     val markerController = inspect?.controller ?: defaultMarkerController
 
-    val layers = layerOrder.map {
-        when (it) {
-            ChartLayer.Left  -> leftLayer
-            ChartLayer.Right -> rightLayer
-            ChartLayer.Basal -> basalLayer
-        }
+    val layers = when {
+        hasBasalLayer  -> listOf(leftLayer, basalLayer)
+        !hasRightAxis  -> listOf(leftLayer)
+        rightFirst     -> listOf(rightLayer, leftLayer)
+        else           -> listOf(leftLayer, rightLayer)
     }
     CartesianChartHost(
         chart = rememberCartesianChart(
