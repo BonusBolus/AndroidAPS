@@ -86,7 +86,8 @@ import kotlin.math.abs
  * Pattern: Observe Primary + Sync to Secondary
  * - Each graph has its OWN VicoScrollState and VicoZoomState
  * - BG graph: Interactive - user can scroll/zoom
- * - Secondary graphs: Non-interactive - scroll/zoom disabled
+ * - Secondary graphs: no scroll/zoom state of their own - a sideways drag on one scrolls BG, a
+ *   two-finger pinch on one zooms BG, and they all follow it
  * - One LaunchedEffect observes BG graph's state changes and syncs to secondary
  *
  * Synchronization Implementation:
@@ -286,6 +287,13 @@ fun GraphsSection(
     }
     // A sideways drag on a graph below BG scrolls BG, and they all follow it
     val bgScrollForwarder = rememberBgScrollForwarder(bgScrollState)
+    // A two-finger pinch on a graph below BG zooms BG, and they all follow it. Same limits as BG's own
+    // zoom: the fewest minutes it may show, and the most (the whole time range).
+    val bgZoomForwarder = rememberBgZoomForwarder(
+        bgZoomState = bgZoomState,
+        minZoomMinutes = MIN_GRAPH_ZOOM_MINUTES.toFloat(),
+        maxZoomMinutes = (Constants.GRAPH_TIME_RANGE_HOURS * 60).toFloat()
+    )
 
     // Pre-allocate secondary graph scroll/zoom states (up to MAX_SECONDARY_GRAPHS)
     // These are always created to keep Compose's remember slots stable
@@ -647,6 +655,7 @@ fun GraphsSection(
                 .pullUp(IOB_GRAPH_PULL_UP)
                 .graphInspectTouch(inspect)
                 .scrollsBgGraph(bgScrollForwarder, inspect, graphViewModel::onGraphInteraction)
+                .zoomsBgGraph(bgZoomForwarder, inspect, graphViewModel::onGraphInteraction)
         ) {
             SecondaryGraphCompose(
                 viewModel = graphViewModel,
@@ -698,6 +707,7 @@ fun GraphsSection(
                     .pullUp(GRAPH_OVERLAP)
                     .graphInspectTouch(inspect)
                     .scrollsBgGraph(bgScrollForwarder, inspect, graphViewModel::onGraphInteraction)
+                    .zoomsBgGraph(bgZoomForwarder, inspect, graphViewModel::onGraphInteraction)
             ) {
                 SecondaryGraphCompose(
                     viewModel = graphViewModel,

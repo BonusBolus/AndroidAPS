@@ -37,6 +37,50 @@ internal class GraphUtilsTest {
         }
     }
 
+    /**
+     * A pinch on a graph below BG is applied to BG's zoom and all graphs follow it, see
+     * [BgZoomForwarder]. The shown range is in minutes, so the fingers moving apart shows fewer of them.
+     */
+    @Nested
+    inner class ZoomAfterPinchTest {
+
+        // The limits of BG's own zoom: MIN_GRAPH_ZOOM_MINUTES, and the whole time range of 24 h.
+        private val fewest = 30f
+        private val most = 1440f
+
+        @Test
+        fun `fingers moving apart show half the minutes`() {
+            assertThat(zoomAfterPinch(360f, 2f, fewest, most)?.toDouble()).isEqualTo(180.0)
+        }
+
+        @Test
+        fun `fingers coming together show twice the minutes`() {
+            assertThat(zoomAfterPinch(360f, 0.5f, fewest, most)?.toDouble()).isEqualTo(720.0)
+        }
+
+        @Test
+        fun `a pinch stops at the whole time range`() {
+            assertThat(zoomAfterPinch(1000f, 0.5f, fewest, most)?.toDouble()).isEqualTo(1440.0)
+        }
+
+        @Test
+        fun `a pinch stops at the fewest minutes`() {
+            assertThat(zoomAfterPinch(40f, 2f, fewest, most)?.toDouble()).isEqualTo(30.0)
+        }
+
+        @Test
+        fun `a pinch already at a limit changes nothing`() {
+            assertThat(zoomAfterPinch(30f, 2f, fewest, most)).isNull()
+            assertThat(zoomAfterPinch(1440f, 0.5f, fewest, most)).isNull()
+        }
+
+        @Test
+        fun `a pinch with no usable factor changes nothing`() {
+            assertThat(zoomAfterPinch(360f, 0f, fewest, most)).isNull()
+            assertThat(zoomAfterPinch(0f, 2f, fewest, most)).isNull()
+        }
+    }
+
     @Nested
     inner class NiceScaleTest {
 
