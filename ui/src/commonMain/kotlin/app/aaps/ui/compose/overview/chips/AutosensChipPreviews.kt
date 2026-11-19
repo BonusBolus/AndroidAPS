@@ -9,7 +9,7 @@ import androidx.compose.ui.tooling.preview.Preview
 internal fun AutosensChipPreview() {
     MaterialTheme {
         AutosensChip(
-            state = SensitivityUiState(asText = "112%", ratio = 1.12, isEnabled = true, hasData = true),
+            state = SensitivityUiState(asText = "112", ratio = 1.12, isEnabled = true, hasData = true),
             onClick = {}
         )
     }
@@ -20,7 +20,7 @@ internal fun AutosensChipPreview() {
 internal fun AutosensChipDisabledPreview() {
     MaterialTheme {
         AutosensChip(
-            state = SensitivityUiState(asText = "88%", ratio = 0.88, isEnabled = false, hasData = true),
+            state = SensitivityUiState(asText = "88", ratio = 0.88, isEnabled = false, hasData = true),
             onClick = {}
         )
     }
@@ -31,7 +31,7 @@ internal fun AutosensChipDisabledPreview() {
 internal fun AutosensChipWithAlgorithmPreview() {
     MaterialTheme {
         AutosensChip(
-            state = SensitivityUiState(asText = "112%", algorithmAutosens = "108%", ratio = 1.12, isEnabled = true, hasData = true),
+            state = SensitivityUiState(asText = "112", algorithmAutosens = "108", ratio = 1.12, isEnabled = true, hasData = true),
             onClick = {}
         )
     }

@@ -56,5 +56,8 @@ object AapsSpacing {
     val chipCornerRadius = 8.dp
     val chipHeight = 35.dp
     val chipIconSize = 24.dp
+    // Gap between a chip icon and the value beside it. The IOB, target glucose and autosens chips
+    // all use this one value, so their numbers start at the same place.
+    val chipIconGap = 4.dp
     val chipProgressHeight = 3.dp
 }

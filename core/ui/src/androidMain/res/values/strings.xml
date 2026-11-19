@@ -784,7 +784,7 @@
     <string name="isf_variable">Variable ISF: %1$.1f</string>
     <string name="isf_effective">Effective ISF: %1$.1f</string>
     <string name="autosens_long">Autosens Value: %.0f%%</string>
-    <string name="autosens_short">%.0f%%</string>
+    <string name="autosens_chip_value" comment="Autosens value in the overview chip. It has no percent sign on purpose: the chip is narrow and the autosens icon already says what the number is. Example: 105">%.0f</string>
     <string name="algorithm_long">Autosens in algorithm: %.0f%%</string>
 
     <!-- Autotune -->

@@ -46,10 +46,10 @@ class OverviewChipsTest {
     fun autosensChipRendersTextAndFiresClick() {
         var clicked = false
         compose.setContent {
-            MaterialTheme { AutosensChip(state = SensitivityUiState(asText = "100%"), onClick = { clicked = true }) }
+            MaterialTheme { AutosensChip(state = SensitivityUiState(asText = "100"), onClick = { clicked = true }) }
         }
-        compose.onNodeWithText("100%").assertIsDisplayed()
-        compose.onNodeWithText("100%").performClick()
+        compose.onNodeWithText("100").assertIsDisplayed()
+        compose.onNodeWithText("100").performClick()
         assertThat(clicked).isTrue()
     }
 }

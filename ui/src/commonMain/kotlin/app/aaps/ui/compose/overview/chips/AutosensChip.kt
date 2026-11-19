@@ -63,11 +63,11 @@ internal fun AutosensChip(
     val autosensOff = stringResource(CoreUiStrings.autosens_state_off)
     // "Always show the current autosens": the text is empty only at exactly 100%, and a ratio of 1.0
     // is what 100% means, so it is formatted here instead of leaving the chip without a number.
-    val autosensText = state.asText.ifEmpty { stringResource(CoreUiStrings.autosens_short, state.ratio * 100) }
+    val autosensText = state.asText.ifEmpty { stringResource(CoreUiStrings.autosens_chip_value, state.ratio * 100) }
     // The algorithm's own ratio earns its room in the row only when it reads differently from the
-    // autosens above. Both print whole percent, so most of the time this would show the same number
-    // twice and take away from the ISF chip beside it. When the two really differ - autosens off,
-    // or a temp target that took sensitivity over - both numbers stay visible.
+    // autosens above. Both show the same whole number, so most of the time this would show it twice
+    // and take away from the ISF chip beside it. When the two really differ - autosens off, or a
+    // temp target that took sensitivity over - both numbers stay visible.
     val algorithmAutosens = state.algorithmAutosens.takeIf { it.isNotEmpty() && it != autosensText }
     Surface(
         shape = RoundedCornerShape(AapsSpacing.chipCornerRadius),
@@ -96,12 +96,10 @@ internal fun AutosensChip(
                 color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                // The gaps inside this chip are one step tighter than the ISF chip's, because two
-                // numbers and two icons have to fit where the ISF chip fits two numbers and one.
-                modifier = Modifier.padding(start = AapsSpacing.small)
+                modifier = Modifier.padding(start = AapsSpacing.chipIconGap)
             )
             if (algorithmAutosens != null) {
-                Spacer(Modifier.width(AapsSpacing.small))
+                Spacer(Modifier.width(AapsSpacing.chipIconGap))
                 Icon(
                     imageVector = ElementType.BOLUS_WIZARD.icon(),
                     contentDescription = stringResourceOrNull(ElementType.BOLUS_WIZARD.label()),
