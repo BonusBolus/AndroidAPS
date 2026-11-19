@@ -7,7 +7,8 @@ import app.aaps.core.interfaces.overview.graph.SeriesType
 //   ([graphSides]);
 // - every series type has one axis rule wherever it appears ([axisRuleOf], [axisRange]);
 // - two axes keep their own ranges, only their zeros are put on one height ([alignReferences]);
-// - the IOB graph alone leaves the top of its height to the basal band ([graphAxes]).
+// - the fixed IOB graph leaves the top of its height to the basal band ([graphAxes]); a right
+//   axis next to it keeps its own range, see there.
 
 /** How the axis of a series is built from its values. */
 internal sealed interface AxisRule {
@@ -100,10 +101,14 @@ internal data class GraphAxes(val left: AxisBounds, val right: AxisBounds?)
  * has the top. The room is measured from the bottom of the values, not from zero: the two only
  * coincide when there is no negative part, and measured from zero the negative part would get less
  * than its share.
+ *
+ * A right axis next to the basal band keeps its own range instead of aligning its reference with
+ * the left one: the band has already moved the left reference to the top of the IOB values, and
+ * putting the right reference there as well would leave most of that axis empty.
  */
 internal fun graphAxes(left: AxisRange?, right: AxisRange?, basalBand: Boolean): GraphAxes = when {
     left == null  -> GraphAxes(EMPTY_AXIS, right?.bounds)
-    basalBand     -> GraphAxes(AxisBounds(left.min, left.min + (left.max - left.min) / IOB_HEIGHT_FRACTION), null)
+    basalBand     -> GraphAxes(AxisBounds(left.min, left.min + (left.max - left.min) / IOB_HEIGHT_FRACTION), right?.bounds)
     right == null -> GraphAxes(left.bounds, null)
     else          -> alignReferences(left, right).let { (l, r) -> GraphAxes(l, r) }
 }

@@ -656,6 +656,7 @@ fun GraphsSection(
                 derivedTimeRange = derivedTimeRange,
                 nowTimestamp = nowTimestamp,
                 activityOverlay = false,
+                basalOverlay = true,
                 onVisibleRangeChanged = { iobVisibleRange = it },
                 inspect = inspect,
                 modifier = Modifier
