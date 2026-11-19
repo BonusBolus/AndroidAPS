@@ -95,11 +95,10 @@ internal fun AutosensChip(
                 style = MaterialTheme.typography.bodyMedium,
                 color = textColor,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = AapsSpacing.chipIconGap)
+                overflow = TextOverflow.Ellipsis
             )
             if (algorithmAutosens != null) {
-                Spacer(Modifier.width(AapsSpacing.chipIconGap))
+                Spacer(Modifier.width(AapsSpacing.extraSmall))
                 Icon(
                     imageVector = ElementType.BOLUS_WIZARD.icon(),
                     contentDescription = stringResourceOrNull(ElementType.BOLUS_WIZARD.label()),

@@ -82,7 +82,7 @@ internal fun SensitivityChip(
                 )
             }
             if (state.wizardIsf.isNotEmpty()) {
-                Spacer(Modifier.width(AapsSpacing.medium))
+                Spacer(Modifier.width(AapsSpacing.extraSmall))
                 Icon(
                     imageVector = ElementType.BOLUS_WIZARD.icon(),
                     contentDescription = stringResourceOrNull(ElementType.BOLUS_WIZARD.label()),
