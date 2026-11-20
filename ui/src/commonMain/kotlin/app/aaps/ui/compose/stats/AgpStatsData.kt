@@ -33,7 +33,9 @@ data class AgpTirBreakdown(
     val low: Double = 0.0,
     val inRange: Double = 0.0,
     val high: Double = 0.0,
-    val veryHigh: Double = 0.0
+    val veryHigh: Double = 0.0,
+    /** Part of [inRange] that is also inside the tight range (70-140 mg/dL). */
+    val tight: Double = 0.0
 )
 
 data class AgpHourlyPercentile(
@@ -157,7 +159,8 @@ internal fun calculateAgpTirBreakdown(
         low = percentage(valuesMgdl.count { it >= VERY_LOW_MGDL && it < lowMgdl }, valuesMgdl.size),
         inRange = percentage(valuesMgdl.count { it in lowMgdl..highMgdl }, valuesMgdl.size),
         high = percentage(valuesMgdl.count { it > highMgdl && it <= VERY_HIGH_MGDL }, valuesMgdl.size),
-        veryHigh = percentage(valuesMgdl.count { it > maxOf(VERY_HIGH_MGDL, highMgdl) }, valuesMgdl.size)
+        veryHigh = percentage(valuesMgdl.count { it > maxOf(VERY_HIGH_MGDL, highMgdl) }, valuesMgdl.size),
+        tight = percentage(valuesMgdl.count { it in maxOf(lowMgdl, TIGHT_LOW_MGDL)..minOf(highMgdl, TIGHT_HIGH_MGDL) }, valuesMgdl.size)
     )
 }
 
@@ -172,10 +175,10 @@ private fun percentile(sorted: List<Double>, fraction: Double): Double {
 private fun percentage(count: Int, total: Int): Double = count * 100.0 / total
 
 private const val MIN_VALID_BG = 39.0
-private const val VERY_LOW_MGDL = 54.0
-private const val VERY_HIGH_MGDL = 250.0
-private const val TIGHT_LOW_MGDL = 70.0
-private const val TIGHT_HIGH_MGDL = 140.0
+internal const val VERY_LOW_MGDL = 54.0
+internal const val VERY_HIGH_MGDL = 250.0
+internal const val TIGHT_LOW_MGDL = 70.0
+internal const val TIGHT_HIGH_MGDL = 140.0
 private const val MINUTE_MS = 60_000L
 private const val DEFAULT_CADENCE_MS = 5 * MINUTE_MS
 private const val MIN_CADENCE_MS = MINUTE_MS

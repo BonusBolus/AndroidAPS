@@ -17,18 +17,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.aaps.core.interfaces.InterfacesStrings
 import app.aaps.core.interfaces.overview.graph.BgDataPoint
 import app.aaps.core.interfaces.overview.graph.TirGraphMode
 import app.aaps.core.interfaces.profile.ProfileUtil
+import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.core.ui.CoreUiStrings
 import app.aaps.core.ui.compose.AapsTheme
 import app.aaps.core.ui.compose.LocalProfileUtil
 import app.aaps.core.ui.compose.stringResource
 import app.aaps.ui.UiStrings
 import app.aaps.ui.compose.stats.AgpTirBreakdown
+import app.aaps.ui.compose.stats.TIGHT_HIGH_MGDL
+import app.aaps.ui.compose.stats.TIGHT_LOW_MGDL
+import app.aaps.ui.compose.stats.VERY_HIGH_MGDL
+import app.aaps.ui.compose.stats.VERY_LOW_MGDL
 import app.aaps.ui.compose.stats.TirBarCompose
 import app.aaps.ui.compose.stats.calculateAgpTirBreakdown
 import app.aaps.core.interfaces.utils.MidnightTime
@@ -72,6 +78,7 @@ internal fun TirGraphCompose(
                 inRangePct = it.inRange,
                 highPct = it.high,
                 veryHighPct = it.veryHigh,
+                tightPct = it.tight,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
@@ -123,32 +130,40 @@ private fun TirLegend(
 ) {
     val colors = AapsTheme.generalColors
     val profileUtil = LocalProfileUtil.current
-    val inRange = stringResource(
-        InterfacesStrings.value_with_detail,
-        stringResource(CoreUiStrings.in_range),
-        stringResource(
-            InterfacesStrings.values_with_dash,
-            profileUtil.fromMgdlToStringInUnits(profileUtil.convertToMgdl(lowMark, profileUtil.units)),
-            profileUtil.fromMgdlToStringInUnits(profileUtil.convertToMgdl(highMark, profileUtil.units))
-        )
-    )
+    val lowMgdl = profileUtil.convertToMgdl(lowMark, profileUtil.units)
+    val highMgdl = profileUtil.convertToMgdl(highMark, profileUtil.units)
+    val veryLow = profileUtil.fromMgdlToStringInUnits(VERY_LOW_MGDL)
+    val low = profileUtil.fromMgdlToStringInUnits(lowMgdl)
+    val high = profileUtil.fromMgdlToStringInUnits(highMgdl)
+    val veryHigh = profileUtil.fromMgdlToStringInUnits(VERY_HIGH_MGDL)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp),
         verticalAlignment = Alignment.Top
     ) {
-        TirLegendItem(stringResource(CoreUiStrings.veryLow), breakdown.veryLow, colors.bgVeryLow)
-        TirLegendItem(stringResource(CoreUiStrings.low), breakdown.low, colors.bgLow)
-        TirLegendItem(inRange, breakdown.inRange, colors.bgInRange)
-        TirLegendItem(stringResource(CoreUiStrings.high), breakdown.high, colors.bgHigh)
-        TirLegendItem(stringResource(CoreUiStrings.veryHigh), breakdown.veryHigh, colors.bgVeryHigh)
+        TirLegendItem(CoreUiStrings.veryLow, stringResource(UiStrings.agp_below, veryLow), breakdown.veryLow, colors.bgVeryLow)
+        TirLegendItem(CoreUiStrings.low, stringResource(UiStrings.agp_range, veryLow, low), breakdown.low, colors.bgLow)
+        TirLegendItem(CoreUiStrings.in_range, stringResource(UiStrings.agp_range, low, high), breakdown.inRange, colors.bgInRange)
+        TirLegendItem(
+            UiStrings.tir_tight,
+            stringResource(
+                UiStrings.agp_range,
+                profileUtil.fromMgdlToStringInUnits(maxOf(lowMgdl, TIGHT_LOW_MGDL)),
+                profileUtil.fromMgdlToStringInUnits(minOf(highMgdl, TIGHT_HIGH_MGDL))
+            ),
+            breakdown.tight,
+            colors.bgTightRange
+        )
+        TirLegendItem(CoreUiStrings.high, stringResource(UiStrings.agp_range, high, veryHigh), breakdown.high, colors.bgHigh)
+        TirLegendItem(CoreUiStrings.veryHigh, stringResource(UiStrings.agp_above, veryHigh), breakdown.veryHigh, colors.bgVeryHigh)
     }
 }
 
 @Composable
 private fun RowScope.TirLegendItem(
-    label: String,
+    label: TextRef,
+    range: String,
     value: Double,
     color: Color
 ) {
@@ -156,10 +171,12 @@ private fun RowScope.TirLegendItem(
         modifier = Modifier.weight(1f),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // 2 lines: on a phone the range does not fit next to the label and wraps below it
         Text(
-            text = label,
+            text = stringResource(InterfacesStrings.value_with_detail, stringResource(label), range),
             style = MaterialTheme.typography.labelSmall,
-            maxLines = 1
+            textAlign = TextAlign.Center,
+            maxLines = 2
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
