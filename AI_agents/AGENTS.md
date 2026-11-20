@@ -66,6 +66,15 @@ When using code written by others:
 * Clearly identify externally sourced code where appropriate.
  
 ### Development Workflow
+
+When the app's Gradle build guard blocks an intentional build on an uncommitted
+feature branch, agents may pass `-PallowUncommitted` to run the build or test.
+This does not change source files or bypass safety code.
+
+Examples:
+
+- Windows: `./gradlew.bat :ui:androidHostTest -PallowUncommitted --no-daemon`
+- macOS: `./gradlew :ui:androidHostTest -PallowUncommitted --no-daemon`
  
 Before implementing a change:
  
@@ -92,11 +101,13 @@ Do not expand the scope unless necessary for correctness or safety.
 
 The user does all building, testing, merging, and pushing.
 
-All new branches should be made from master, such that all feature branches only contain the unique features/changes and are up to date with upstream. For easy revertability. 
+All new branches should be made from main(which should be up to date with upstream master), such that all feature branches only contain the unique features/changes and are up to date with upstream and main. For easy revertability. Before updating feature branch, pull from main!
 
 - Feature branches: Every functional feature gets its own branch: feature/<short-name> (e.g. feature/smb-max-minutes-automation). Never work directly on master. If no branch name has been established, ask the user before creating or switching branches. Never invent a branch name.
 
 - UI and non-functional branches: Changes that do not affect loop behaviour or algorithm functionality must be kept separate from functional feature branches. These branches can use a different naming convention, such as ui/<short-name> (e.g. ui/automation-settings-layout). The ui/ prefix is an example, not a strict requirement; other suitable naming conventions are allowed.
+
+- Keep note of the big overview of general changes in /AI_agents/changelog.md
 
 - Allowed without asking: `git status`, `diff`, `log`, `fetch`; creating/switching to a `feature/*` branch; focused commits on the current `feature/*` branch (`WIP:` prefix for unfinished work).
 - **Never do** (the user does these): `git push`; merging into `master` (or `master` into a feature branch without asking); `rebase`, `reset --hard`, `push --force`, `clean -fd`, discarding uncommitted changes; merging/rebasing/resetting onto upstream; deleting branches. If a task seems to require one, stop and ask.
@@ -121,3 +132,30 @@ Skills live in `AI_agents/skills/<name>/SKILL.md`. Claude Code and Antigravity d
 ## Reference Material
 
 - `AI_agents/AndroidAPS_Feature_Backlog.md`: planned custom features (SMB max-minutes actions, BG notification icon, Garmin, AutoISF, FPU bolus). Read it when asked about the backlog or porting an upstream PR; re-verify against current upstream before starting an item.
+
+
+### AndroidAPS Build Commands
+
+Three GitHub Actions build options are available through the VS Code terminal (`gh`):
+
+1. **Official release build**
+   ```powershell
+   gh workflow run "AAPS CI" --ref master -f tagName=4.0.0 -f buildVariant=fullRelease
+   ```
+   Builds an official upstream version selected by tag.
+
+2. **Branch build**
+   ```powershell
+   gh workflow run "Branch CI" --ref dev -f buildVariant=fullRelease
+   ```
+   Builds the selected branch of the personal fork (e.g. `dev` or `master`).
+
+3. **Cherry-pick build**
+   ```powershell
+   gh workflow run "Cherry Pick CI" --ref dev -f cherry_pick="HASH1 HASH2" -f buildVariant=fullRelease
+   ```
+   Builds the selected branch with specified upstream commits applied temporarily.
+
+**Permission requirement:** The AI agent must explicitly ask for user permission before triggering any build workflow. Never execute a build without confirmation.
+
+The user can change `--ref`, version tags, commit hashes, and build variants as needed.
