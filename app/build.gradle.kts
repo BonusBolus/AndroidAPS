@@ -298,9 +298,10 @@ println("isMaster: ${isMaster()}")
 println("gitAvailable: ${gitAvailable()}")
 println("allCommitted: ${allCommitted()}")
 println("-------------------")
+val allowUncommitted = providers.gradleProperty("allowUncommitted").isPresent
 if (!gitAvailable()) {
     throw GradleException("GIT system is not available. On Windows try to run Android Studio as an Administrator. Check if GIT is installed and Studio have permissions to use it")
 }
-if (isMaster() && !allCommitted()) {
+if (isMaster() && !allCommitted() && !allowUncommitted) {
     throw GradleException("There are uncommitted changes. Clone sources again as described in wiki and do not allow gradle update")
 }
