@@ -6,12 +6,15 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import app.aaps.core.data.model.TT
+import app.aaps.core.interfaces.overview.IsfStep
 import app.aaps.core.interfaces.resources.TextRefIdRegistry
 import app.aaps.ui.UiStringIds
 import app.aaps.ui.compose.main.TempTargetChipState
@@ -48,6 +51,45 @@ class TempTargetChipTest {
         }
 
         compose.onNodeWithText("5.5 - 5.5 (30 min)").assertIsDisplayed()
+    }
+
+    @Test
+    fun adjustedTargetShowsProfileAndAlgorithmTargetWhenTheyDiffer() {
+        compose.setContent {
+            MaterialTheme {
+                TempTargetChip(
+                    targetText = "6.1",
+                    profileTargetText = "5.5",
+                    tempTargetStep = IsfStep.UP,
+                    state = TempTargetChipState.Adjusted,
+                    progress = 0f,
+                    reason = null,
+                    onClick = {}
+                )
+            }
+        }
+
+        compose.onNodeWithText("5.5").assertIsDisplayed()
+        compose.onNodeWithText("6.1").assertIsDisplayed()
+    }
+
+    @Test
+    fun adjustedTargetShowsOneValueWhenItIsTheSame() {
+        compose.setContent {
+            MaterialTheme {
+                TempTargetChip(
+                    targetText = "5.5",
+                    profileTargetText = "5.5",
+                    state = TempTargetChipState.Adjusted,
+                    progress = 0f,
+                    reason = null,
+                    onClick = {}
+                )
+            }
+        }
+
+        // One number, not "5.5 -> 5.5": the step is only shown when the algorithm really moved the target.
+        compose.onAllNodesWithText("5.5").assertCountEquals(1)
     }
 
     @Test

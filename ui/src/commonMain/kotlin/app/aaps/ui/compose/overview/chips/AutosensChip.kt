@@ -80,9 +80,11 @@ internal fun AutosensChip(
                 else Modifier
             )
     ) {
+        // No padding before the icon: its 24 dp box already keeps an empty margin around the glyph, and the
+        // row beside the BG circle is narrow.
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = AapsSpacing.medium, vertical = AapsSpacing.small)
+            modifier = Modifier.padding(end = AapsSpacing.medium, top = AapsSpacing.small, bottom = AapsSpacing.small)
         ) {
             Icon(
                 imageVector = icon,
@@ -90,9 +92,11 @@ internal fun AutosensChip(
                 tint = color,
                 modifier = Modifier.size(AapsSpacing.chipIconSize)
             )
+            // The last value in the chip is bold: the algorithm's value when it is shown, else the autosens.
             Text(
                 text = autosensText,
                 style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (algorithmAutosens == null) FontWeight.Bold else null,
                 color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

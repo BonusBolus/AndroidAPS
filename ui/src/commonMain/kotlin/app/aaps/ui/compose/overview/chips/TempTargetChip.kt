@@ -117,7 +117,9 @@ fun TempTargetChip(
                     modifier = Modifier.size(AapsSpacing.chipIconSize)
                 )
                 // One line, like the profile chip: a second line did not fit the chip's height.
-                if (state == TempTargetChipState.Adjusted && profileTargetText.isNotEmpty()) {
+                // Profile target -> algorithm target only when the two read differently. The same rule as the
+                // ISF and autosens chips: one value when they are equal, and the last value shown is bold.
+                if (state == TempTargetChipState.Adjusted && profileTargetText.isNotEmpty() && profileTargetText != targetText) {
                     Text(
                         text = profileTargetText,
                         style = MaterialTheme.typography.bodyMedium,
@@ -146,6 +148,7 @@ fun TempTargetChip(
                     Text(
                         text = profileTargetText.ifEmpty { targetText },
                         style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
                         color = textColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
