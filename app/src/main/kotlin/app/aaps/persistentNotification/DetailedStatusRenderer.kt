@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.toArgb
 import app.aaps.R as AppR
 import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GlucoseUnit
+import app.aaps.core.data.model.SceneLifecycle
 import app.aaps.core.data.model.TrendArrow
 import app.aaps.core.data.time.T
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
@@ -32,6 +33,7 @@ import app.aaps.core.interfaces.overview.graph.TempTargetState
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.scenes.ActiveSceneSync
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.interfaces.utils.TrendCalculator
@@ -53,15 +55,18 @@ import app.aaps.ui.widget.glance.BgGraphBitmapRenderer
 import app.aaps.ui.widget.glance.BgGraphColors
 import app.aaps.ui.widget.glance.BgGraphInput
 import dev.zacsweers.metro.Inject
+import app.aaps.core.interfaces.R as InterfacesR
 import app.aaps.core.ui.R as CoreUiR
 
 /**
  * Everything the ongoing status notification shows besides the plain lines: glucose, trend, delta, age,
- * SMB state, IOB, COB, profile, sensitivity, target and the glucose graph - as a coloured text card (for the
- * live chip, where Android allows no custom views) or as a custom [RemoteViews] layout with the graph.
+ * profile, scene, SMB state, IOB, COB, sensitivity, target and the glucose graph - as a coloured text card (for
+ * the live chip, where Android allows no custom views) or as a custom [RemoteViews] layout with the graph.
  *
- * The values carry no labels. Their colours say what they are, the same colours as in the overview. The rules
- * for which values are shown and which one is bold are the overview chips' rules.
+ * Two levels of detail. Detailed: the values carry no labels, their colours say what they are, and beside the
+ * current values it shows the profile, algorithm and Wizard values, with the overview chips' rules for which
+ * value is shown and which one is bold. Simple: only the current values, with a short label, and only the
+ * algorithm's target in bold.
  */
 @Inject
 class DetailedStatusRenderer(
@@ -74,6 +79,7 @@ class DetailedStatusRenderer(
     private val profileFunction: ProfileFunction,
     private val profileUtil: ProfileUtil,
     private val sensitivityOverview: SensitivityOverview,
+    private val activeSceneSync: ActiveSceneSync,
     private val preferences: Preferences,
     private val decimalFormatter: DecimalFormatter,
     private val dateUtil: DateUtil,
@@ -87,12 +93,14 @@ class DetailedStatusRenderer(
         val deltaText: String?,
         val readingTimestamp: Long,
         val isStale: Boolean,
-        /** IOB • COB • SMB: the first line of the chip card and the right part of the graph layout's top row */
+        /** Profile • scene, for the chip title */
+        val profileLine: String,
+        /** Profile | scene, for the header of the graph layout */
+        val header: String,
+        /** IOB • COB | SMB: the first line of the chip card and the right part of the graph layout's top row */
         val cardValues: CharSequence,
-        /** Chip card, second line: profile • autosens • ISF */
-        val cardSensitivity: CharSequence,
-        /** Line under the graph: ISF • autosens • target */
-        val graphValues: CharSequence,
+        /** autosens | ISF | target: the second line of the chip card and the line under the graph */
+        val sensitivityLine: CharSequence,
         val graph: Bitmap?
     )
 
@@ -114,8 +122,9 @@ class DetailedStatusRenderer(
     /**
      * @return null when there is no valid profile or no reading: the caller then keeps the plain notification
      * @param withGraph the graph bitmap is only needed for the custom layout
+     * @param detailed the detailed or the simple sensitivity line
      */
-    suspend fun build(withGraph: Boolean): Status? {
+    suspend fun build(withGraph: Boolean, detailed: Boolean): Status? {
         if (!profileFunction.isProfileValid("Notification")) return null
         val lastBg = lastBgData.lastBg() ?: return null
         val now = dateUtil.now()
@@ -138,6 +147,7 @@ class DetailedStatusRenderer(
         val cob = iobCobCalculator.getCobInfo("DetailedStatusRenderer").generateCOBString(decimalFormatter)
         // The customised name already carries the percentage and time shift when they are not the default.
         val profile = profileFunction.getProfileName()
+        val scene = scene(now)
 
         val smbMinutes = preferences.get(IntKey.ApsMaxMinutesOfBasalToLimitSmb)
         // Like the overview chip: nothing to show without a limit. Blue when on, red and struck through when off.
@@ -147,22 +157,20 @@ class DetailedStatusRenderer(
             else                                  -> SpannableStringBuilder().add(rh.gs(AppR.string.notification_smb, smbMinutes), color = palette.low, strike = true)
         }
         val sensitivity = sensitivityOverview.build()
+        val target = cacheProvider().tempTargetFlow.value
 
         val cardValues = SpannableStringBuilder()
             .add(iob, color = palette.element.insulin.toArgb())
             .dot()
             .add(cob, color = palette.element.cob.toArgb())
-        smb?.let { cardValues.dot().append(it) }
+        smb?.let { cardValues.bar().append(it) }
 
-        val cardSensitivity = SpannableStringBuilder().add(profile, color = palette.element.profileSwitch.toArgb())
-        autosens(sensitivity, palette)?.let { cardSensitivity.dot().append(it) }
-        isf(sensitivity, palette)?.let { cardSensitivity.dot().append(it) }
-
-        // IOB, COB and SMB are on the top row of the graph layout, so this line holds the rest.
-        val graphValues = SpannableStringBuilder()
-        isf(sensitivity, palette)?.let { graphValues.append(it) }
-        autosens(sensitivity, palette)?.let { graphValues.dotIfNotEmpty().append(it) }
-        cacheProvider().tempTargetFlow.value?.let { target(it, palette) }?.let { graphValues.dotIfNotEmpty().append(it) }
+        // Always autosens first, then ISF, then the target.
+        val parts =
+            if (detailed) listOf(autosens(sensitivity, palette), isf(sensitivity, palette), target?.let { target(it, palette) })
+            else listOf(simpleAutosens(sensitivity, palette), simpleIsf(sensitivity, palette), target?.let { simpleTarget(it, palette) })
+        val sensitivityLine = SpannableStringBuilder()
+        parts.filterNotNull().forEach { sensitivityLine.barIfNotEmpty().append(it) }
 
         return Status(
             bgText = profileUtil.fromMgdlToStringInUnits(lastBg.recalculated),
@@ -172,26 +180,27 @@ class DetailedStatusRenderer(
             readingTimestamp = lastBg.timestamp,
             // The same limit the overview uses to strike the glucose through.
             isStale = !lastBgData.isActualBg(),
+            profileLine = scene?.let { "$profile$DOT$it" } ?: profile,
+            header = scene?.let { "$profile$BAR$it" } ?: profile,
             cardValues = cardValues,
-            cardSensitivity = cardSensitivity,
-            graphValues = graphValues,
+            sensitivityLine = sensitivityLine,
             graph = if (withGraph) graph(now, palette) else null
         )
     }
 
     /**
      * The notification title for the live chip: the coloured glucose, trend and delta, struck through together
-     * when the reading is stale, then [suffix] (the basal rate) as it is.
+     * when the reading is stale, then the profile and the scene when [withProfile].
      */
-    fun title(status: Status, suffix: String?): CharSequence {
+    fun title(status: Status, withProfile: Boolean): CharSequence {
         val title = headline(status, deltaScale = 1.0f)
-        suffix?.let { title.append(it) }
+        if (withProfile) title.append(BAR).append(status.profileLine)
         return title
     }
 
     /** The two lines of the live chip card under the title. */
     fun card(status: Status): CharSequence =
-        SpannableStringBuilder(status.cardValues).append("\n").append(status.cardSensitivity)
+        SpannableStringBuilder(status.cardValues).append("\n").append(status.sensitivityLine)
 
     /** The custom layout, used as collapsed and expanded content alike. */
     fun remoteViews(status: Status): RemoteViews =
@@ -207,7 +216,7 @@ class DetailedStatusRenderer(
             )
             setTextViewText(AppR.id.status_top_values, status.cardValues)
             status.graph?.let { setImageViewBitmap(AppR.id.status_graph, it) }
-            if (status.graphValues.isNotEmpty()) setTextViewText(AppR.id.status_values, status.graphValues)
+            if (status.sensitivityLine.isNotEmpty()) setTextViewText(AppR.id.status_values, status.sensitivityLine)
             else setViewVisibility(AppR.id.status_values, View.GONE)
         }
 
@@ -221,15 +230,25 @@ class DetailedStatusRenderer(
         return line
     }
 
+    /** The active scene with its remaining time, null when no scene is active. A scene without an end has no time. */
+    private fun scene(now: Long): String? {
+        val state = activeSceneSync.activeSceneState.value?.takeIf { it.lifecycle == SceneLifecycle.ACTIVE } ?: return null
+        val end = state.endsAt ?: return state.scene.name
+        return rh.gs(InterfacesR.string.value_with_detail, state.scene.name, dateUtil.untilString(end, rh, withParentheses = false))
+    }
+
+    /** The current autosens. Empty at exactly 100 % in the overview data: then the ratio itself is the number, as on the chip. */
+    private fun currentAutosens(data: SensitivityOverviewData): String =
+        data.asText.ifEmpty { rh.gs(CoreUiR.string.autosens_chip_value, data.ratio * 100) }
+
     /**
      * Autosens, then the algorithm's autosens after the wizard mark when it reads differently. The same rules as the
-     * overview autosens chip: always a number, also at 100 %, and the last value shown is bold.
+     * overview autosens chip: the last value shown is bold.
      */
     private fun autosens(data: SensitivityOverviewData, palette: Palette): CharSequence? {
         if (!data.hasData) return null
         val color = palette.element.autosens.toArgb()
-        // Empty at exactly 100 %: then the ratio itself is the number, as on the chip.
-        val autosens = data.asText.ifEmpty { rh.gs(CoreUiR.string.autosens_chip_value, data.ratio * 100) }
+        val autosens = currentAutosens(data)
         val algorithm = data.algorithmAutosens.takeIf { it.isNotEmpty() && it != autosens }
         val line = SpannableStringBuilder().add(autosens, color = color, bold = algorithm == null)
         algorithm?.let { line.add(" $WIZARD ").add(it, color = color, bold = true) }
@@ -264,15 +283,47 @@ class DetailedStatusRenderer(
         if (data.targetRangeText.isBlank()) return null
         return when (data.state) {
             TempTargetState.NONE     -> SpannableStringBuilder().add(data.targetRangeText, bold = true)
-            TempTargetState.ACTIVE   -> SpannableStringBuilder().add(data.targetRangeText, color = data.reason.ttReasonColor(palette.general).toArgb(), bold = true)
+            TempTargetState.ACTIVE   -> SpannableStringBuilder().add(data.targetRangeText, color = targetColor(data, palette), bold = true)
             TempTargetState.ADJUSTED -> {
-                val color = palette.general.adjusted.toArgb()
+                val color = targetColor(data, palette)
                 val line = SpannableStringBuilder()
                 if (data.profileTargetRangeText.isNotBlank() && data.profileTargetRangeText != data.targetRangeText)
                     line.add("${data.profileTargetRangeText} ${arrow(data.targetStep)} ", color = color)
                 line.add(data.targetRangeText, color = color, bold = true)
             }
         }
+    }
+
+    /** Simple mode: the current autosens with its label, not bold, because it is not what the algorithm used. */
+    private fun simpleAutosens(data: SensitivityOverviewData, palette: Palette): CharSequence? {
+        if (!data.hasData) return null
+        return SpannableStringBuilder().add(rh.gs(AppR.string.notification_autosens_simple, currentAutosens(data)), color = palette.element.autosens.toArgb())
+    }
+
+    /** Simple mode: the ISF in use now with its label, not bold. Nothing when the ISF is the profile ISF unchanged. */
+    private fun simpleIsf(data: SensitivityOverviewData, palette: Palette): CharSequence? {
+        if (!data.hasData || data.isfTo.isBlank()) return null
+        return SpannableStringBuilder().add(rh.gs(AppR.string.notification_isf_simple, data.isfTo), color = palette.element.sensitivity.toArgb())
+    }
+
+    /** Simple mode: the target the algorithm uses, the only bold value, in the overview target chip's colour. */
+    private fun simpleTarget(data: TempTargetDisplayData, palette: Palette): CharSequence? {
+        if (data.targetRangeText.isBlank()) return null
+        val line = SpannableStringBuilder()
+        val color = if (data.state == TempTargetState.NONE) null else targetColor(data, palette)
+        val text = rh.gs(AppR.string.notification_target_simple, data.targetRangeText)
+        // Only the value in bold, not the target mark before it.
+        val valueStart = text.indexOf(data.targetRangeText)
+        line.add(text, color = color)
+        if (valueStart >= 0) line.setSpan(StyleSpan(Typeface.BOLD), valueStart, valueStart + data.targetRangeText.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        return line
+    }
+
+    /** No colour without an adjustment, the "adjusted" colour when the algorithm moves it, else the colour of the temp target's reason. */
+    private fun targetColor(data: TempTargetDisplayData, palette: Palette): Int? = when (data.state) {
+        TempTargetState.NONE     -> null
+        TempTargetState.ADJUSTED -> palette.general.adjusted.toArgb()
+        TempTargetState.ACTIVE   -> data.reason.ttReasonColor(palette.general).toArgb()
     }
 
     private fun arrow(step: IsfStep): String = when (step) {
@@ -341,9 +392,11 @@ class DetailedStatusRenderer(
         return Palette(night)
     }
 
-    private fun SpannableStringBuilder.dot(): SpannableStringBuilder = append("  •  ")
+    private fun SpannableStringBuilder.dot(): SpannableStringBuilder = append(DOT)
 
-    private fun SpannableStringBuilder.dotIfNotEmpty(): SpannableStringBuilder = if (isEmpty()) this else dot()
+    private fun SpannableStringBuilder.bar(): SpannableStringBuilder = append(BAR)
+
+    private fun SpannableStringBuilder.barIfNotEmpty(): SpannableStringBuilder = if (isEmpty()) this else bar()
 
     private fun SpannableStringBuilder.add(
         text: CharSequence,
@@ -375,6 +428,12 @@ class DetailedStatusRenderer(
         /** Room above the high line and under the low line, in mg/dL and mmol/L, for the SMB marks and the dots on the lines. */
         private const val Y_MARGIN_MGDL = 10.0
         private const val Y_MARGIN_MMOL = 0.6
+
+        /** Separates values of one group, like IOB and COB. */
+        private const val DOT = "  •  "
+
+        /** Separates groups of values. */
+        private const val BAR = "  |  "
 
         /** The Wizard mark (abacus) before the Wizard ISF and the algorithm's autosens. Notification text cannot hold icons. */
         private const val WIZARD = "🧮"

@@ -50,6 +50,7 @@ import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.interfaces.utils.TrendCalculator
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
+import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.keys.interfaces.TextRef
@@ -255,6 +256,8 @@ class PersistentNotificationPlugin(
         // A change of the mode shows at once, not with the next reading
         preferences.observe(StringKey.NotificationStatusMode).drop(1)
             .collectResilient(newScope, aapsLogger, LTag.CORE) { updateNotification() }
+        preferences.observe(BooleanKey.NotificationStatusDetailed).drop(1)
+            .collectResilient(newScope, aapsLogger, LTag.CORE) { updateNotification() }
     }
 
     /**
@@ -333,7 +336,6 @@ class PersistentNotificationPlugin(
         var line2: String? = null
         var line3: String? = null
         var bgStatusChipText: String? = null
-        var basalText: String? = null
         var bgMetric: Metric? = null
         var metricValue: Metric.MetricValue? = null
         var unreadConversationBuilder: NotificationCompat.CarExtender.UnreadConversation.Builder? = null
@@ -379,12 +381,11 @@ class PersistentNotificationPlugin(
                 line1WithDelta = rh.gs(CoreUiR.string.missed_bg_readings)
             }
             val activeTemp = processedTbrEbData.getTempBasalIncludingConvertedExtended(System.currentTimeMillis())
-            basalText = if (activeTemp != null) {
+            line1 += if (activeTemp != null) {
                 " • " + activeTemp.toStringShort(rh) + " "
             } else {
                 " • " + rh.gs(CoreUiR.string.pump_base_basal_rate, ch.fromPump(pump.baseBasalRate)) + " "
             }
-            line1 += basalText
             val profileName = profileFunction.getProfileName()
             //IOB
             val bolusIob = iobCobCalculator.calculateIobFromBolus().round()
@@ -473,7 +474,10 @@ class PersistentNotificationPlugin(
         }
         // Beside the small chip the graph goes into a second notification, so it is needed there too.
         val status = if (look == Look.STANDARD) null
-        else detailedStatus.build(withGraph = look == Look.GRAPH || look == Look.GRAPH_LOCK_SCREEN || look == Look.CHIP_MINIMAL)
+        else detailedStatus.build(
+            withGraph = look == Look.GRAPH || look == Look.GRAPH_LOCK_SCREEN || look == Look.CHIP_MINIMAL,
+            detailed = preferences.get(BooleanKey.NotificationStatusDetailed)
+        )
         val builder = NotificationCompat.Builder(context, notificationHolder.channelID)
         builder.setOngoing(true)
         when (look) {
@@ -503,7 +507,7 @@ class PersistentNotificationPlugin(
         builder.setContentTitle(line1)
         if (line2 != null) builder.setContentText(line2)
         if (line3 != null) builder.setSubText(line3)
-        applyStatusContent(builder, status, look, basalText, usesMetricStyle = Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN && bgMetric != null)
+        applyStatusContent(builder, status, look, usesMetricStyle = Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN && bgMetric != null)
         /// Android Auto
         if (includeAuto && unreadConversationBuilder != null) {
             builder.extend(
@@ -524,7 +528,6 @@ class PersistentNotificationPlugin(
         builder: NotificationCompat.Builder,
         status: DetailedStatusRenderer.Status?,
         look: Look,
-        basalText: String?,
         usesMetricStyle: Boolean
     ) {
         staleJob?.cancel()
@@ -547,7 +550,8 @@ class PersistentNotificationPlugin(
             Look.CHIP_CARD                     -> {
                 // The chip shows the AAPS icon with the glucose beside it.
                 builder.setSmallIcon(iconsProvider.getNotificationIcon())
-                builder.setContentTitle(detailedStatus.title(status, basalText))
+                // Glucose | profile • scene. The temp basal is left out of the chip.
+                builder.setContentTitle(detailedStatus.title(status, withProfile = true))
                 builder.setContentText(status.cardValues)
                 // The card shows the profile, so the sub text would only repeat it.
                 builder.setSubText(null)
@@ -558,7 +562,7 @@ class PersistentNotificationPlugin(
             Look.CHIP_MINIMAL                  -> {
                 // Android needs a title to show the chip, so the card keeps one line: the glucose.
                 builder.setSmallIcon(iconsProvider.getNotificationIcon())
-                builder.setContentTitle(detailedStatus.title(status, null))
+                builder.setContentTitle(detailedStatus.title(status, withProfile = false))
                 builder.setContentText(null)
                 builder.setSubText(null)
                 postGraphNotification(status)
@@ -570,6 +574,8 @@ class PersistentNotificationPlugin(
                 builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 builder.setCustomContentView(view)
                 builder.setCustomBigContentView(view)
+                // The header row: AAPS • profile | scene
+                builder.setSubText(status.header)
                 if (look == Look.GRAPH_LOCK_SCREEN) builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             }
 
@@ -592,6 +598,7 @@ class PersistentNotificationPlugin(
             // The chip already shows the glucose, so the status bar does not get a second glucose icon.
             .setSmallIcon(iconsProvider.getNotificationIcon())
             .setContentTitle(status.bgText)
+            .setSubText(status.header)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setCustomContentView(view)
             .setCustomBigContentView(view)

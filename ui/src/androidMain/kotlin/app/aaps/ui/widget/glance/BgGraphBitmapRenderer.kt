@@ -29,11 +29,11 @@ data class BgGraphInput(
     /** The part of the target line that belongs to an active temp target, drawn in its own colour. */
     val tempTargetFromMs: Long? = null,
     val tempTargetToMs: Long? = null,
-    /** SMBs, drawn as small triangles on the low line. Not drawn when there is no low line. */
+    /** SMBs, drawn as small upward triangles on the low line. Not drawn when there is no low line. */
     val smbTimesMs: List<Long> = emptyList(),
-    /** Normal boluses, drawn as a triangle above the BG dot at their time. */
+    /** Normal boluses, drawn as a downward triangle above the BG dot at their time. */
     val bolusTimesMs: List<Long> = emptyList(),
-    /** Carbs, drawn as a dot below the BG dot at their time. */
+    /** Carbs, drawn as an upward triangle below the BG dot at their time. */
     val carbsTimesMs: List<Long> = emptyList()
 )
 
@@ -146,12 +146,13 @@ class BgGraphBitmapRenderer {
         val window = input.fromTimeMs..input.toTimeMs
         val dots = input.bucketed.filter { it.type == BgType.BUCKETED && it.timestamp in window }
         fun bgAt(time: Long): Double? = dots.minByOrNull { abs(it.timestamp - time) }?.value
-        // A triangle pointing down, its tip at (x, tipY).
-        fun triangle(x: Float, tipY: Float) {
+        // A triangle with its tip at (x, tipY), pointing up or down.
+        fun triangle(x: Float, tipY: Float, up: Boolean) {
+            val baseY = if (up) tipY + size else tipY - size
             val path = Path().apply {
                 moveTo(x, tipY)
-                lineTo(x - size / 2, tipY - size)
-                lineTo(x + size / 2, tipY - size)
+                lineTo(x - size / 2, baseY)
+                lineTo(x + size / 2, baseY)
                 close()
             }
             canvas.drawPath(path, paint)
@@ -160,16 +161,16 @@ class BgGraphBitmapRenderer {
         paint.color = colors.bolus
         input.lowUserUnits?.takeIf { it >= input.yMinUserUnits && it <= input.yMaxUserUnits }?.let { low ->
             val y = yOf(low)
-            input.smbTimesMs.filter { it in window }.forEach { triangle(xOf(it), y + size / 2) }
+            input.smbTimesMs.filter { it in window }.forEach { triangle(xOf(it), y - size / 2, up = true) }
         }
         input.bolusTimesMs.filter { it in window }.forEach { time ->
             val bg = bgAt(time) ?: return@forEach
-            triangle(xOf(time), yOf(bg) - dotRadius)
+            triangle(xOf(time), yOf(bg) - dotRadius, up = false)
         }
         paint.color = colors.carbs
         input.carbsTimesMs.filter { it in window }.forEach { time ->
             val bg = bgAt(time) ?: return@forEach
-            canvas.drawCircle(xOf(time), yOf(bg) + dotRadius + size / 2, size / 2, paint)
+            triangle(xOf(time), yOf(bg) + dotRadius, up = true)
         }
     }
 

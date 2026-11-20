@@ -24,7 +24,10 @@
     <string name="settings_unreadable_notification">AAPS is not running. Open AAPS to see what to do.</string>
 
     <!-- Ongoing status notification -->
-    <string name="notification_smb" comment="%1$d=max minutes of basal that limit an SMB. Example: SMB 20m">SMB %1$dm</string>
+    <string name="notification_smb" comment="The drop stands for SMB, to save room. %1$d=max minutes of basal that limit an SMB. Example: 💧20m">💧%1$dm</string>
+    <string name="notification_autosens_simple" comment="Current autosens in the short status notification. %1$s=autosens in percent without the percent sign. Example: AS 97%">AS %1$s%%</string>
+    <string name="notification_isf_simple" comment="ISF in use in the short status notification. %1$s=ISF in the user's glucose unit per unit of insulin. Example: ISF 8.1">ISF %1$s</string>
+    <string name="notification_target_simple" comment="Target glucose the algorithm uses, in the short status notification. The target emoji stands for the word target. %1$s=target in the user's glucose unit. Example: 🎯 6.1">🎯 %1$s</string>
     <string name="notification_age_format" comment="Time since the last glucose reading, after the glucose value. %s=the running time, for example 3:47. Only %s is allowed here, no positional placeholder. Example: • 3:47">• %s</string>
     <string name="notification_divider" translatable="false">|</string>
 
