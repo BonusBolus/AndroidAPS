@@ -25,6 +25,7 @@ import app.aaps.core.interfaces.overview.IsfStep
 import app.aaps.core.interfaces.overview.LastBgData
 import app.aaps.core.interfaces.overview.SensitivityOverview
 import app.aaps.core.interfaces.overview.SensitivityOverviewData
+import app.aaps.core.interfaces.overview.graph.BolusType
 import app.aaps.core.interfaces.overview.graph.OverviewDataCache
 import app.aaps.core.interfaces.overview.graph.TempTargetDisplayData
 import app.aaps.core.interfaces.overview.graph.TempTargetState
@@ -52,13 +53,15 @@ import app.aaps.ui.widget.glance.BgGraphBitmapRenderer
 import app.aaps.ui.widget.glance.BgGraphColors
 import app.aaps.ui.widget.glance.BgGraphInput
 import dev.zacsweers.metro.Inject
+import app.aaps.core.ui.R as CoreUiR
 
 /**
  * Everything the ongoing status notification shows besides the plain lines: glucose, trend, delta, age,
  * SMB state, IOB, COB, profile, sensitivity, target and the glucose graph - as a coloured text card (for the
  * live chip, where Android allows no custom views) or as a custom [RemoteViews] layout with the graph.
  *
- * The values carry no labels. Their colours say what they are, the same colours as in the overview.
+ * The values carry no labels. Their colours say what they are, the same colours as in the overview. The rules
+ * for which values are shown and which one is bold are the overview chips' rules.
  */
 @Inject
 class DetailedStatusRenderer(
@@ -84,13 +87,11 @@ class DetailedStatusRenderer(
         val deltaText: String?,
         val readingTimestamp: Long,
         val isStale: Boolean,
-        /** SMB state with its max minutes, null when SMB has no limit */
-        val smb: CharSequence?,
-        /** Chip card, first line: IOB • COB • SMB */
+        /** IOB • COB • SMB: the first line of the chip card and the right part of the graph layout's top row */
         val cardValues: CharSequence,
         /** Chip card, second line: profile • autosens • ISF */
         val cardSensitivity: CharSequence,
-        /** Line under the graph: IOB • COB • autosens • ISF • target */
+        /** Line under the graph: ISF • autosens • target */
         val graphValues: CharSequence,
         val graph: Bitmap?
     )
@@ -157,13 +158,11 @@ class DetailedStatusRenderer(
         autosens(sensitivity, palette)?.let { cardSensitivity.dot().append(it) }
         isf(sensitivity, palette)?.let { cardSensitivity.dot().append(it) }
 
+        // IOB, COB and SMB are on the top row of the graph layout, so this line holds the rest.
         val graphValues = SpannableStringBuilder()
-            .add(iob, color = palette.element.insulin.toArgb())
-            .dot()
-            .add(cob, color = palette.element.cob.toArgb())
-        autosens(sensitivity, palette)?.let { graphValues.dot().append(it) }
-        isf(sensitivity, palette)?.let { graphValues.dot().append(it) }
-        cacheProvider().tempTargetFlow.value?.let { target(it, palette) }?.let { graphValues.dot().append(it) }
+        isf(sensitivity, palette)?.let { graphValues.append(it) }
+        autosens(sensitivity, palette)?.let { graphValues.dotIfNotEmpty().append(it) }
+        cacheProvider().tempTargetFlow.value?.let { target(it, palette) }?.let { graphValues.dotIfNotEmpty().append(it) }
 
         return Status(
             bgText = profileUtil.fromMgdlToStringInUnits(lastBg.recalculated),
@@ -173,7 +172,6 @@ class DetailedStatusRenderer(
             readingTimestamp = lastBg.timestamp,
             // The same limit the overview uses to strike the glucose through.
             isStale = !lastBgData.isActualBg(),
-            smb = smb,
             cardValues = cardValues,
             cardSensitivity = cardSensitivity,
             graphValues = graphValues,
@@ -199,12 +197,18 @@ class DetailedStatusRenderer(
     fun remoteViews(status: Status): RemoteViews =
         RemoteViews(context.packageName, AppR.layout.notification_status_detailed).apply {
             setTextViewText(AppR.id.status_bg, headline(status, deltaScale = 0.85f))
-            // Ticks by itself, so the age is right without a notification update every minute.
-            setChronometer(AppR.id.status_age, SystemClock.elapsedRealtime() - (dateUtil.now() - status.readingTimestamp), null, true)
-            if (status.smb != null) setTextViewText(AppR.id.status_smb, status.smb)
-            else setViewVisibility(AppR.id.status_smb, View.GONE)
+            // Ticks by itself, so the age is right without a notification update every minute. The system UI
+            // redraws it only while the notification is on screen, AAPS is not woken up for it.
+            setChronometer(
+                AppR.id.status_age,
+                SystemClock.elapsedRealtime() - (dateUtil.now() - status.readingTimestamp),
+                rh.gs(AppR.string.notification_age_format),
+                true
+            )
+            setTextViewText(AppR.id.status_top_values, status.cardValues)
             status.graph?.let { setImageViewBitmap(AppR.id.status_graph, it) }
-            setTextViewText(AppR.id.status_values, status.graphValues)
+            if (status.graphValues.isNotEmpty()) setTextViewText(AppR.id.status_values, status.graphValues)
+            else setViewVisibility(AppR.id.status_values, View.GONE)
         }
 
     /** Glucose and trend in the range colour, then the delta. All struck through together when the reading is stale. */
@@ -217,33 +221,55 @@ class DetailedStatusRenderer(
         return line
     }
 
+    /**
+     * Autosens, then the algorithm's autosens after the wizard mark when it reads differently. The same rules as the
+     * overview autosens chip: always a number, also at 100 %, and the last value shown is bold.
+     */
     private fun autosens(data: SensitivityOverviewData, palette: Palette): CharSequence? {
-        if (!data.hasData || data.asText.isBlank()) return null
-        return SpannableStringBuilder().add(data.asText, color = palette.element.scene.toArgb())
-    }
-
-    /** ISF from → to, the ISF in use in bold. */
-    private fun isf(data: SensitivityOverviewData, palette: Palette): CharSequence? {
-        if (!data.hasData || (data.isfFrom.isBlank() && data.isfTo.isBlank())) return null
-        val color = palette.element.sensitivity.toArgb()
-        return SpannableStringBuilder()
-            .add("${data.isfFrom} ${arrow(data.isfStep)} ", color = color)
-            .add(data.isfTo, color = color, bold = true)
+        if (!data.hasData) return null
+        val color = palette.element.autosens.toArgb()
+        // Empty at exactly 100 %: then the ratio itself is the number, as on the chip.
+        val autosens = data.asText.ifEmpty { rh.gs(CoreUiR.string.autosens_chip_value, data.ratio * 100) }
+        val algorithm = data.algorithmAutosens.takeIf { it.isNotEmpty() && it != autosens }
+        val line = SpannableStringBuilder().add(autosens, color = color, bold = algorithm == null)
+        algorithm?.let { line.add(" $WIZARD ").add(it, color = color, bold = true) }
+        return line
     }
 
     /**
-     * The target as the overview target chip shows it: the profile target alone, profile → algorithm target when
-     * the algorithm adjusts it, or the temp target alone in the colour of its reason.
+     * ISF from → to, then the Wizard ISF after the wizard mark when it reads differently. The same rules as the
+     * overview ISF chip: the last value shown is bold.
+     */
+    private fun isf(data: SensitivityOverviewData, palette: Palette): CharSequence? {
+        if (!data.hasData) return null
+        val color = palette.element.sensitivity.toArgb()
+        val wizard = data.wizardIsf.takeIf { it.isNotEmpty() && it != data.isfTo }
+        val line = SpannableStringBuilder()
+        if (data.isfFrom.isNotBlank()) {
+            line.add("${data.isfFrom} ${arrow(data.isfStep)} ", color = color)
+            line.add(data.isfTo, color = color, bold = wizard == null)
+        }
+        wizard?.let {
+            if (line.isNotEmpty()) line.append(" ")
+            line.add("$WIZARD ").add(it, color = color, bold = true)
+        }
+        return line.takeIf { it.isNotEmpty() }
+    }
+
+    /**
+     * The target as the overview target chip shows it: one value in bold when nothing moves it, profile → algorithm
+     * target when the algorithm adjusts it to a different value, or the temp target in the colour of its reason.
      */
     private fun target(data: TempTargetDisplayData, palette: Palette): CharSequence? {
         if (data.targetRangeText.isBlank()) return null
         return when (data.state) {
-            TempTargetState.NONE     -> SpannableStringBuilder().add(data.targetRangeText)
-            TempTargetState.ACTIVE   -> SpannableStringBuilder().add(data.targetRangeText, color = data.reason.ttReasonColor(palette.general).toArgb())
+            TempTargetState.NONE     -> SpannableStringBuilder().add(data.targetRangeText, bold = true)
+            TempTargetState.ACTIVE   -> SpannableStringBuilder().add(data.targetRangeText, color = data.reason.ttReasonColor(palette.general).toArgb(), bold = true)
             TempTargetState.ADJUSTED -> {
                 val color = palette.general.adjusted.toArgb()
                 val line = SpannableStringBuilder()
-                if (data.profileTargetRangeText.isNotBlank()) line.add("${data.profileTargetRangeText} ${arrow(data.targetStep)} ", color = color)
+                if (data.profileTargetRangeText.isNotBlank() && data.profileTargetRangeText != data.targetRangeText)
+                    line.add("${data.profileTargetRangeText} ${arrow(data.targetStep)} ", color = color)
                 line.add(data.targetRangeText, color = color, bold = true)
             }
         }
@@ -257,27 +283,37 @@ class DetailedStatusRenderer(
 
     private fun graph(now: Long, palette: Palette): Bitmap {
         val cache = cacheProvider()
-        val units = profileFunction.getUnits()
-        val (yMinFloor, yMaxFloor) = when (units) {
-            GlucoseUnit.MGDL -> Y_MIN_MGDL to Y_MAX_MGDL
-            GlucoseUnit.MMOL -> Y_MIN_MMOL to Y_MAX_MMOL
+        val margin = when (profileFunction.getUnits()) {
+            GlucoseUnit.MGDL -> Y_MARGIN_MGDL
+            GlucoseUnit.MMOL -> Y_MARGIN_MMOL
         }
         val fromTime = now - HISTORY_WINDOW_MS
         val bucketed = cache.bucketedDataFlow.value
-        val dataMax = bucketed.asSequence().filter { it.timestamp in fromTime..now }.maxOfOrNull { it.value } ?: yMaxFloor
+        val shown = bucketed.filter { it.timestamp in fromTime..now }
+        // Both marks are in the user's units, as are the readings.
+        val low = preferences.get(UnitDoubleKey.OverviewLowMark)
+        val high = preferences.get(UnitDoubleKey.OverviewHighMark)
+        // From just under the low line to just over the high line, and further when a reading is outside them, so
+        // no reading is ever drawn off the graph and no room is spent under the low line.
+        val yMin = minOf(low, shown.minOfOrNull { it.value } ?: low) - margin
+        val yMax = maxOf(high, shown.maxOfOrNull { it.value } ?: high) + margin
         val tempTarget = cache.tempTargetFlow.value?.takeIf { it.state == TempTargetState.ACTIVE }
+        val treatments = cache.treatmentGraphFlow.value
         val input = BgGraphInput(
             bucketed = bucketed,
             fromTimeMs = fromTime,
             toTimeMs = now,
-            yMinUserUnits = yMinFloor,
-            yMaxUserUnits = maxOf(yMaxFloor, dataMax + dataMax * 0.05),
-            lowUserUnits = preferences.get(UnitDoubleKey.OverviewLowMark),
-            highUserUnits = preferences.get(UnitDoubleKey.OverviewHighMark),
+            yMinUserUnits = yMin,
+            yMaxUserUnits = yMax,
+            lowUserUnits = low,
+            highUserUnits = high,
             targets = cache.targetLineFlow.value.targets,
             tempTargetFromMs = tempTarget?.timestamp,
             // A temp target without an end has duration 0 or is very long: clip to the graph either way.
-            tempTargetToMs = tempTarget?.let { if (it.duration > 0) it.timestamp + it.duration else now }
+            tempTargetToMs = tempTarget?.let { if (it.duration > 0) it.timestamp + it.duration else now },
+            smbTimesMs = treatments.boluses.filter { it.isValid && it.bolusType == BolusType.SMB }.map { it.timestamp },
+            bolusTimesMs = treatments.boluses.filter { it.isValid && it.bolusType != BolusType.SMB }.map { it.timestamp },
+            carbsTimesMs = treatments.carbs.filter { it.isValid }.map { it.timestamp }
         )
         val colors = BgGraphColors(
             low = palette.low,
@@ -286,11 +322,18 @@ class DetailedStatusRenderer(
             lowLine = palette.lowLine,
             highLine = palette.highLine,
             target = palette.target,
-            tempTarget = palette.element.tempTarget.toArgb()
+            // The colour of the temp target's reason, as on the overview target chip.
+            tempTarget = tempTarget?.reason.ttReasonColor(palette.general).toArgb(),
+            bolus = palette.element.insulin.toArgb(),
+            carbs = palette.element.carbs.toArgb()
         )
         val density = context.resources.displayMetrics.density
         val widthPx = (context.resources.displayMetrics.widthPixels * GRAPH_WIDTH_FRACTION).toInt()
-        return BgGraphBitmapRenderer().render(widthPx, (GRAPH_HEIGHT_DP * density).toInt(), input, colors, dotRadiusPx = DOT_RADIUS_DP * density)
+        return BgGraphBitmapRenderer().render(
+            widthPx, (GRAPH_HEIGHT_DP * density).toInt(), input, colors,
+            dotRadiusPx = DOT_RADIUS_DP * density,
+            markerSizePx = MARKER_SIZE_DP * density
+        )
     }
 
     private fun palette(): Palette {
@@ -299,6 +342,8 @@ class DetailedStatusRenderer(
     }
 
     private fun SpannableStringBuilder.dot(): SpannableStringBuilder = append("  •  ")
+
+    private fun SpannableStringBuilder.dotIfNotEmpty(): SpannableStringBuilder = if (isEmpty()) this else dot()
 
     private fun SpannableStringBuilder.add(
         text: CharSequence,
@@ -325,10 +370,13 @@ class DetailedStatusRenderer(
         private const val GRAPH_HEIGHT_DP = 48
         private const val GRAPH_WIDTH_FRACTION = 0.9f
         private const val DOT_RADIUS_DP = 2.2f
+        private const val MARKER_SIZE_DP = 4.0f
 
-        private const val Y_MIN_MGDL = 40.0
-        private const val Y_MAX_MGDL = 220.0
-        private const val Y_MIN_MMOL = 2.2
-        private const val Y_MAX_MMOL = 12.2
+        /** Room above the high line and under the low line, in mg/dL and mmol/L, for the SMB marks and the dots on the lines. */
+        private const val Y_MARGIN_MGDL = 10.0
+        private const val Y_MARGIN_MMOL = 0.6
+
+        /** The Wizard mark (abacus) before the Wizard ISF and the algorithm's autosens. Notification text cannot hold icons. */
+        private const val WIZARD = "🧮"
     }
 }

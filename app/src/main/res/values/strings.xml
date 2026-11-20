@@ -25,5 +25,7 @@
 
     <!-- Ongoing status notification -->
     <string name="notification_smb" comment="%1$d=max minutes of basal that limit an SMB. Example: SMB 20m">SMB %1$dm</string>
+    <string name="notification_age_format" comment="Time since the last glucose reading, after the glucose value. %s=the running time, for example 3:47. Only %s is allowed here, no positional placeholder. Example: • 3:47">• %s</string>
+    <string name="notification_divider" translatable="false">|</string>
 
 </resources>

@@ -4,10 +4,12 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.Paint
+import android.graphics.Path
 import app.aaps.core.interfaces.overview.graph.BgDataPoint
 import app.aaps.core.interfaces.overview.graph.BgRange
 import app.aaps.core.interfaces.overview.graph.BgType
 import app.aaps.core.interfaces.overview.graph.GraphDataPoint
+import kotlin.math.abs
 
 /**
  * Inputs for [BgGraphBitmapRenderer]. All BG values are in user units
@@ -26,7 +28,13 @@ data class BgGraphInput(
     val targets: List<GraphDataPoint> = emptyList(),
     /** The part of the target line that belongs to an active temp target, drawn in its own colour. */
     val tempTargetFromMs: Long? = null,
-    val tempTargetToMs: Long? = null
+    val tempTargetToMs: Long? = null,
+    /** SMBs, drawn as small triangles on the low line. Not drawn when there is no low line. */
+    val smbTimesMs: List<Long> = emptyList(),
+    /** Normal boluses, drawn as a triangle above the BG dot at their time. */
+    val bolusTimesMs: List<Long> = emptyList(),
+    /** Carbs, drawn as a dot below the BG dot at their time. */
+    val carbsTimesMs: List<Long> = emptyList()
 )
 
 data class BgGraphColors(
@@ -37,7 +45,10 @@ data class BgGraphColors(
     val lowLine: Int = 0xFFC62828.toInt(),
     val highLine: Int = 0xFFFFB300.toInt(),
     val target: Int = 0x66FFFFFF,
-    val tempTarget: Int = 0xFF6BD16B.toInt()
+    val tempTarget: Int = 0xFF6BD16B.toInt(),
+    /** Only used when the input has boluses, SMBs or carbs. */
+    val bolus: Int = 0xFF67DFE8.toInt(),
+    val carbs: Int = 0xFFFFAE01.toInt()
 ) {
 
     companion object {
@@ -65,8 +76,18 @@ data class BgGraphColors(
  */
 class BgGraphBitmapRenderer {
 
-    /** @param dotRadiusPx radius of one BG dot */
-    fun render(widthPx: Int, heightPx: Int, input: BgGraphInput, colors: BgGraphColors, dotRadiusPx: Float = BG_RADIUS_PX): Bitmap {
+    /**
+     * @param dotRadiusPx radius of one BG dot
+     * @param markerSizePx size of the bolus, SMB and carbs markers
+     */
+    fun render(
+        widthPx: Int,
+        heightPx: Int,
+        input: BgGraphInput,
+        colors: BgGraphColors,
+        dotRadiusPx: Float = BG_RADIUS_PX,
+        markerSizePx: Float = MARKER_SIZE_PX
+    ): Bitmap {
         val bitmap = Bitmap.createBitmap(widthPx.coerceAtLeast(1), heightPx.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
@@ -100,7 +121,56 @@ class BgGraphBitmapRenderer {
             canvas.drawCircle(x, y, dotRadiusPx, paint)
         }
 
+        drawTreatments(canvas, input, colors, markerSizePx, dotRadiusPx, ::xOf, ::yOf)
+
         return bitmap
+    }
+
+    /**
+     * SMBs on the low line, boluses and carbs at the BG dot nearest to their time, as in the main graph.
+     * Markers outside the time window are left out.
+     */
+    private fun drawTreatments(
+        canvas: Canvas,
+        input: BgGraphInput,
+        colors: BgGraphColors,
+        size: Float,
+        dotRadius: Float,
+        xOf: (Long) -> Float,
+        yOf: (Double) -> Float
+    ) {
+        val paint = Paint().apply {
+            isAntiAlias = true
+            style = Paint.Style.FILL
+        }
+        val window = input.fromTimeMs..input.toTimeMs
+        val dots = input.bucketed.filter { it.type == BgType.BUCKETED && it.timestamp in window }
+        fun bgAt(time: Long): Double? = dots.minByOrNull { abs(it.timestamp - time) }?.value
+        // A triangle pointing down, its tip at (x, tipY).
+        fun triangle(x: Float, tipY: Float) {
+            val path = Path().apply {
+                moveTo(x, tipY)
+                lineTo(x - size / 2, tipY - size)
+                lineTo(x + size / 2, tipY - size)
+                close()
+            }
+            canvas.drawPath(path, paint)
+        }
+
+        paint.color = colors.bolus
+        input.lowUserUnits?.takeIf { it >= input.yMinUserUnits && it <= input.yMaxUserUnits }?.let { low ->
+            val y = yOf(low)
+            input.smbTimesMs.filter { it in window }.forEach { triangle(xOf(it), y + size / 2) }
+        }
+        input.bolusTimesMs.filter { it in window }.forEach { time ->
+            val bg = bgAt(time) ?: return@forEach
+            triangle(xOf(time), yOf(bg) - dotRadius)
+        }
+        paint.color = colors.carbs
+        input.carbsTimesMs.filter { it in window }.forEach { time ->
+            val bg = bgAt(time) ?: return@forEach
+            canvas.drawCircle(xOf(time), yOf(bg) + dotRadius + size / 2, size / 2, paint)
+        }
     }
 
     private fun drawLimitLines(canvas: Canvas, input: BgGraphInput, colors: BgGraphColors, left: Float, right: Float, yOf: (Double) -> Float) {
@@ -173,5 +243,6 @@ class BgGraphBitmapRenderer {
         private const val DASH_PX = 10.0f
         private const val TARGET_STROKE_PX = 2.0f
         private const val TEMP_TARGET_STROKE_PX = 7.0f
+        private const val MARKER_SIZE_PX = 12.0f
     }
 }
