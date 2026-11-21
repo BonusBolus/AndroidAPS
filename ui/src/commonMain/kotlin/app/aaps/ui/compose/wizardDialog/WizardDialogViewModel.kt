@@ -249,6 +249,8 @@ class WizardDialogViewModel(
                 // BG card
                 hasBgData = hasBgData,
                 bgAgeMinutes = bgAgeMinutes,
+                sensorBg = currentBg,
+                standardPercentage = percentage,
                 // Initial IOB display
                 totalIOB = -totalIOB,
                 forcedRecordOnly = forcedRecordOnly
@@ -401,7 +403,8 @@ class WizardDialogViewModel(
                 useTrend = useTrend,
                 useCOB = useCOB,
                 useBolusAdvisor = useBolusAdvisor,
-                percentage = percentage ?: it.percentage
+                percentage = percentage ?: it.percentage,
+                standardPercentage = percentage ?: it.standardPercentage
             )
         }
         recalculateSuspend()
@@ -459,21 +462,15 @@ class WizardDialogViewModel(
         // Carbs constraint check (on effective carbs only)
         val carbsAfterConstraint = constraintChecker.applyCarbsConstraints(ConstraintObject(effectiveCarbs, aapsLogger)).value()
 
-        // Direct correction value
-        val correctionValue = state.directCorrection
-
-        // Percentage is always applied
-        val percentageCorrection = state.percentage
-
-        val w = bolusWizardProvider().doCalc(
+        suspend fun calc(bg: Double, correction: Double, percentage: Int) = bolusWizardProvider().doCalc(
             specificProfile,
             profileName,
             tempTarget,
             carbsAfterConstraint,
             cob,
-            bgInput,
-            correctionValue,
-            percentageCorrection,
+            bg,
+            correction,
+            percentage,
             state.useBg,
             state.useCOB,
             state.useIOB,
@@ -485,6 +482,14 @@ class WizardDialogViewModel(
             state.notes,
             state.carbTime
         )
+
+        // Display only: what the wizard gives without the user's changes. Toggles do not count as a change.
+        // Calculated first, so the wizard that can be confirmed is always the last one made.
+        val standardBg = if (state.useBg && state.hasBgData) state.sensorBg else bgInput
+        val changed = state.percentage != state.standardPercentage || state.directCorrection != 0.0 || standardBg != bgInput
+        val standard = if (changed) calc(standardBg, 0.0, state.standardPercentage).data.calculatedTotalInsulin else null
+
+        val w = calc(bgInput, state.directCorrection, state.percentage)
 
         // A newer calculation started meanwhile: its result counts, not this one
         if (calculation != calculations) return
@@ -526,6 +531,8 @@ class WizardDialogViewModel(
                 targetBGLow = 0.0, // not exposed directly
                 targetBGHigh = 0.0,
                 hasResult = true,
+                // Both are rounded to the bolus step by doCalc, so equal means the same dose
+                standardInsulin = standard?.takeIf { s -> s != w.data.calculatedTotalInsulin },
                 okVisible = w.data.calculatedTotalInsulin > 0.0 || carbsAfterConstraint > 0,
                 hasTempTarget = hasTT,
                 effectiveCarbs = effectiveCarbs,

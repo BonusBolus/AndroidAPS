@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -402,12 +403,30 @@ internal fun WizardDialogContent(
                         ) {
                             // Result summary (always visible)
                             if (uiState.hasResult && (uiState.totalInsulin > 0.0 || uiState.carbs > 0)) {
-                                if (uiState.totalInsulin > 0.0) {
-                                    Text(
-                                        text = stringResource(InterfacesStrings.format_insulin_units, uiState.totalInsulin),
-                                        fontWeight = FontWeight.Bold,
-                                        color = ElementType.INSULIN.color()
-                                    )
+                                val standardInsulin = uiState.standardInsulin
+                                if (uiState.totalInsulin > 0.0 || standardInsulin != null) {
+                                    // One Row, so the standard amount, the arrow and the delivered amount never wrap apart
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (standardInsulin != null) {
+                                            Text(
+                                                text = stringResource(InterfacesStrings.format_insulin_units, standardInsulin),
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                                contentDescription = null,
+                                                modifier = Modifier
+                                                    .padding(horizontal = 4.dp)
+                                                    .size(16.dp)
+                                            )
+                                        }
+                                        Text(
+                                            text = stringResource(InterfacesStrings.format_insulin_units, uiState.totalInsulin),
+                                            fontWeight = FontWeight.Bold,
+                                            color = ElementType.INSULIN.color()
+                                        )
+                                    }
                                 }
                                 if (uiState.effectiveCarbs > 0 || uiState.eCarbs > 0) {
                                     Text(

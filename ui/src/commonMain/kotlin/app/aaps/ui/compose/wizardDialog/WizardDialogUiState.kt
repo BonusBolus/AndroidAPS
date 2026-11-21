@@ -69,6 +69,13 @@ data class WizardDialogUiState(
     val targetBGHigh: Double = 0.0,
     val hasResult: Boolean = false,
     val okVisible: Boolean = false,
+    /**
+     * Display only: the total with the standard inputs (percentage the wizard opened with, no correction, sensor BG).
+     * Null when the user changed none of them, or when it is the same as [totalInsulin].
+     */
+    val standardInsulin: Double? = null,
+    /** The percentage the wizard opened with (from the settings). Changing the slider away from it is a change from standard. */
+    val standardPercentage: Int = 100,
 
     // Carbs type split (computed from carbs + carbsType)
     val effectiveCarbs: Int = 0,
@@ -79,6 +86,8 @@ data class WizardDialogUiState(
     // BG source info
     val hasBgData: Boolean = false,
     val bgAgeMinutes: Int = 0,
+    /** The latest sensor BG. Unlike [bg], it keeps following readings after the user edits the BG field. */
+    val sensorBg: Double = 0.0,
 
     /** True when the entry must be recorded only (no pump delivery): pump unavailable or the mode forbids bolus. (A client delivers via the master, not record-only.) */
     val forcedRecordOnly: Boolean = false,
@@ -93,7 +102,7 @@ data class WizardDialogUiState(
  * master with the other inputs, so a field filled when the wizard opened would dose on a BG from minutes ago.
  */
 fun WizardDialogUiState.withNewReading(bg: Double, ageMinutes: Int): WizardDialogUiState =
-    if (bgEdited) this else copy(bg = bg, bgAgeMinutes = ageMinutes, hasBgData = true)
+    if (bgEdited) copy(sensorBg = bg) else copy(bg = bg, sensorBg = bg, bgAgeMinutes = ageMinutes, hasBgData = true)
 
 /**
  * OK waits: the pump would give this bolus, and an SMB is being delivered right now (#5381). The master calculates
