@@ -25,6 +25,7 @@ import app.aaps.core.interfaces.overview.graph.TempTargetDisplayData
 import app.aaps.core.interfaces.overview.graph.TimeRange
 import app.aaps.core.interfaces.overview.graph.TreatmentGraphData
 import app.aaps.core.interfaces.overview.graph.VarSensGraphData
+import app.aaps.core.interfaces.overview.graph.AlgorithmGraphData
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
@@ -59,6 +60,7 @@ class FakeOverviewDataCache : OverviewDataCache {
     override val ratioGraphFlow = MutableStateFlow(RatioGraphData(emptyList()))
     override val devSlopeGraphFlow = MutableStateFlow(DevSlopeGraphData(emptyList(), emptyList()))
     override val varSensGraphFlow = MutableStateFlow(VarSensGraphData(emptyList()))
+    override val algorithmGraphFlow = MutableStateFlow(AlgorithmGraphData(emptyList(), emptyList(), emptyList()))
     override val heartRateGraphFlow = MutableStateFlow(HeartRateGraphData(emptyList()))
     override val stepsGraphFlow = MutableStateFlow(StepsGraphData(emptyList()))
 
@@ -90,6 +92,7 @@ class FakeOverviewDataCache : OverviewDataCache {
     override fun updateRatioGraph(data: RatioGraphData) { ratioGraphFlow.value = data }
     override fun updateDevSlopeGraph(data: DevSlopeGraphData) { devSlopeGraphFlow.value = data }
     override fun updateVarSensGraph(data: VarSensGraphData) { varSensGraphFlow.value = data }
+    override fun updateAlgorithmGraph(data: AlgorithmGraphData) { algorithmGraphFlow.value = data }
     override fun updateHeartRateGraph(data: HeartRateGraphData) { heartRateGraphFlow.value = data }
     override fun updateStepsGraph(data: StepsGraphData) { stepsGraphFlow.value = data }
 

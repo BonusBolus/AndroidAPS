@@ -31,6 +31,7 @@ import app.aaps.core.interfaces.overview.graph.IobGraphData
 import app.aaps.core.interfaces.overview.graph.RatioGraphData
 import app.aaps.core.interfaces.overview.graph.TimeRange
 import app.aaps.core.interfaces.overview.graph.VarSensGraphData
+import app.aaps.core.interfaces.overview.graph.AlgorithmGraphData
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.EffectiveProfile
 import app.aaps.core.interfaces.profile.ProfileFunction
@@ -768,6 +769,7 @@ class PrepareGraphDataRunner(
         val ratioListCompose: MutableList<GraphDataPoint> = ArrayList()
         val dsMaxListCompose: MutableList<GraphDataPoint> = ArrayList()
         val dsMinListCompose: MutableList<GraphDataPoint> = ArrayList()
+        val wizardIsfListCompose: MutableList<GraphDataPoint> = ArrayList()
 
         val adsData = data.iobCobCalculator.ads.clone()
 
@@ -809,6 +811,8 @@ class PrepareGraphDataRunner(
                 deviationsListCompose.add(DeviationDataPoint(time, autosensData.deviation, deviationType))
 
                 ratioListCompose.add(GraphDataPoint(time, 100.0 * (autosensData.autosensResult.ratio - 1)))
+                // The ISF for carbs the COB calculation gave this bucket: the ISF the bolus wizard uses (#5404)
+                wizardIsfListCompose.add(GraphDataPoint(time, profileUtil.fromMgdlToUnits(autosensData.sens)))
 
                 dsMaxListCompose.add(GraphDataPoint(time, autosensData.slopeFromMaxDeviation))
                 dsMinListCompose.add(GraphDataPoint(time, autosensData.slopeFromMinDeviation))
@@ -848,6 +852,15 @@ class PrepareGraphDataRunner(
         data.cache.updateRatioGraph(RatioGraphData(ratio = ratioListCompose))
         data.cache.updateDevSlopeGraph(DevSlopeGraphData(dsMax = dsMaxListCompose, dsMin = dsMinListCompose))
         data.cache.updateVarSensGraph(VarSensGraphData(varSens = varSensListCompose))
+        // The autosens ratio and target each loop run used. Only these fields are read, see getVariableSensitivities.
+        val algorithmValues = persistenceLayer.getLoopAlgorithmValues(fromTime, endTime)
+        data.cache.updateAlgorithmGraph(
+            AlgorithmGraphData(
+                wizardIsf = wizardIsfListCompose,
+                autosens = algorithmValues.mapNotNull { row -> row.sensitivityRatio?.let { GraphDataPoint(row.timestamp, 100.0 * (it - 1)) } },
+                target = algorithmValues.mapNotNull { row -> row.targetMgdl?.let { GraphDataPoint(row.timestamp, profileUtil.fromMgdlToUnits(it)) } }
+            )
+        )
 
         data.signals.emitProgress(CalculationWorkflow.ProgressData.PREPARE_IOB_AUTOSENS_DATA, 100)
     }

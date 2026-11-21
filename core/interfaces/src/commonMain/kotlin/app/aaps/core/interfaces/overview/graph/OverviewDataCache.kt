@@ -92,6 +92,9 @@ interface OverviewDataCache {
     val varSensGraphFlow: StateFlow<VarSensGraphData>
     fun updateVarSensGraph(data: VarSensGraphData)
 
+    val algorithmGraphFlow: StateFlow<AlgorithmGraphData>
+    fun updateAlgorithmGraph(data: AlgorithmGraphData)
+
     // Heart rate graph: BPM readings from smartwatch
     val heartRateGraphFlow: StateFlow<HeartRateGraphData>
     fun updateHeartRateGraph(data: HeartRateGraphData)

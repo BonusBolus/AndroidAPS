@@ -20,7 +20,13 @@ enum class SeriesType {
     BGI,
     DEVIATIONS,
     SENSITIVITY,
+    /** The autosens ratio each loop run used (dashed beside [SENSITIVITY]). */
+    ALGO_AUTOSENS,
     VAR_SENSITIVITY,
+    /** The ISF the bolus wizard uses, the ISF for carbs (dashed beside [VAR_SENSITIVITY]). */
+    WIZARD_ISF,
+    /** The target each loop run used. */
+    ALGO_TARGET,
     DEV_SLOPE,
     HEART_RATE,
     STEPS,

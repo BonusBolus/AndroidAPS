@@ -72,6 +72,7 @@ import app.aaps.core.interfaces.overview.graph.TherapyEventType
 import app.aaps.core.interfaces.overview.graph.TimeRange
 import app.aaps.core.interfaces.overview.graph.TreatmentGraphData
 import app.aaps.core.interfaces.overview.graph.VarSensGraphData
+import app.aaps.core.interfaces.overview.graph.AlgorithmGraphData
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileUtil
@@ -270,6 +271,8 @@ class OverviewDataCacheImpl(
     override val devSlopeGraphFlow: StateFlow<DevSlopeGraphData> = _devSlopeGraphFlow.asStateFlow()
     private val _varSensGraphFlow = MutableStateFlow(VarSensGraphData(emptyList()))
     override val varSensGraphFlow: StateFlow<VarSensGraphData> = _varSensGraphFlow.asStateFlow()
+    private val _algorithmGraphFlow = MutableStateFlow(AlgorithmGraphData(emptyList(), emptyList(), emptyList()))
+    override val algorithmGraphFlow: StateFlow<AlgorithmGraphData> = _algorithmGraphFlow.asStateFlow()
     private val _heartRateGraphFlow = MutableStateFlow(HeartRateGraphData(emptyList()))
     override val heartRateGraphFlow: StateFlow<HeartRateGraphData> = _heartRateGraphFlow.asStateFlow()
     private val _stepsGraphFlow = MutableStateFlow(StepsGraphData(emptyList()))
@@ -842,6 +845,10 @@ class OverviewDataCacheImpl(
         _varSensGraphFlow.value = data
     }
 
+    override fun updateAlgorithmGraph(data: AlgorithmGraphData) {
+        _algorithmGraphFlow.value = data
+    }
+
     override fun updateHeartRateGraph(data: HeartRateGraphData) {
         _heartRateGraphFlow.value = data
     }
@@ -1277,6 +1284,7 @@ class OverviewDataCacheImpl(
         _ratioGraphFlow.value = RatioGraphData(emptyList())
         _devSlopeGraphFlow.value = DevSlopeGraphData(emptyList(), emptyList())
         _varSensGraphFlow.value = VarSensGraphData(emptyList())
+        _algorithmGraphFlow.value = AlgorithmGraphData(emptyList(), emptyList(), emptyList())
         _heartRateGraphFlow.value = HeartRateGraphData(emptyList())
         _stepsGraphFlow.value = StepsGraphData(emptyList())
         _treatmentGraphFlow.value = TreatmentGraphData(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())

@@ -190,6 +190,19 @@ data class VarSensGraphData(
 )
 
 /**
+ * The values the bolus wizard and the algorithm used, over time, drawn dashed beside their live lines.
+ *
+ * @param wizardIsf the ISF for carbs of every 5 minute bucket, in the user's units (the bold wizard ISF of the overview)
+ * @param autosens the autosens ratio of every loop run, stored like [RatioGraphData] as 100 * (ratio - 1)
+ * @param target the target of every loop run, in the user's units
+ */
+data class AlgorithmGraphData(
+    val wizardIsf: List<GraphDataPoint>,
+    val autosens: List<GraphDataPoint>,
+    val target: List<GraphDataPoint>
+)
+
+/**
  * Heart rate graph data: BPM readings from smartwatch or similar device, as stretches of a line.
  * A new stretch starts where the device sent nothing for a while, so the line is not drawn across
  * that time. A point is the start of a reading; the last point of a stretch is the end of its last reading.

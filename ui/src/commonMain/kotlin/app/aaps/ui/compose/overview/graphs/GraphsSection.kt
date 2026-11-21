@@ -865,6 +865,9 @@ private fun seriesShortNameId(type: SeriesType): TextRef = when (type) {
     SeriesType.DEVIATIONS      -> CoreUiStrings.deviation_shortname
     SeriesType.SENSITIVITY     -> CoreUiStrings.sensitivity_shortname
     SeriesType.VAR_SENSITIVITY -> CoreUiStrings.variable_sensitivity_shortname
+    SeriesType.ALGO_AUTOSENS   -> CoreUiStrings.algo_autosens_shortname
+    SeriesType.WIZARD_ISF      -> CoreUiStrings.wizard_isf_shortname
+    SeriesType.ALGO_TARGET     -> CoreUiStrings.algo_target_shortname
     SeriesType.DEV_SLOPE       -> CoreUiStrings.devslope_shortname
     SeriesType.HEART_RATE      -> CoreUiStrings.heartRate_shortname
     SeriesType.STEPS           -> CoreUiStrings.steps_shortname
@@ -881,6 +884,9 @@ private fun seriesNameId(type: SeriesType): TextRef = when (type) {
     SeriesType.DEVIATIONS      -> CoreUiStrings.graph_series_deviations
     SeriesType.SENSITIVITY     -> CoreUiStrings.graph_series_sensitivity
     SeriesType.VAR_SENSITIVITY -> CoreUiStrings.graph_series_variable_sens
+    SeriesType.ALGO_AUTOSENS   -> CoreUiStrings.graph_series_algo_autosens
+    SeriesType.WIZARD_ISF      -> CoreUiStrings.graph_series_wizard_isf
+    SeriesType.ALGO_TARGET     -> CoreUiStrings.graph_series_algo_target
     SeriesType.DEV_SLOPE       -> CoreUiStrings.graph_series_deviation_slope
     SeriesType.HEART_RATE      -> CoreUiStrings.graph_series_heart_rate
     SeriesType.STEPS           -> CoreUiStrings.graph_series_steps

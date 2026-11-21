@@ -18,3 +18,10 @@
 - Quick Launch: draw the divider before Scenes across the full menu width.
 - Overview screen: the screens read the scroll position only to know if they are at the top, so they are no longer
   redrawn on every scroll frame. Removed an always-visible AnimatedVisibility around the bottom bar.
+- Overview graphs: three new data fields with the values the wizard and the algorithm used, drawn dashed:
+  - Wizard ISF: the ISF for carbs the bolus wizard uses (the bold wizard ISF), dashed in the ISF colour beside VSENS.
+  - Autosens used by the algorithm: the ratio of each loop run, dashed in the autosens colour beside SENS%.
+  - Target used by the algorithm: the target of each loop run, dashed in the "adjusted" target colour.
+  Wizard ISF comes from the COB buckets. Autosens and target come from a light query that reads only these two
+  fields of the stored loop results with json_extract, like the VSENS query (#5248). Same-unit pairs share an axis.
+- Tests: ApsResultAlgorithmValuesTest (real SQLite).

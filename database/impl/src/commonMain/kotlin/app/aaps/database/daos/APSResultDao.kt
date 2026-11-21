@@ -39,10 +39,24 @@ internal interface APSResultDao : TraceableDao<APSResult> {
      */
     @Query("SELECT timestamp, json_extract(resultJson, '\$.variable_sens') AS variableSens FROM $TABLE_APS_RESULTS WHERE timestamp >= :start AND timestamp <= :end ORDER BY timestamp ASC")
     suspend fun getVariableSens(start: Long, end: Long): List<ApsResultVariableSens>
+
+    /**
+     * Only the time, the autosens ratio and the target of each result, for the graphs of the values the
+     * algorithm used. Read by SQLite from `resultJson` for the same reason as [getVariableSens].
+     */
+    @Query("SELECT timestamp, json_extract(resultJson, '\$.sensitivityRatio') AS sensitivityRatio, json_extract(resultJson, '\$.targetBG') AS targetBg FROM $TABLE_APS_RESULTS WHERE timestamp >= :start AND timestamp <= :end ORDER BY timestamp ASC")
+    suspend fun getAlgorithmValues(start: Long, end: Long): List<ApsResultAlgorithmValues>
 }
 
 /** One row of [APSResultDao.getVariableSens]. [variableSens] is in mg/dL, null when the result has no value. */
 data class ApsResultVariableSens(
     val timestamp: Long,
     val variableSens: Double?
+)
+
+/** One row of [APSResultDao.getAlgorithmValues]. [targetBg] is in mg/dL. Both are null when the result has no value. */
+data class ApsResultAlgorithmValues(
+    val timestamp: Long,
+    val sensitivityRatio: Double?,
+    val targetBg: Double?
 )

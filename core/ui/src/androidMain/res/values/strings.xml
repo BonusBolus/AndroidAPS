@@ -1217,6 +1217,9 @@
     <string name="heartRate_shortname" comment="Short label for Heart Rate graph series">HR</string>
     <string name="sensitivity_shortname" comment="Short label for Sensitivity/Autosens graph series">SENS%</string>
     <string name="variable_sensitivity_shortname" comment="Short label for Variable Sensitivity graph series">VSENS</string>
+    <string name="algo_autosens_shortname" comment="Short graph label: the autosens percentage the algorithm used in each loop run">ALGO SENS%</string>
+    <string name="wizard_isf_shortname" comment="Short graph label: the ISF the bolus wizard uses">WIZ ISF</string>
+    <string name="algo_target_shortname" comment="Short graph label: the glucose target the algorithm used in each loop run">ALGO TGT</string>
     <string name="steps_shortname" comment="Short label for Steps graph series">STEPS</string>
     <!-- Graph series full names (used in the graph settings, where there is room) -->
     <string name="graph_series_iob">Insulin On Board</string>
@@ -1226,6 +1229,9 @@
     <string name="graph_series_deviations">Deviations</string>
     <string name="graph_series_sensitivity" comment="Graph of the autosens ratio: how sensitive to insulin the user is now compared to the profile">Sensitivity change</string>
     <string name="graph_series_variable_sens">Variable sensitivity</string>
+    <string name="graph_series_algo_autosens" comment="Graph of the autosens percentage the algorithm used in each loop run">Autosens used by the algorithm</string>
+    <string name="graph_series_wizard_isf" comment="Graph of the ISF the bolus wizard uses (the average ISF for carbs)">Wizard ISF</string>
+    <string name="graph_series_algo_target" comment="Graph of the glucose target the algorithm used in each loop run">Target used by the algorithm</string>
     <string name="graph_series_deviation_slope">Deviation slope</string>
     <string name="graph_series_heart_rate">Heart Rate</string>
     <string name="graph_series_steps">Steps</string>

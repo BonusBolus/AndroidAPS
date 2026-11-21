@@ -23,16 +23,19 @@ internal sealed interface AxisRule {
 }
 
 internal fun axisRuleOf(type: SeriesType): AxisRule = when (type) {
-    SeriesType.SENSITIVITY                            -> AxisRule.Pivot(100.0, SENS_MIN_DEVIATION)
+    SeriesType.SENSITIVITY, SeriesType.ALGO_AUTOSENS  -> AxisRule.Pivot(100.0, SENS_MIN_DEVIATION)
     SeriesType.DEV_SLOPE                              -> AxisRule.Pivot(0.0)
-    SeriesType.VAR_SENSITIVITY, SeriesType.HEART_RATE -> AxisRule.Free
+    SeriesType.VAR_SENSITIVITY, SeriesType.WIZARD_ISF,
+    SeriesType.ALGO_TARGET, SeriesType.HEART_RATE     -> AxisRule.Free
     else                                              -> AxisRule.ZeroFloor
 }
 
 /** The series that are measured in the same unit, and so are drawn against one axis. */
 private val SHARED_UNITS = listOf(
     setOf(SeriesType.IOB, SeriesType.ABS_IOB),
-    setOf(SeriesType.BGI, SeriesType.DEVIATIONS)
+    setOf(SeriesType.BGI, SeriesType.DEVIATIONS),
+    setOf(SeriesType.SENSITIVITY, SeriesType.ALGO_AUTOSENS),
+    setOf(SeriesType.VAR_SENSITIVITY, SeriesType.WIZARD_ISF)
 )
 
 /** The series of one graph, by axis. A side is empty when it has no series. */

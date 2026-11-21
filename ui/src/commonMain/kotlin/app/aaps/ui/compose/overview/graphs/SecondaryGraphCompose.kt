@@ -160,6 +160,7 @@ fun SecondaryGraphCompose(
     val deviationsData = if (SeriesType.DEVIATIONS in seriesTypes) viewModel.deviationsGraphFlow.collectAsStateWithLifecycle().value else null
     val ratioData = if (SeriesType.SENSITIVITY in seriesTypes) viewModel.ratioGraphFlow.collectAsStateWithLifecycle().value else null
     val varSensData = if (SeriesType.VAR_SENSITIVITY in seriesTypes) viewModel.varSensGraphFlow.collectAsStateWithLifecycle().value else null
+    val algorithmData = if (seriesTypes.any { it in ALGORITHM_SERIES }) viewModel.algorithmGraphFlow.collectAsStateWithLifecycle().value else null
     val devSlopeData = if (SeriesType.DEV_SLOPE in seriesTypes) viewModel.devSlopeGraphFlow.collectAsStateWithLifecycle().value else null
     val hrData = if (SeriesType.HEART_RATE in seriesTypes) viewModel.heartRateGraphFlow.collectAsStateWithLifecycle().value else null
     val stepsData = if (SeriesType.STEPS in seriesTypes) viewModel.stepsGraphFlow.collectAsStateWithLifecycle().value else null
@@ -180,7 +181,7 @@ fun SecondaryGraphCompose(
 
     // Simple line series processing (excludes BASAL — it's a fixed flipped overlay on IOB)
     val processedSimpleSeries = remember(
-        seriesTypes, stableTimeRange, absIobData, bgiData, ratioData, varSensData, devSlopeData, hrData, activityData
+        seriesTypes, stableTimeRange, absIobData, bgiData, ratioData, varSensData, algorithmData, devSlopeData, hrData, activityData
     ) {
         if (!hasRealTimeRange) return@remember emptyList()
         buildList {
@@ -199,6 +200,17 @@ fun SecondaryGraphCompose(
             }
             varSensData?.varSens?.takeIf { it.isNotEmpty() }?.let {
                 add(SeriesType.VAR_SENSITIVITY to processPoints(it, minTimestamp, minX, maxX))
+            }
+            algorithmData?.let { algo ->
+                if (SeriesType.ALGO_AUTOSENS in seriesTypes && algo.autosens.isNotEmpty()) {
+                    // Stored like the ratio series, as 100*(ratio-1), shown as a percentage
+                    val shifted = algo.autosens.map { GraphDataPoint(it.timestamp, it.value + 100.0) }
+                    add(SeriesType.ALGO_AUTOSENS to processPoints(shifted, minTimestamp, minX, maxX))
+                }
+                if (SeriesType.WIZARD_ISF in seriesTypes && algo.wizardIsf.isNotEmpty())
+                    add(SeriesType.WIZARD_ISF to processPoints(algo.wizardIsf, minTimestamp, minX, maxX))
+                if (SeriesType.ALGO_TARGET in seriesTypes && algo.target.isNotEmpty())
+                    add(SeriesType.ALGO_TARGET to processPoints(algo.target, minTimestamp, minX, maxX))
             }
             devSlopeData?.let {
                 if (it.dsMax.isNotEmpty()) add(SeriesType.DEV_SLOPE to processPoints(it.dsMax, minTimestamp, minX, maxX))
@@ -868,6 +880,9 @@ internal data class ProcessedIobOverlays(
 // Line styles
 // =========================================================================
 
+/** The series drawn from [app.aaps.core.interfaces.overview.graph.AlgorithmGraphData]. */
+private val ALGORITHM_SERIES = setOf(SeriesType.ALGO_AUTOSENS, SeriesType.WIZARD_ISF, SeriesType.ALGO_TARGET)
+
 /** Color map for simple line series */
 data class SeriesColors(
     val iob: Color,
@@ -877,6 +892,7 @@ data class SeriesColors(
     val deviations: Color,
     val sensitivity: Color,
     val varSensitivity: Color,
+    val target: Color,
     val devSlope: Color,
     val heartRate: Color,
     val steps: Color,
@@ -891,6 +907,10 @@ data class SeriesColors(
         SeriesType.DEVIATIONS      -> deviations
         SeriesType.SENSITIVITY     -> sensitivity
         SeriesType.VAR_SENSITIVITY -> varSensitivity
+        // Dashed in the colour of the live value they belong to
+        SeriesType.ALGO_AUTOSENS   -> sensitivity
+        SeriesType.WIZARD_ISF      -> varSensitivity
+        SeriesType.ALGO_TARGET     -> target
         SeriesType.DEV_SLOPE       -> devSlope
         SeriesType.HEART_RATE      -> heartRate
         SeriesType.STEPS           -> steps
@@ -906,7 +926,9 @@ fun rememberSeriesColors(): SeriesColors {
     // The same colours as the overview chips: autosens ratio = autosens chip, variable ISF = ISF chip.
     val sensitivityColor = AapsTheme.elementColors.autosens
     val varSensitivityColor = AapsTheme.elementColors.sensitivity
-    return remember(iobColor, cobColor, sensitivityColor, varSensitivityColor) {
+    // The colour the overview target chip uses when the algorithm adjusts the target
+    val targetColor = AapsTheme.generalColors.adjusted
+    return remember(iobColor, cobColor, sensitivityColor, varSensitivityColor, targetColor) {
         SeriesColors(
             iob = iobColor,                         // #1e88e5 blue (matches @color/iob)
             absIob = iobColor,                      // same blue as IOB
@@ -915,6 +937,7 @@ fun rememberSeriesColors(): SeriesColors {
             deviations = Color(0xFF00EEEE),         // cyan (matches @color/bgi — legacy uses per-type colors)
             sensitivity = sensitivityColor,
             varSensitivity = varSensitivityColor,
+            target = targetColor,
             devSlope = Color(0xFFFFFF00),            // yellow (matches @color/devSlopePos)
             heartRate = Color(0xFFFFFF66),           // pale yellow (matches @color/heartRate #FFFFFF66)
             steps = Color(0xFF66FFB8),              // mint green (matches @color/steps)
@@ -946,6 +969,12 @@ fun createSeriesLine(type: SeriesType, colors: SeriesColors): LineCartesianLayer
         // Line only, no fill
         SeriesType.DEV_SLOPE, SeriesType.SENSITIVITY, SeriesType.VAR_SENSITIVITY -> LineCartesianLayer.Line(
             fill = LineCartesianLayer.LineFill.single(Fill(color)),
+            areaFill = null
+        )
+        // The values the algorithm and the wizard used: dashed, so they read as the partner of the live line
+        SeriesType.ALGO_AUTOSENS, SeriesType.WIZARD_ISF, SeriesType.ALGO_TARGET -> LineCartesianLayer.Line(
+            fill = LineCartesianLayer.LineFill.single(Fill(color)),
+            stroke = LineCartesianLayer.LineStroke.Dashed(thickness = 2.dp, cap = StrokeCap.Round, dashLength = 6.dp, gapLength = 4.dp),
             areaFill = null
         )
         // Thin curved line, no fill, so it reads well over the steps columns
