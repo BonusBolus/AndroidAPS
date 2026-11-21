@@ -3,8 +3,8 @@ package app.aaps.ui.compose.overview.graphs
 import app.aaps.core.interfaces.overview.graph.SeriesType
 
 // The axes of a graph below BG, from a few rules that hold for every series:
-// - the first series is drawn against the left axis, every later series against the right one
-//   ([graphSides]);
+// - the first series is drawn against the left axis, every later series against the right one, unless it
+//   has the same unit as the first and so shares the left axis ([graphSides]);
 // - every series type has one axis rule wherever it appears ([axisRuleOf], [axisRange]);
 // - two axes keep their own ranges, only their zeros are put on one height ([alignReferences]);
 // - the IOB graph alone leaves the top of its height to the basal band ([graphAxes]).
@@ -29,13 +29,24 @@ internal fun axisRuleOf(type: SeriesType): AxisRule = when (type) {
     else                                              -> AxisRule.ZeroFloor
 }
 
+/** The series that are measured in the same unit, and so are drawn against one axis. */
+private val SHARED_UNITS = listOf(
+    setOf(SeriesType.IOB, SeriesType.ABS_IOB),
+    setOf(SeriesType.BGI, SeriesType.DEVIATIONS)
+)
+
 /** The series of one graph, by axis. A side is empty when it has no series. */
 internal data class GraphSides(val left: List<SeriesType>, val right: List<SeriesType>)
 
-/** The first series on the left axis; every later series is drawn against the right axis. */
+/**
+ * The first series on the left axis, together with every series of the same unit, so two lines that look
+ * equal also have equal values. Every other series is drawn against the right axis. With two series this is
+ * the same as master.
+ */
 internal fun graphSides(types: List<SeriesType>): GraphSides {
     val first = types.firstOrNull() ?: return GraphSides(emptyList(), emptyList())
-    return GraphSides(listOf(first), types.drop(1))
+    val (left, right) = types.partition { it == first || SHARED_UNITS.any { unit -> first in unit && it in unit } }
+    return GraphSides(left, right)
 }
 
 /**

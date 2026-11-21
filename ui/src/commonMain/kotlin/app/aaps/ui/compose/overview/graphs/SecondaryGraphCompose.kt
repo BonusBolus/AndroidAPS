@@ -903,8 +903,9 @@ data class SeriesColors(
 fun rememberSeriesColors(): SeriesColors {
     val iobColor = AapsTheme.generalColors.iobPrediction
     val cobColor = AapsTheme.generalColors.cobPrediction
-    val sensitivityColor = AapsTheme.elementColors.sensitivity
-    val varSensitivityColor = AapsTheme.elementColors.scene
+    // The same colours as the overview chips: autosens ratio = autosens chip, variable ISF = ISF chip.
+    val sensitivityColor = AapsTheme.elementColors.autosens
+    val varSensitivityColor = AapsTheme.elementColors.sensitivity
     return remember(iobColor, cobColor, sensitivityColor, varSensitivityColor) {
         SeriesColors(
             iob = iobColor,                         // #1e88e5 blue (matches @color/iob)

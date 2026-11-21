@@ -253,6 +253,22 @@ internal class SecondaryGraphScaleHelpersTest {
         }
 
         @Test
+        fun `two series with the same unit share the left axis`() {
+            assertThat(graphSides(listOf(SeriesType.BGI, SeriesType.DEVIATIONS))).isEqualTo(GraphSides(listOf(SeriesType.BGI, SeriesType.DEVIATIONS), emptyList()))
+            assertThat(graphSides(listOf(SeriesType.DEVIATIONS, SeriesType.BGI))).isEqualTo(GraphSides(listOf(SeriesType.DEVIATIONS, SeriesType.BGI), emptyList()))
+        }
+
+        /** More than two series: the unit of the first decides the left axis, wherever its partner is in the list. */
+        @Test
+        fun `a later series with the unit of the first also shares the left axis`() {
+            assertThat(graphSides(listOf(SeriesType.BGI, SeriesType.COB, SeriesType.DEVIATIONS)))
+                .isEqualTo(GraphSides(listOf(SeriesType.BGI, SeriesType.DEVIATIONS), listOf(SeriesType.COB)))
+            // Two series of one unit after the first share the right axis together.
+            assertThat(graphSides(listOf(SeriesType.COB, SeriesType.BGI, SeriesType.DEVIATIONS)))
+                .isEqualTo(GraphSides(listOf(SeriesType.COB), listOf(SeriesType.BGI, SeriesType.DEVIATIONS)))
+        }
+
+        @Test
         fun `one series takes the left axis`() {
             assertThat(graphSides(listOf(SeriesType.IOB))).isEqualTo(GraphSides(listOf(SeriesType.IOB), emptyList()))
         }

@@ -1,9 +1,11 @@
 ## UI
 
 - Overview graphs: allow more than two data fields on one graph.
-- Overview graphs: use the first field on the left axis and later fields on the right axis.
+- Overview graphs: use the first field on the left axis and later fields on the right axis. Fields with the same
+  unit as the first (IOB with absolute IOB, BGI with deviations) share the left axis, as on master.
 - Overview graphs: zoom the graphs below the glucose graph with a two-finger pinch, the same as on the glucose graph itself.
-- Overview graphs: show `%sens` and VSENS with different colors.
+- Overview graphs: show `%sens` and VSENS with different colors. `%sens` uses the new autosens colour (rose)
+  and VSENS the ISF chip colour, the same as the overview chips.
 - Overview graphs: remove the 100 dp minimum and 250 dp maximum height limits.
 - Overview screen: hide the top controls until the content is scrolled back to the top; keep bottom controls visible.
 - Overview screen: hide the top controls after 3 seconds of inactivity and keep them hidden when returning from another screen.
