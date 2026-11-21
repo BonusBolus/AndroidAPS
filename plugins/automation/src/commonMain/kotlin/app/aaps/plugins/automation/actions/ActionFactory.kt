@@ -96,7 +96,7 @@ class ActionFactory(
     fun actionUAMSMBMaxMinutesChange() = ActionUAMSMBMaxMinutesChange(aapsLogger, rh, pumpEnactResultProvider, preferences)
     fun actionStartTempTarget() = ActionStartTempTarget(aapsLogger, rh, pumpEnactResultProvider, activePlugin, persistenceLayer, profileFunction, dateUtil, profileUtil, triggerDeps)
     fun actionStopProcessing() = ActionStopProcessing(aapsLogger, rh, pumpEnactResultProvider)
-    fun actionStopScene() = ActionStopScene(aapsLogger, rh, pumpEnactResultProvider, sceneApi)
+    fun actionStopScene() = ActionStopScene(aapsLogger, rh, pumpEnactResultProvider, sceneApi, triggerDeps)
     fun actionStopTempTarget() = ActionStopTempTarget(aapsLogger, rh, pumpEnactResultProvider, persistenceLayer, dateUtil)
 
     /**

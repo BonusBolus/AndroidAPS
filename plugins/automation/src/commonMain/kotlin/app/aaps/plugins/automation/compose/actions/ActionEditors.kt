@@ -83,7 +83,7 @@ fun ActionEditor(
             is ActionRunScene             -> ActionRunSceneEditor(action, sceneOptions, tick, onChange)
             is ActionEnableScene          -> ActionEnableSceneEditor(action, sceneOptions, tick, onChange)
             is ActionDisableScene         -> ActionDisableSceneEditor(action, sceneOptions, tick, onChange)
-            is ActionStopScene            -> ActionStopSceneEditor(action, tick, onChange)
+            is ActionStopScene            -> ActionStopSceneEditor(action, sceneOptions, tick, onChange)
             else                          -> Text(action::class.simpleName.orEmpty())
         }
     }
@@ -377,8 +377,14 @@ fun ActionDisableSceneEditor(a: ActionDisableScene, sceneOptions: List<Scene>, t
 }
 
 @Composable
-fun ActionStopSceneEditor(a: ActionStopScene, tick: Int = 0, onChange: () -> Unit) {
+fun ActionStopSceneEditor(a: ActionStopScene, sceneOptions: List<Scene>, tick: Int = 0, onChange: () -> Unit) {
     @Suppress("UNUSED_EXPRESSION") tick
+    ScenePicker(
+        selectedId = a.scene.value,
+        sceneOptions = sceneOptions,
+        onPicked = { a.scene.value = it; onChange() },
+        anyLabel = stringResource(AutomationStrings.trigger_scene_any)
+    )
     val stopOnly = stringResource(AutomationStrings.action_stop_scene_option_stop_only)
     val withFollowUp = stringResource(AutomationStrings.action_stop_scene_option_follow_up)
     AutomationDropdown(
