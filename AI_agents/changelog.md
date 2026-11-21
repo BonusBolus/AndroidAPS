@@ -19,9 +19,10 @@ Changed
 
 Notes
 - Same pump, hard-limit and insulin checks as before. Only the switch duration differs.
-- Like upstream, the switch uses timeshift 0. A temporary switch ends and the old permanent profile
-  (with its timeshift) comes back; a permanent switch replaces it, so a timeshift is lost.
+- A permanent switch keeps the timeshift of the running profile (for example after travel).
+  A temporary switch uses timeshift 0 like upstream: when it ends, the old profile with its timeshift comes back.
 
 Tests
 - Permanent switch (valid, description, createProfileSwitch with duration 0), precondition for temporary and
-  permanent switches, minimum duration of 1 min, missing duration is invalid, JSON with the permanent flag.
+  permanent switches, minimum duration of 1 min, missing duration is invalid, JSON with the permanent flag, timeshift
+  kept for permanent and 0 for temporary switches.

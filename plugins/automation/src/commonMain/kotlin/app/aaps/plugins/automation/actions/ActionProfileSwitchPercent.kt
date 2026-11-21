@@ -1,5 +1,6 @@
 package app.aaps.plugins.automation.actions
 
+import app.aaps.core.data.time.T
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.data.ue.ValueWithUnit
 import app.aaps.core.interfaces.InterfacesStrings
@@ -10,6 +11,7 @@ import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.pump.PumpEnactResult
 import app.aaps.core.interfaces.resources.TextResolver
 import app.aaps.core.keys.interfaces.TextRef
+import app.aaps.core.objects.profile.ProfileSealed
 import app.aaps.core.ui.CoreUiStrings
 import app.aaps.core.ui.compose.icons.IcProfile
 import app.aaps.core.utils.lenientBoolean
@@ -68,10 +70,11 @@ class ActionProfileSwitchPercent(
     override fun elementType() = ElementType.PROFILE_MANAGEMENT
 
     override suspend fun doAction(): PumpEnactResult {
+        val timeShift = timeShiftInHours()
         val switched = profileFunction.createProfileSwitch(
             durationInMinutes = durationInMinutes,
             percentage = pct.value.toInt(),
-            timeShiftInHours = 0,
+            timeShiftInHours = timeShift,
             action = app.aaps.core.data.ue.Action.PROFILE_SWITCH,
             source = Sources.Automation,
             note = rh.gs(InterfacesStrings.confirmation_line, title, shortDescription()),
@@ -84,10 +87,21 @@ class ActionProfileSwitchPercent(
             pumpEnactResultProvider().success(true).comment(CoreUiStrings.ok)
         } else {
             // Say why in the automation log, not "OK" next to a failure.
-            val reason = profileFunction.profileSwitchRefusal(durationInMinutes, pct.value.toInt(), 0) ?: rh.gs(CoreUiStrings.invalid_profile)
+            val reason = profileFunction.profileSwitchRefusal(durationInMinutes, pct.value.toInt(), timeShift) ?: rh.gs(CoreUiStrings.invalid_profile)
             aapsLogger.error(LTag.AUTOMATION, "Final profile not valid: $reason")
             pumpEnactResultProvider().success(false).comment(reason)
         }
+    }
+
+    /**
+     * A permanent switch replaces the running profile, so it keeps its timeshift (for example after
+     * travel). A temporary switch uses 0 like upstream: when it ends the old profile with its timeshift
+     * comes back.
+     */
+    private suspend fun timeShiftInHours(): Int {
+        if (!permanent) return 0
+        val eps = profileFunction.getProfile() as? ProfileSealed.EPS ?: return 0
+        return T.msecs(eps.value.originalTimeshift).hours().toInt()
     }
 
     override fun hasDialog(): Boolean = true

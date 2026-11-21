@@ -1,6 +1,8 @@
 package app.aaps.plugins.automation.actions
 
 import app.aaps.core.data.model.PS
+import app.aaps.core.data.time.T
+import app.aaps.core.objects.profile.ProfileSealed
 import app.aaps.plugins.automation.AutomationStrings
 import app.aaps.plugins.automation.elements.InputDuration
 import app.aaps.plugins.automation.elements.InputPercent
@@ -47,6 +49,28 @@ class ActionProfileSwitchPercentTest : ActionsTestBase() {
         assertThat(sut.doAction().success).isTrue()
         // A permanent switch passes duration 0, also when a duration is still set.
         verify(profileFunction, times(1)).createProfileSwitch(eq(0), eq(90), eq(0), any(), any(), any(), any(), eq(0L))
+    }
+
+    /** A permanent switch replaces the running profile, so a timeshift (for example after travel) must stay. */
+    @Test fun permanentSwitchKeepsTheTimeshift() = runTest {
+        val shifted = ProfileSealed.EPS(effectiveProfileSwitch.copy(originalTimeshift = T.hours(2).msecs()), activePlugin)
+        whenever(profileFunction.getProfile()).thenReturn(shifted)
+        whenever(profileFunction.createProfileSwitch(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(mock<PS>())
+        sut.pct = InputPercent(90.0)
+        sut.permanent = true
+        assertThat(sut.doAction().success).isTrue()
+        verify(profileFunction, times(1)).createProfileSwitch(eq(0), eq(90), eq(2), any(), any(), any(), any(), eq(0L))
+    }
+
+    /** A temporary switch keeps timeshift 0 like upstream: the old profile with its timeshift comes back after it. */
+    @Test fun temporarySwitchUsesNoTimeshift() = runTest {
+        val shifted = ProfileSealed.EPS(effectiveProfileSwitch.copy(originalTimeshift = T.hours(2).msecs()), activePlugin)
+        whenever(profileFunction.getProfile()).thenReturn(shifted)
+        whenever(profileFunction.createProfileSwitch(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(mock<PS>())
+        sut.pct = InputPercent(90.0)
+        sut.duration = InputDuration(30, InputDuration.TimeUnit.MINUTES)
+        assertThat(sut.doAction().success).isTrue()
+        verify(profileFunction, times(1)).createProfileSwitch(eq(30), eq(90), eq(0), any(), any(), any(), any(), eq(0L))
     }
 
     /** The running profile in the test base is 100%. */
