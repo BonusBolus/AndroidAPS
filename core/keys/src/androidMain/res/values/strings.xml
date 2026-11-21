@@ -37,6 +37,16 @@
     <string name="pref_title_alert_override_dnd">Override Do Not Disturb mode</string>
     <string name="pref_summary_alert_override_dnd">On: alarms ring even when the phone is silent or in Do Not Disturb. Off: alarms do not ring then. In Do Not Disturb they only vibrate.</string>
 
+    <!-- Ongoing status notification preferences -->
+    <string name="pref_title_notification_status_mode">Ongoing status notification</string>
+    <string name="pref_title_notification_status_detailed">Detailed status notification</string>
+    <string name="pref_summary_notification_status_detailed">On: the notification also shows the profile values, the algorithm values and the Wizard values beside the current ones. Off: only the values in use now. Not used by AAPS standard.</string>
+    <string name="pref_summary_notification_status_mode">Live chip: the glucose chip stays in the status bar, the notification is a text card. Status bar icon: no chip, the glucose is the status bar icon and the notification shows the graph. Graph on lock screen: the graph while the phone is locked; when unlocked the live chip, with the graph as a second notification. AAPS standard: the notification without changes.</string>
+    <string name="pref_notification_status_mode_chip">Live chip</string>
+    <string name="pref_notification_status_mode_icon">Status bar icon</string>
+    <string name="pref_notification_status_mode_graph_locked">Graph on lock screen</string>
+    <string name="pref_notification_status_mode_standard">AAPS standard</string>
+
     <!-- BG Source preferences -->
     <string name="pref_title_bg_source_upload_to_ns">Upload BG data to NS</string>
     <string name="pref_title_bg_source_create_sensor_change">Log sensor change</string>

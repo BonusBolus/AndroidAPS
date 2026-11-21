@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Detailed ongoing status notification. One view for the collapsed and the expanded state, so it must stay
+     compact: the system limits the height of the collapsed state. Only views allowed in RemoteViews.
+     The text uses the notification text styles, so it is light on a dark notification and dark on a light one,
+     whatever the app theme is. Coloured values get their colour from spans. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="2dp"
+    android:paddingBottom="2dp">
+
+    <!-- Glucose • age | IOB • COB • SMB. The texts have different sizes, so they line up on their baseline. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="true"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/status_bg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="15sp" />
+
+        <!-- tnum: digits of equal width, so the divider after the time does not move every second. -->
+        <Chronometer
+            android:id="@+id/status_age"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:fontFeatureSettings="tnum"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="12sp"
+            android:textStyle="normal" />
+
+        <TextView
+            android:id="@+id/status_divider"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="6dp"
+            android:text="@string/notification_divider"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Info"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/status_top_values"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="12sp"
+            android:textStyle="normal" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/status_graph"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:scaleType="fitXY" />
+
+    <TextView
+        android:id="@+id/status_values"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+        android:textSize="12sp"
+        android:textStyle="normal" />
+</LinearLayout>

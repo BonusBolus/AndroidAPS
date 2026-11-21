@@ -28,7 +28,7 @@ class NotificationHolderImpl(
     private val uiInteraction: UiInteraction
 ) : NotificationHolder {
 
-    override val channelID = "AndroidAPS-Ongoing"
+    override val channelID = "AndroidAPS-Ongoing-Status"
     override val notificationID = 4711
     private var _notification: Notification? = null
     override var notification: Notification
@@ -73,8 +73,19 @@ class NotificationHolderImpl(
 
     override fun createNotificationChannel() {
         val mNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        // Same id as before, so the user's settings stay. Android renames an existing channel.
-        val channel = NotificationChannel(channelID, context.getString(R.string.ongoing_channel_name), NotificationManager.IMPORTANCE_HIGH)
+        // IMPORTANCE_LOW: no banner and no sound when the notification updates with every new reading.
+        // The importance of an existing channel cannot be raised or reliably lowered by the app, so the
+        // channel has a new id and the former one (IMPORTANCE_HIGH) is removed.
+        val channel = NotificationChannel(channelID, context.getString(R.string.ongoing_channel_name), NotificationManager.IMPORTANCE_LOW)
         mNotificationManager.createNotificationChannel(channel)
+        // Android refuses to delete a channel that a foreground service notification is still posted in.
+        if (mNotificationManager.activeNotifications.none { it.notification.channelId == OLD_CHANNEL_ID }) {
+            mNotificationManager.deleteNotificationChannel(OLD_CHANNEL_ID)
+        }
+    }
+
+    private companion object {
+
+        const val OLD_CHANNEL_ID = "AndroidAPS-Ongoing"
     }
 }

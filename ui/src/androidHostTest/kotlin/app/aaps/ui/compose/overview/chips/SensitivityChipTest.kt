@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -29,17 +30,48 @@ class SensitivityChipTest {
     val compose = createComposeRule()
 
     @Test
-    fun showsSensitivityText() {
+    fun autosensChipShowsCurrentAutosens() {
         compose.setContent {
             MaterialTheme {
-                SensitivityChip(
-                    state = SensitivityUiState(asText = "112%", ratio = 1.12, isEnabled = true, hasData = true),
+                AutosensChip(
+                    state = SensitivityUiState(asText = "112", ratio = 1.12, isEnabled = true, hasData = true),
                     onClick = {}
                 )
             }
         }
 
-        compose.onNodeWithText("112%").assertIsDisplayed()
+        compose.onNodeWithText("112").assertIsDisplayed()
+    }
+
+    @Test
+    fun autosensChipShowsAlgorithmValue() {
+        compose.setContent {
+            MaterialTheme {
+                AutosensChip(
+                    state = SensitivityUiState(asText = "112", algorithmAutosens = "108", ratio = 1.12, isEnabled = true, hasData = true),
+                    onClick = {}
+                )
+            }
+        }
+
+        compose.onNodeWithText("112").assertIsDisplayed()
+        compose.onNodeWithText("108").assertIsDisplayed()
+    }
+
+    @Test
+    fun autosensChipHidesAlgorithmValueWhenItIsTheSame() {
+        compose.setContent {
+            MaterialTheme {
+                AutosensChip(
+                    state = SensitivityUiState(asText = "112", algorithmAutosens = "112", ratio = 1.12, isEnabled = true, hasData = true),
+                    onClick = {}
+                )
+            }
+        }
+
+        // One number, not the same percentage twice: the chip only spends the room when the
+        // algorithm used a different ratio.
+        compose.onAllNodesWithText("112").assertCountEquals(1)
     }
 
     @Test
@@ -80,8 +112,8 @@ class SensitivityChipTest {
         var clicks = 0
         compose.setContent {
             MaterialTheme {
-                SensitivityChip(
-                    state = SensitivityUiState(asText = "88%", ratio = 0.88, isEnabled = false, hasData = true),
+                AutosensChip(
+                    state = SensitivityUiState(asText = "88", ratio = 0.88, isEnabled = false, hasData = true),
                     onClick = { clicks++ },
                     modifier = Modifier.testTag("sensChip")
                 )

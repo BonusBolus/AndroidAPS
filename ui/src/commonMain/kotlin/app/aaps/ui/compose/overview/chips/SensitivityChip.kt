@@ -16,12 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aaps.core.interfaces.navigation.ElementType
-import app.aaps.core.interfaces.InterfacesStrings
 import app.aaps.core.interfaces.overview.IsfStep
 import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.core.ui.CoreUiStrings
@@ -29,21 +27,17 @@ import app.aaps.core.ui.compose.AapsSpacing
 import app.aaps.core.ui.compose.icons.IcArrowFlat
 import app.aaps.core.ui.compose.icons.IcArrowFortyfiveDown
 import app.aaps.core.ui.compose.icons.IcArrowFortyfiveUp
-import app.aaps.core.ui.compose.icons.IcAs
-import app.aaps.core.ui.compose.icons.IcAsAbove
-import app.aaps.core.ui.compose.icons.IcAsAboveX
-import app.aaps.core.ui.compose.icons.IcAsBelow
-import app.aaps.core.ui.compose.icons.IcAsBelowX
-import app.aaps.core.ui.compose.icons.IcAsX
 import app.aaps.core.ui.compose.navigation.color
 import app.aaps.core.ui.compose.navigation.icon
 import app.aaps.core.ui.compose.navigation.label
-import app.aaps.core.ui.compose.stringResource
 import app.aaps.core.ui.compose.stringResourceOrNull
 
+
 /**
+ * The ISF half of the overview sensitivity block: the profile ISF and the ISF in use, with the
+ * Wizard ISF beside them. The autosens value lives in [AutosensChip], which sits to the left of it.
+ *
  * @see SensitivityChipAbovePreview
- * @see SensitivityChipBelowDisabledPreview
  * @see SensitivityChipIsfDownPreview
  */
 @Composable
@@ -52,50 +46,25 @@ internal fun SensitivityChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val icon = selectSensIcon(ratio = state.ratio, isEnabled = state.isEnabled)
     val textColor = MaterialTheme.colorScheme.onSurfaceVariant
-    // Autosens being switched off is drawn as a small X across the icon and nothing else, while the
-    // chip goes on showing a percentage. So a screen reader read out a figure that is not actually
-    // being applied, with no sign of it. Above or below profile stays unspoken on purpose - the
-    // percentage itself already says which way it goes.
-    val autosensOff = stringResource(CoreUiStrings.autosens_state_off)
     Surface(
         shape = RoundedCornerShape(AapsSpacing.chipCornerRadius),
         color = ElementType.SENSITIVITY.color().copy(alpha = 0.2f),
         modifier = modifier
             .heightIn(min = AapsSpacing.chipHeight)
             .clickable(onClick = onClick)
-            .then(
-                if (!state.isEnabled) Modifier.semantics { stateDescription = autosensOff }
-                else Modifier
-            )
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = AapsSpacing.medium, vertical = AapsSpacing.small)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = stringResourceOrNull(ElementType.SENSITIVITY.label()),
-                tint = ElementType.SENSITIVITY.color(),
-                modifier = Modifier.size(AapsSpacing.chipIconSize)
-            )
-            if (state.asText.isNotEmpty()) {
-                Text(
-                    text = state.asText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = textColor,
-                    modifier = Modifier.padding(start = AapsSpacing.medium)
-                )
-            }
-            if (state.asText.isNotEmpty() && state.isfFrom.isNotEmpty()) {
-                Spacer(Modifier.width(AapsSpacing.medium))
-            }
             if (state.isfFrom.isNotEmpty()) {
                 Text(
                     text = state.isfFrom,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = textColor
+                    color = textColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Icon(
                     imageVector = selectIsfArrow(state.isfStep),
@@ -107,11 +76,13 @@ internal fun SensitivityChip(
                     text = state.isfTo,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
-                    color = textColor
+                    color = textColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             if (state.wizardIsf.isNotEmpty()) {
-                Spacer(Modifier.width(AapsSpacing.medium))
+                Spacer(Modifier.width(AapsSpacing.extraSmall))
                 Icon(
                     imageVector = ElementType.BOLUS_WIZARD.icon(),
                     contentDescription = stringResourceOrNull(ElementType.BOLUS_WIZARD.label()),
@@ -119,34 +90,17 @@ internal fun SensitivityChip(
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
-                    text = stringResource(
-                        InterfacesStrings.confirmation_line,
-                        stringResource(CoreUiStrings.wizard_isf),
-                        state.wizardIsf
-                    ),
+                    text = state.wizardIsf,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
-                    color = textColor
+                    color = textColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
     }
 }
-
-private fun selectSensIcon(ratio: Double, isEnabled: Boolean): ImageVector =
-    if (isEnabled) {
-        when {
-            ratio > 1.0 -> IcAsAbove
-            ratio < 1.0 -> IcAsBelow
-            else        -> IcAs
-        }
-    } else {
-        when {
-            ratio > 1.0 -> IcAsAboveX
-            ratio < 1.0 -> IcAsBelowX
-            else        -> IcAsX
-        }
-    }
 
 private fun selectIsfArrow(step: IsfStep): ImageVector =
     when (step) {

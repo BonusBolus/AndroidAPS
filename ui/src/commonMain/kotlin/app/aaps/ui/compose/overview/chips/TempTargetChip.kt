@@ -126,7 +126,7 @@ fun TempTargetChip(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
                             .weight(1f, fill = false)
-                            .padding(start = AapsSpacing.medium)
+                            .padding(start = AapsSpacing.chipIconGap)
                     )
                     Icon(
                         imageVector = selectTempTargetArrow(tempTargetStep),
@@ -151,7 +151,7 @@ fun TempTargetChip(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
                             .weight(1f, fill = false)
-                            .padding(start = AapsSpacing.medium)
+                            .padding(start = AapsSpacing.chipIconGap)
                     )
                 }
                 if (sceneManaged) {

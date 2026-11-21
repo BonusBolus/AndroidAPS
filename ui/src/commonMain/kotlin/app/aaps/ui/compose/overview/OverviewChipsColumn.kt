@@ -23,6 +23,7 @@ import app.aaps.ui.compose.overview.chips.CobUiState
 import app.aaps.ui.compose.overview.chips.IobCobChipsRow
 import app.aaps.ui.compose.overview.chips.IobUiState
 import app.aaps.ui.compose.overview.chips.ProfileChip
+import app.aaps.ui.compose.overview.chips.ReservedChip
 import app.aaps.ui.compose.overview.chips.RunningModeChip
 import app.aaps.ui.compose.overview.chips.SensitivityUiState
 import app.aaps.ui.compose.overview.chips.TbrChip
@@ -175,6 +176,9 @@ private fun NarrowChips(
             state = tbrState,
             onClick = onTbrChipClick
         )
+        // Grey placeholder for a value that comes in a later change. It is sized like the temp
+        // basal chip, so the row reads as: temp target, temp basal, reserved block.
+        ReservedChip()
     }
 }
 

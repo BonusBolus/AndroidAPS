@@ -95,6 +95,10 @@ class SensitivityOverviewImpl(
         val units = profileFunction.getUnits()
 
         var asText = ""
+        // The autosens value the algorithm used, always shown beside the current autosens. A ratio
+        // of 1.0 means it applied no adjustment, and 100 is the honest way to say that. No percent
+        // sign: the chip is narrow and the autosens icon already says what the number is.
+        val algorithmAutosens = rh.gs(CoreUiStrings.autosens_chip_value, ratioUsed * 100)
         var isfFrom = ""
         var isfTo = ""
         var wizardIsf = ""
@@ -106,7 +110,7 @@ class SensitivityOverviewImpl(
             // Variable ISF branch — hide "AS: 100%" from overview when ratio is exactly 100%
             lastAutosensPercent?.let {
                 if (it != 100.0)
-                    asText = rh.gs(CoreUiStrings.autosens_short, it)
+                    asText = rh.gs(CoreUiStrings.autosens_chip_value, it)
                 lines.add(rh.gs(CoreUiStrings.autosens_long, it))
             }
             val profileIsfDisplayed = profileUtil.fromMgdlToUnits(isfMgdl, units)
@@ -129,7 +133,7 @@ class SensitivityOverviewImpl(
             lastAutosensData?.let {
                 val pct = it.autosensResult.ratio * 100
                 if (pct != 100.0)
-                    asText = rh.gs(CoreUiStrings.autosens_short, pct)
+                    asText = rh.gs(CoreUiStrings.autosens_chip_value, pct)
                 lines.add(rh.gs(CoreUiStrings.autosens_long, pct))
             }
             if (isfMgdl != null) {
@@ -161,6 +165,7 @@ class SensitivityOverviewImpl(
 
         return SensitivityOverviewData(
             asText = asText,
+            algorithmAutosens = algorithmAutosens,
             isfFrom = isfFrom,
             isfTo = isfTo,
             wizardIsf = wizardIsf,

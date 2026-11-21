@@ -25,6 +25,7 @@ data class CobUiState(
 @Immutable
 data class SensitivityUiState(
     val asText: String = "",
+    val algorithmAutosens: String = "",
     val isfFrom: String = "",
     val isfTo: String = "",
     val wizardIsf: String = "",
