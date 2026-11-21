@@ -20,7 +20,13 @@ enum class SeriesType {
     BGI,
     DEVIATIONS,
     SENSITIVITY,
+    /** The autosens ratio each loop run used (dashed beside [SENSITIVITY]). */
+    ALGO_AUTOSENS,
     VAR_SENSITIVITY,
+    /** The ISF the bolus wizard uses, the ISF for carbs (dashed beside [VAR_SENSITIVITY]). */
+    WIZARD_ISF,
+    /** The target each loop run used. */
+    ALGO_TARGET,
     DEV_SLOPE,
     HEART_RATE,
     STEPS,
@@ -50,11 +56,11 @@ data class SecondaryGraph(
  *
  * Fixed graphs (not removable):
  * - BG graph: blood glucose with optional activity overlay (toggled via [bgOverlays]).
- * - IOB graph: configurable series with flipped basal overlay when IOB is selected.
+ * - IOB graph: IOB line with bolus markers + flipped basal overlay, with optional activity
+ *   overlay (toggled via [iobOverlays]).
  *
  * @param bgOverlays       Overlay toggles for the BG graph (currently only [SeriesType.ACTIVITY]).
- * @param iobSeries        Series shown on the first fixed graph.
- * @param iobOverlays      Legacy activity overlay setting retained for config migration.
+ * @param iobOverlays      Overlay toggles for the fixed IOB graph (currently only [SeriesType.ACTIVITY]).
  * @param secondaryGraphs  Ordered list of user-configurable secondary graph configurations.
  *   IOB cannot appear here (it has a dedicated fixed slot). Each graph is a List (not Set) to
  *   preserve selection order:
@@ -63,7 +69,6 @@ data class SecondaryGraph(
  */
 data class GraphConfig(
     val bgOverlays: List<SeriesType> = listOf(SeriesType.ACTIVITY, SeriesType.PREDICTIONS),
-    val iobSeries: List<SeriesType> = listOf(SeriesType.IOB, SeriesType.ACTIVITY),
     val iobOverlays: List<SeriesType> = listOf(SeriesType.ACTIVITY),
     val bgHeight: Int = DEFAULT_GRAPH_HEIGHT_DP,
     val iobHeight: Int = DEFAULT_GRAPH_HEIGHT_DP,

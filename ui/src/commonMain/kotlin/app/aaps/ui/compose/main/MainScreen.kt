@@ -1,6 +1,7 @@
 package app.aaps.ui.compose.main
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -257,14 +258,23 @@ fun MainScreen(
             Scaffold { scaffoldPadding ->
                 val hasToolbar = quickLaunchItems.isNotEmpty()
 
+                // The top controls slide in and out over the content. Their height goes into the
+                // content padding over the same animation, so the graphs and chips flow with the
+                // bar instead of snapping to their new place when it starts moving.
+                val topChromeHeight = with(density) { topBarHeightPx.toDp() }
+                val animatedTopChromeHeight by animateDpAsState(
+                    targetValue = if (topChromeVisible) topChromeHeight else 0.dp,
+                    animationSpec = tween(durationMillis = TOP_CHROME_ANIMATION_MS),
+                    label = "topChromePadding"
+                )
+
                 // Content padding: in preview mode use only system bars;
                 // in normal mode add measured bar heights
                 val contentPadding = if (previewMode) scaffoldPadding
                 else {
-                    val topBarHeight = if (topChromeVisible) with(density) { topBarHeightPx.toDp() } else 0.dp
                     val bottomBarHeight = with(density) { bottomBarHeightPx.toDp() }
                     PaddingValues(
-                        top = scaffoldPadding.calculateTopPadding() + topBarHeight,
+                        top = scaffoldPadding.calculateTopPadding() + animatedTopChromeHeight,
                         bottom = scaffoldPadding.calculateBottomPadding() + bottomBarHeight
                     )
                 }
@@ -392,11 +402,16 @@ fun MainScreen(
                     // bar shown it is lifted into the bar's empty band under the search bar, so it sits
                     // above the profile chip instead of level with the chip's text. In preview mode the
                     // content starts right under the status bar, so there it stays at the content's edge.
+                    val versionLift by animateDpAsState(
+                        targetValue = if (topChromeVisible) -VERSION_LABEL_LIFT else 0.dp,
+                        animationSpec = tween(durationMillis = TOP_CHROME_ANIMATION_MS),
+                        label = "versionLift"
+                    )
                     VersionOverlay(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(contentPadding)
-                            .offset(y = if (topChromeVisible) -VERSION_LABEL_LIFT else 0.dp)
+                            .offset(y = versionLift)
                     )
 
                     // Status bar protection scrim — keeps system icons legible
@@ -421,10 +436,10 @@ fun MainScreen(
                     // Top bar overlay
                     AnimatedVisibility(
                         visible = topChromeVisible,
-                        enter = slideInVertically(animationSpec = tween(durationMillis = 500)) { -it } +
-                            fadeIn(animationSpec = tween(durationMillis = 500)),
-                        exit = slideOutVertically(animationSpec = tween(durationMillis = 500)) { -it } +
-                            fadeOut(animationSpec = tween(durationMillis = 500)),
+                        enter = slideInVertically(animationSpec = tween(durationMillis = TOP_CHROME_ANIMATION_MS)) { -it } +
+                            fadeIn(animationSpec = tween(durationMillis = TOP_CHROME_ANIMATION_MS)),
+                        exit = slideOutVertically(animationSpec = tween(durationMillis = TOP_CHROME_ANIMATION_MS)) { -it } +
+                            fadeOut(animationSpec = tween(durationMillis = TOP_CHROME_ANIMATION_MS)),
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .padding(top = scaffoldPadding.calculateTopPadding())
@@ -451,11 +466,8 @@ fun MainScreen(
                         )
                     }
 
-                    // Bottom bar overlay
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = slideInVertically { it },
-                        exit = slideOutVertically { it },
+                    // Bottom bar overlay, always shown
+                    Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(bottom = scaffoldPadding.calculateBottomPadding())
@@ -632,6 +644,9 @@ fun MainScreen(
 
 private val PREVIEW_MODE_MIN_HEIGHT: Dp = 500.dp
 private const val AUTO_HIDE_DELAY_MS = 3000L
+
+/** Duration of the top controls' slide, and of the content following it. One value, so they stay in step. */
+private const val TOP_CHROME_ANIMATION_MS = 350
 
 /**
  * How far the version label is lifted above the content's top edge while the top bar is shown. The

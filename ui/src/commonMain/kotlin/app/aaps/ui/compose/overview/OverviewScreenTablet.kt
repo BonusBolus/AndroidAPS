@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -105,25 +104,7 @@ fun OverviewScreenTablet(
     var statusExpanded by rememberSaveable { mutableStateOf(true) }
     val leftScrollState = rememberScrollState()
     val rightScrollState = rememberScrollState()
-    var hasScrolled by rememberSaveable { mutableStateOf(false) }
-
-    LaunchedEffect(leftScrollState.value) {
-        if (leftScrollState.value > 0) {
-            hasScrolled = true
-            onScrollAtTopChange(false)
-        } else if (hasScrolled && rightScrollState.value == 0) {
-            onScrollAtTopChange(true)
-        }
-    }
-
-    LaunchedEffect(rightScrollState.value) {
-        if (rightScrollState.value > 0) {
-            hasScrolled = true
-            onScrollAtTopChange(false)
-        } else if (hasScrolled && leftScrollState.value == 0) {
-            onScrollAtTopChange(true)
-        }
-    }
+    ReportScrollAtTop(leftScrollState, rightScrollState, onScrollAtTopChange = onScrollAtTopChange)
 
     Column(
         modifier = modifier

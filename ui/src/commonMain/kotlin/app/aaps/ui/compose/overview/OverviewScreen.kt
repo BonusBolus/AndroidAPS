@@ -1,6 +1,11 @@
 package app.aaps.ui.compose.overview
 
 import androidx.compose.animation.AnimatedVisibility
+import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
@@ -352,6 +357,27 @@ fun OverviewScreen(
             onDismissNotification = onDismissNotification,
             onNotificationActionClick = onNotificationActionClick
         )
+    }
+}
+
+/**
+ * Tells [onScrollAtTopChange] when the content leaves the top, and when all of [scrollStates] are back at the top
+ * after a scroll. The positions are read in a snapshotFlow, so the screen is not recomposed on every scroll
+ * frame, only when "at the top" changes.
+ */
+@Composable
+internal fun ReportScrollAtTop(vararg scrollStates: ScrollState, onScrollAtTopChange: (Boolean) -> Unit) {
+    val onChange by rememberUpdatedState(onScrollAtTopChange)
+    var hasScrolled by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(*scrollStates) {
+        snapshotFlow { scrollStates.all { it.value == 0 } }
+            .distinctUntilChanged()
+            .collect { atTop ->
+                if (!atTop) {
+                    hasScrolled = true
+                    onChange(false)
+                } else if (hasScrolled) onChange(true)
+            }
     }
 }
 

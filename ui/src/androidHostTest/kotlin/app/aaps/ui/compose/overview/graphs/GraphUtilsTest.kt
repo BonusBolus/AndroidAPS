@@ -37,6 +37,56 @@ internal class GraphUtilsTest {
         }
     }
 
+    /**
+     * A pinch on a graph below BG is applied to BG's zoom and all graphs follow it, see
+     * [BgZoomForwarder]. Vico's zoom is a factor, not a number of minutes, and a pinch scales it by the
+     * ratio of the fingers' distances.
+     */
+    @Nested
+    inner class ZoomAfterPinchTest {
+
+        // BG's own zoom range: fully zoomed out shows the whole time range, fully zoomed in
+        // MIN_GRAPH_ZOOM_MINUTES, and the factor in between is what Vico computes for a given width.
+        private val range = 0.75f..36f
+
+        @Test
+        fun `fingers moving apart zoom in by the same ratio`() {
+            assertThat(zoomAfterPinch(3f, 2f, range)?.toDouble()).isEqualTo(6.0)
+        }
+
+        @Test
+        fun `fingers coming together zoom out by the same ratio`() {
+            assertThat(zoomAfterPinch(3f, 0.5f, range)?.toDouble()).isEqualTo(1.5)
+        }
+
+        @Test
+        fun `a pinch stops at the whole time range`() {
+            assertThat(zoomAfterPinch(1f, 0.5f, range)?.toDouble()).isEqualTo(0.75)
+        }
+
+        @Test
+        fun `a pinch stops at the most zoomed in`() {
+            assertThat(zoomAfterPinch(20f, 2f, range)?.toDouble()).isEqualTo(36.0)
+        }
+
+        @Test
+        fun `a pinch already at a limit changes nothing`() {
+            assertThat(zoomAfterPinch(36f, 2f, range)).isNull()
+            assertThat(zoomAfterPinch(0.75f, 0.5f, range)).isNull()
+        }
+
+        @Test
+        fun `a pinch with no usable factor changes nothing`() {
+            assertThat(zoomAfterPinch(3f, 0f, range)).isNull()
+            assertThat(zoomAfterPinch(0f, 2f, range)).isNull()
+        }
+
+        @Test
+        fun `a pinch before BG is measured changes nothing`() {
+            assertThat(zoomAfterPinch(3f, 2f, 0f..0f)).isNull()
+        }
+    }
+
     @Nested
     inner class NiceScaleTest {
 

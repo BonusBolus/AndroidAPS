@@ -1799,6 +1799,23 @@ interface PersistenceLayer {
     )
 
     /**
+     * The autosens ratio and the target each stored loop result used, for the graphs of the values the
+     * algorithm worked with. Reads only these fields, like [getVariableSensitivities].
+     *
+     * @param start from
+     * @param end to
+     * @return one row for every result, oldest first
+     */
+    suspend fun getLoopAlgorithmValues(start: Long, end: Long): List<LoopAlgorithmValues>
+
+    /** [sensitivityRatio] is 1.0 for no change. [targetMgdl] is in mg/dL. Each is null when the result has no value. */
+    data class LoopAlgorithmValues(
+        val timestamp: Long,
+        val sensitivityRatio: Double?,
+        val targetMgdl: Double?
+    )
+
+    /**
      * Insert or update ApsResult record
      *
      * @param apsResult record

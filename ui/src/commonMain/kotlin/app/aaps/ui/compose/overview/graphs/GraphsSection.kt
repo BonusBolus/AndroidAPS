@@ -90,7 +90,8 @@ import kotlin.math.abs
  * Pattern: Observe Primary + Sync to Secondary
  * - Each graph has its OWN VicoScrollState and VicoZoomState
  * - BG graph: Interactive - user can scroll/zoom
- * - Secondary graphs: Non-interactive - scroll/zoom disabled
+ * - Secondary graphs: no scroll/zoom state of their own - a sideways drag on one scrolls BG, a
+ *   two-finger pinch on one zooms BG, and they all follow it
  * - One LaunchedEffect observes BG graph's state changes and syncs to secondary
  *
  * Synchronization Implementation:
@@ -290,6 +291,8 @@ fun GraphsSection(
     }
     // A sideways drag on a graph below BG scrolls BG, and they all follow it
     val bgScrollForwarder = rememberBgScrollForwarder(bgScrollState)
+    // A two-finger pinch on a graph below BG zooms BG, and they all follow it. BG's own zoom limits apply.
+    val bgZoomForwarder = rememberBgZoomForwarder(bgZoomState)
 
     // Pre-allocate secondary graph scroll/zoom states (up to MAX_SECONDARY_GRAPHS)
     // These are always created to keep Compose's remember slots stable
@@ -651,15 +654,16 @@ fun GraphsSection(
                 .pullUp(IOB_GRAPH_PULL_UP)
                 .graphInspectTouch(inspect)
                 .scrollsBgGraph(bgScrollForwarder, inspect, graphViewModel::onGraphInteraction)
+                .zoomsBgGraph(bgZoomForwarder, inspect, graphViewModel::onGraphInteraction)
         ) {
             SecondaryGraphCompose(
                 viewModel = graphViewModel,
-                seriesTypes = graphConfig.iobSeries,
+                seriesTypes = listOf(SeriesType.IOB),
                 scrollState = iobScrollState,
                 zoomState = iobZoomState,
                 derivedTimeRange = derivedTimeRange,
                 nowTimestamp = nowTimestamp,
-                activityOverlay = false,
+                activityOverlay = SeriesType.ACTIVITY in graphConfig.iobOverlays,
                 onVisibleRangeChanged = { iobVisibleRange = it },
                 inspect = inspect,
                 modifier = Modifier
@@ -667,11 +671,7 @@ fun GraphsSection(
                     .height(graphConfig.iobHeight.dp - REMOVED_TIME_LABELS_HEIGHT)
             )
             GraphNameRow(
-                name = if (SeriesType.IOB in graphConfig.iobSeries) {
-                    stringResource(InterfacesStrings.values_with_slash, stringResource(CoreUiStrings.iob), stringResource(CoreUiStrings.basal_shortname))
-                } else {
-                    seriesListLabel(graphConfig.iobSeries)
-                },
+                name = stringResource(InterfacesStrings.values_with_slash, stringResource(CoreUiStrings.iob), stringResource(CoreUiStrings.basal_shortname)),
                 editName = stringResource(CoreUiStrings.iob),
                 onEdit = if (isSimpleMode) null else ({ editingIobOverlays = true }),
                 modifier = Modifier
@@ -681,21 +681,17 @@ fun GraphsSection(
         }
         if (editingIobOverlays) {
             GraphSeriesBottomSheet(
-                title = stringResource(CoreUiStrings.graph_series_iob),
-                selectedSeries = graphConfig.iobSeries,
-                availableSeries = SeriesType.entries.filter { it != SeriesType.PREDICTIONS },
+                title = stringResource(InterfacesStrings.values_with_slash, stringResource(CoreUiStrings.iob), stringResource(CoreUiStrings.basal_shortname)),
+                selectedSeries = graphConfig.iobOverlays,
+                availableSeries = listOf(SeriesType.ACTIVITY),
                 height = graphConfig.iobHeight,
                 onHeightChange = { h ->
                     graphViewModel.updateGraphConfig(graphConfig.copy(iobHeight = h))
                 },
                 onToggle = { type ->
-                    val current = graphConfig.iobSeries.toMutableList()
+                    val current = graphConfig.iobOverlays.toMutableList()
                     if (type in current) current.remove(type) else current.add(type)
-                    graphViewModel.updateGraphConfig(
-                        graphConfig.copy(
-                            iobSeries = if (current.isEmpty()) listOf(SeriesType.IOB) else current
-                        )
-                    )
+                    graphViewModel.updateGraphConfig(graphConfig.copy(iobOverlays = current))
                 },
                 onDismiss = { editingIobOverlays = false }
             )
@@ -710,6 +706,7 @@ fun GraphsSection(
                     .pullUp(GRAPH_OVERLAP)
                     .graphInspectTouch(inspect)
                     .scrollsBgGraph(bgScrollForwarder, inspect, graphViewModel::onGraphInteraction)
+                    .zoomsBgGraph(bgZoomForwarder, inspect, graphViewModel::onGraphInteraction)
             ) {
                 SecondaryGraphCompose(
                     viewModel = graphViewModel,
@@ -885,6 +882,9 @@ private fun seriesShortNameId(type: SeriesType): TextRef = when (type) {
     SeriesType.DEVIATIONS      -> CoreUiStrings.deviation_shortname
     SeriesType.SENSITIVITY     -> CoreUiStrings.sensitivity_shortname
     SeriesType.VAR_SENSITIVITY -> CoreUiStrings.variable_sensitivity_shortname
+    SeriesType.ALGO_AUTOSENS   -> CoreUiStrings.algo_autosens_shortname
+    SeriesType.WIZARD_ISF      -> CoreUiStrings.wizard_isf_shortname
+    SeriesType.ALGO_TARGET     -> CoreUiStrings.algo_target_shortname
     SeriesType.DEV_SLOPE       -> CoreUiStrings.devslope_shortname
     SeriesType.HEART_RATE      -> CoreUiStrings.heartRate_shortname
     SeriesType.STEPS           -> CoreUiStrings.steps_shortname
@@ -902,6 +902,9 @@ private fun seriesNameId(type: SeriesType): TextRef = when (type) {
     SeriesType.DEVIATIONS      -> CoreUiStrings.graph_series_deviations
     SeriesType.SENSITIVITY     -> CoreUiStrings.graph_series_sensitivity
     SeriesType.VAR_SENSITIVITY -> CoreUiStrings.graph_series_variable_sens
+    SeriesType.ALGO_AUTOSENS   -> CoreUiStrings.graph_series_algo_autosens
+    SeriesType.WIZARD_ISF      -> CoreUiStrings.graph_series_wizard_isf
+    SeriesType.ALGO_TARGET     -> CoreUiStrings.graph_series_algo_target
     SeriesType.DEV_SLOPE       -> CoreUiStrings.graph_series_deviation_slope
     SeriesType.HEART_RATE      -> CoreUiStrings.graph_series_heart_rate
     SeriesType.STEPS           -> CoreUiStrings.graph_series_steps

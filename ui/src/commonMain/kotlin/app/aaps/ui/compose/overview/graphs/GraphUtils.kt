@@ -4,6 +4,8 @@ import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.animateDecay
 import androidx.compose.animation.rememberSplineBasedDecay
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.GenericShape
@@ -19,7 +21,9 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.input.pointer.util.addPointerInputChange
 import androidx.compose.ui.unit.Dp
@@ -29,6 +33,8 @@ import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
 import com.patrykandpatrick.vico.compose.cartesian.CartesianMeasuringContext
 import com.patrykandpatrick.vico.compose.cartesian.Scroll
 import com.patrykandpatrick.vico.compose.cartesian.VicoScrollState
+import com.patrykandpatrick.vico.compose.cartesian.VicoZoomState
+import com.patrykandpatrick.vico.compose.cartesian.Zoom
 import com.patrykandpatrick.vico.compose.cartesian.axis.Axis
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
@@ -71,8 +77,9 @@ import kotlin.time.Instant
  *
  * **Scroll/Zoom Synchronization:**
  * - BG graph (primary): scrollEnabled = true, zoomEnabled = true
- * - Secondary graphs: scrollEnabled = false, zoomEnabled = false. A sideways drag on them scrolls
- *   the BG graph instead ([BgScrollForwarder]), and they follow it like for a drag on BG.
+ * - Secondary graphs: scrollEnabled = false, zoomEnabled = false. A sideways drag on them scrolls the
+ *   BG graph and a two-finger pinch zooms it ([BgScrollForwarder], [BgZoomForwarder]), and they follow
+ *   it like for a drag or a pinch on BG.
  * - Pixel-based sync: snapshotFlow { bgScrollState.value to bgZoomState.value }
  * - See OverviewGraphsSection for full implementation
  *
@@ -272,6 +279,79 @@ fun rememberBgScrollForwarder(bgScrollState: VicoScrollState): BgScrollForwarder
 }
 
 /**
+ * Zooms the BG graph for a two-finger pinch on a graph below it, see [zoomsBgGraph]. One for the
+ * screen, shared by those graphs.
+ *
+ * The pinch is not applied to the graph it is on. The graphs below BG follow BG's zoom on every frame
+ * already, so zooming BG zooms all of them and they stay on one time window. Their own Vico zoom stays
+ * off for the same reasons as their scroll, see [BgScrollForwarder].
+ */
+@Stable
+class BgZoomForwarder internal constructor(
+    scope: CoroutineScope
+) {
+
+    /** The BG graph's zoom state. It is recreated by a viewport reset, so it is set on every composition. */
+    internal var target: VicoZoomState? = null
+
+    /**
+     * Pinch factors, applied one after the other. [VicoZoomState.zoom] suspends and a pinch delivers its
+     * moves faster than one zoom may take, so they wait in line instead of one cancelling the other.
+     */
+    private val factors = Channel<Float>(Channel.UNLIMITED)
+
+    init {
+        scope.launch {
+            for (factor in factors) {
+                val state = target ?: continue
+                val zoom = zoomAfterPinch(state.value, factor, state.valueRange) ?: continue
+                state.zoom(Zoom.fixed(zoom))
+            }
+        }
+    }
+
+    /** The fingers of a pinch moved [factor] times further apart, further apart than before when > 1. */
+    internal fun pinch(factor: Float) {
+        factors.trySend(factor)
+    }
+}
+
+/** The [BgZoomForwarder] of the screen, zooming [bgZoomState]. */
+@Composable
+fun rememberBgZoomForwarder(bgZoomState: VicoZoomState): BgZoomForwarder {
+    val scope = rememberCoroutineScope()
+    val forwarder = remember(scope) { BgZoomForwarder(scope) }
+    SideEffect { forwarder.target = bgZoomState }
+    return forwarder
+}
+
+/**
+ * How little a pinch may change the distance between the fingers and still zoom the graphs, so a still
+ * pinch that only reports rounding is not applied over and over.
+ */
+private const val PINCH_TOLERANCE = 1e-4f
+
+/** The smallest change of the zoom factor, as a part of it, that is worth zooming the graphs for. */
+private const val MIN_ZOOM_CHANGE = 1e-3f
+
+/**
+ * The zoom factor the graphs have after a pinch that moved the fingers [factor] times further apart, or
+ * null when that would not change the factor [currentZoom] they have within [range].
+ *
+ * Vico's zoom is a factor, not a number of shown minutes: the x axis is stretched by it, so the graphs
+ * show 1/factor of what they showed. A pinch is a ratio too, so fingers moving apart (factor > 1)
+ * multiply it: more detail, fewer minutes. [range] is BG's own [VicoZoomState.valueRange], the limits
+ * its [Zoom]s set, so a pinch cannot zoom further than a gesture on BG could.
+ */
+internal fun zoomAfterPinch(currentZoom: Float, factor: Float, range: ClosedFloatingPointRange<Float>): Float? {
+    if (!currentZoom.isFinite() || currentZoom <= 0f) return null
+    if (!factor.isFinite() || factor <= 0f) return null
+    if (range.start <= 0f || range.endInclusive < range.start) return null
+    val next = (currentZoom * factor).coerceIn(range)
+    return next.takeIf { abs(it - currentZoom) > it * MIN_ZOOM_CHANGE }
+}
+
+/**
  * A sideways drag on this graph scrolls all graphs, through [forwarder]. Calls [onGesture] when the
  * drag starts and ends, like [onScrollOrZoomGesture] does on BG, so a new reading does not reset the
  * view in the middle of it.
@@ -303,6 +383,53 @@ fun Modifier.scrollsBgGraph(forwarder: BgScrollForwarder, inspect: GraphInspectS
             }
         )
     }
+
+/**
+ * A two-finger pinch on this graph zooms all graphs, through [forwarder]. Calls [onGesture] when the
+ * pinch starts and ends, like [onScrollOrZoomGesture] does on BG, so a new reading does not reset the
+ * view in the middle of it.
+ *
+ * One finger is left alone: a drag is still the sideways scroll of [scrollsBgGraph], and a press that
+ * does not move still turns into the press and hold of [inspect]. While inspecting the fingers belong
+ * to the marker. The moves of a pinch are consumed, so the drag next to this one does not scroll BG
+ * while the fingers are zooming.
+ */
+fun Modifier.zoomsBgGraph(forwarder: BgZoomForwarder, inspect: GraphInspectState, onGesture: () -> Unit): Modifier =
+    pointerInput(forwarder, inspect, onGesture) {
+        awaitEachGesture {
+            awaitFirstDown(requireUnconsumed = false)
+            var pinching = false
+            do {
+                val event = awaitPointerEvent()
+                val pressed = event.changes.filter { it.pressed }
+                // Two fingers are a pinch. One finger, or a pinch while inspecting, belongs to the drag,
+                // the press and hold, or the page.
+                if (pressed.size < 2 || inspect.fingerDown) {
+                    if (pinching) {
+                        pinching = false
+                        onGesture()
+                    }
+                    continue
+                }
+                val factor = pinchFactor(pressed)
+                if (abs(factor - 1f) < PINCH_TOLERANCE) continue
+                if (!pinching) {
+                    pinching = true
+                    onGesture()
+                }
+                forwarder.pinch(factor)
+                pressed.forEach { if (it.positionChanged()) it.consume() }
+            } while (event.changes.any { it.pressed })
+            if (pinching) onGesture()
+        }
+    }
+
+/** How much further apart the first two fingers of a pinch are than in the previous event. */
+private fun pinchFactor(changes: List<PointerInputChange>): Float {
+    val before = (changes[0].previousPosition - changes[1].previousPosition).getDistance()
+    val after = (changes[0].position - changes[1].position).getDistance()
+    return if (before > 0f && after > 0f) after / before else 1f
+}
 
 /**
  * Stops a running fling of [forwarder] at any new touch on the graphs. Observed in the
