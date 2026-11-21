@@ -80,11 +80,9 @@ internal fun AutosensChip(
                 else Modifier
             )
     ) {
-        // No padding before the icon: its 24 dp box already keeps an empty margin around the glyph, and the
-        // row beside the BG circle is narrow.
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(end = AapsSpacing.medium, top = AapsSpacing.small, bottom = AapsSpacing.small)
+            modifier = Modifier.padding(horizontal = AapsSpacing.medium, vertical = AapsSpacing.small)
         ) {
             Icon(
                 imageVector = icon,

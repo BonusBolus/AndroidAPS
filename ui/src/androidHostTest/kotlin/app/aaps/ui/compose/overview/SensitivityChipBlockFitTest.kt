@@ -37,9 +37,10 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * Checks that the autosens and ISF chips fit in the overview row beside the BG circle.
  *
- * The widths are the room the row gets on a phone: about 261 dp at the default display size of a
- * 411 dp wide phone, and about 210 dp at one step larger display size (width minus 16 dp padding,
- * the 126 dp BG circle and the 8 dp gap). The font scales are the default and 130 %.
+ * The widths are the room the row gets on a phone in portrait (the stacked layout): about 292 dp at
+ * the default display size of a 411 dp wide phone, and about 241 dp at one step larger display size
+ * (width minus 16 dp padding, the 95 dp compact BG circle and the 8 dp gap). The font scales are the
+ * default and 130 %.
  *
  * The autosens value and both ISF values must never be cut: the second ISF is the one the loop works
  * with. The wizard ISF and the second autosens value may be cut when there is no room, so they are
@@ -83,7 +84,7 @@ class SensitivityChipBlockFitTest {
             required = listOf("105", "180", "225"), optional = listOf("112", "199")
         )
     )
-    private val widthsDp = listOf(261, 210)
+    private val widthsDp = listOf(292, 241)
     private val fontScales = listOf(1.0f, 1.3f)
 
     @Test
