@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -88,16 +87,7 @@ fun OverviewScreenStacked(
 
     var statusExpanded by rememberSaveable { mutableStateOf(false) }
     val scrollState = rememberScrollState()
-    var hasScrolled by rememberSaveable { mutableStateOf(false) }
-
-    LaunchedEffect(scrollState.value) {
-        if (scrollState.value > 0) {
-            hasScrolled = true
-            onScrollAtTopChange(false)
-        } else if (hasScrolled) {
-            onScrollAtTopChange(true)
-        }
-    }
+    ReportScrollAtTop(scrollState, onScrollAtTopChange = onScrollAtTopChange)
 
     Column(
         modifier = modifier

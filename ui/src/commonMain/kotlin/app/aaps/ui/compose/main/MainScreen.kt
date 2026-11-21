@@ -463,11 +463,8 @@ fun MainScreen(
                         )
                     }
 
-                    // Bottom bar overlay
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = slideInVertically { it },
-                        exit = slideOutVertically { it },
+                    // Bottom bar overlay, always shown
+                    Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(bottom = scaffoldPadding.calculateBottomPadding())

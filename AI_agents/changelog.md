@@ -16,3 +16,5 @@
 - Quick Launch: remove the count badges from the Treatments and Scenes bottom-bar buttons.
 - Quick Launch: make the settings action optional and configurable instead of always adding it.
 - Quick Launch: draw the divider before Scenes across the full menu width.
+- Overview screen: the screens read the scroll position only to know if they are at the top, so they are no longer
+  redrawn on every scroll frame. Removed an always-visible AnimatedVisibility around the bottom bar.
