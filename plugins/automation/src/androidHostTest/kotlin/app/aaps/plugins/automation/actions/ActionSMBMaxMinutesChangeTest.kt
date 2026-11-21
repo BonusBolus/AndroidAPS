@@ -6,6 +6,7 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -18,9 +19,7 @@ class ActionSMBMaxMinutesChangeTest : ActionsTestBase() {
     private lateinit var sut: ActionSMBMaxMinutesChange
 
     @BeforeEach fun setUp() {
-        whenever(rh.gs(AutomationStrings.changeSmbMaxMinutesTo)).thenReturn("Change SMB max minutes to %1\$d min")
-
-        sut = ActionSMBMaxMinutesChange(aapsLogger, rh, { pumpEnactResultProvider() }, preferences)
+        sut = ActionSMBMaxMinutesChange(aapsLogger, text, { pumpEnactResultProvider() }, preferences, notificationManager)
     }
 
     @Test fun friendlyName() = runTest {
@@ -56,5 +55,13 @@ class ActionSMBMaxMinutesChangeTest : ActionsTestBase() {
     @Test fun fromJSONTest() = runTest {
         sut.fromJSON("""{"minutes":45}""")
         assertThat(sut.minutes.value).isEqualTo(45)
+    }
+
+    /** In simple mode the value would only be used later, so the action must refuse. */
+    @Test fun doActionRefusesInSimpleMode() = runTest {
+        whenever(preferences.simpleMode).thenReturn(true)
+        sut.minutes.value = 45
+        assertThat(sut.doAction().success).isFalse()
+        verify(preferences, never()).put(IntKey.ApsMaxMinutesOfBasalToLimitSmb, 45)
     }
 }

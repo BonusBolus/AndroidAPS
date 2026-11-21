@@ -2,6 +2,7 @@ package app.aaps.plugins.automation.actions
 
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.navigation.ElementType
+import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.pump.PumpEnactResult
 import app.aaps.core.interfaces.resources.TextResolver
 import app.aaps.core.keys.interfaces.IntPreferenceKey
@@ -23,6 +24,7 @@ abstract class ActionSMBMaxMinutesChangeBase(
     rh: TextResolver,
     pumpEnactResultProvider: () -> PumpEnactResult,
     private val preferences: Preferences,
+    private val notificationManager: NotificationManager,
     val key: IntPreferenceKey,
     private val friendlyNameRef: TextRef,
     private val shortDescriptionRef: TextRef
@@ -36,6 +38,7 @@ abstract class ActionSMBMaxMinutesChangeBase(
     override fun elementType() = ElementType.INSULIN
 
     override suspend fun doAction(): PumpEnactResult {
+        refuseInSimpleMode(preferences, notificationManager)?.let { return it }
         preferences.put(key, minutes.value.coerceIn(key.min, key.max))
         return pumpEnactResultProvider().success(true).comment(CoreUiStrings.ok)
     }

@@ -63,7 +63,7 @@ class AutomationEventTest : TestBase() {
         val event = eventFactory.newEvent()
         event.title = "Test"
         event.trigger = triggerFactory.instantiate(TriggerConnectorTest().oneItem.asJsonObject()) as TriggerConnector
-        event.addAction(ActionSMBChange(aapsLogger, rh, pumpEnactResultProvider, dateUtil, preferences))
+        event.addAction(ActionSMBChange(aapsLogger, rh, pumpEnactResultProvider, dateUtil, preferences, mock()))
 
         // export to json
         val eventJson = event.toJSON()

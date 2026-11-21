@@ -165,9 +165,11 @@
     <string name="triggerStepsCountDropdownLabel">Measurement Duration</string>
     <string name="automation_log_entry" comment="One line of the automation run log. %1$s=time, %2$s=a symbol for success or failure, %3$s=rule name (bold), %4$s=what the action did, %5$s=its result. Example: 21:15 ☺ Night low: Start temp target: 8.0mmol/L@60 min(Automation): OK">%1$s %2$s %3$s: %4$s: %5$s</string>
     <!--    SMB mode-->
-    <string name="changeSmbState">Enable/Disable/Flip SMB</string>
+    <string name="changeSmbState">Enable/Disable/Toggle SMB</string>
     <string name="changeSmbTo">Change SMB to %1$s</string>
     <string name="toggleSmb">Toggle SMB</string>
+    <string name="toggle">TOGGLE</string>
+    <string name="action_not_in_simple_mode" comment="%1$s=description of the automation action. Example: Change SMB to OFF did not run: SMB settings cannot be changed in simple mode. Turn off simple mode first.">%1$s did not run: SMB settings cannot be changed in simple mode. Turn off simple mode first.</string>
     <string name="newSmbMode">New SMB mode:</string>
     <string name="on">ON</string>
     <string name="off">OFF</string>

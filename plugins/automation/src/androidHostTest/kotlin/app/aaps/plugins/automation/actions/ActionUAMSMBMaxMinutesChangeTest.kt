@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.skyscreamer.jsonassert.JSONAssert
 
 private const val STRING_JSON = """{"data":{"minutes":30},"type":"ActionUAMSMBMaxMinutesChange"}"""
@@ -18,9 +17,7 @@ class ActionUAMSMBMaxMinutesChangeTest : ActionsTestBase() {
     private lateinit var sut: ActionUAMSMBMaxMinutesChange
 
     @BeforeEach fun setUp() {
-        whenever(rh.gs(AutomationStrings.changeUamSmbMaxMinutesTo)).thenReturn("Change UAM SMB max minutes to %1\$d min")
-
-        sut = ActionUAMSMBMaxMinutesChange(aapsLogger, rh, { pumpEnactResultProvider() }, preferences)
+        sut = ActionUAMSMBMaxMinutesChange(aapsLogger, text, { pumpEnactResultProvider() }, preferences, notificationManager)
     }
 
     @Test fun friendlyName() = runTest {

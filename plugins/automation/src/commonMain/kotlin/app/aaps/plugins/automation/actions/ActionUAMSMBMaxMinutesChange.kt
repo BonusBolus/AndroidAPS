@@ -1,6 +1,7 @@
 package app.aaps.plugins.automation.actions
 
 import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.pump.PumpEnactResult
 import app.aaps.core.interfaces.resources.TextResolver
 import app.aaps.core.keys.IntKey
@@ -12,9 +13,10 @@ class ActionUAMSMBMaxMinutesChange(
     aapsLogger: AAPSLogger,
     rh: TextResolver,
     pumpEnactResultProvider: () -> PumpEnactResult,
-    preferences: Preferences
+    preferences: Preferences,
+    notificationManager: NotificationManager
 ) : ActionSMBMaxMinutesChangeBase(
-    aapsLogger, rh, pumpEnactResultProvider, preferences,
+    aapsLogger, rh, pumpEnactResultProvider, preferences, notificationManager,
     IntKey.ApsUamMaxMinutesOfBasalToLimitSmb,
     AutomationStrings.changeUamSmbMaxMinutes,
     AutomationStrings.changeUamSmbMaxMinutesTo
