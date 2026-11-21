@@ -917,15 +917,16 @@ fun rememberSeriesColors(): SeriesColors {
     val iobColor = AapsTheme.generalColors.iobPrediction
     val cobColor = AapsTheme.generalColors.cobPrediction
     val onSurface = MaterialTheme.colorScheme.onSurface
-    return remember(iobColor, cobColor, onSurface) {
+    val autosensColor = AapsTheme.elementColors.autosens
+    return remember(iobColor, cobColor, onSurface, autosensColor) {
         SeriesColors(
             iob = iobColor,                         // #1e88e5 blue (matches @color/iob)
             absIob = iobColor,                      // same blue as IOB
             cob = cobColor,                         // #FB8C00 orange (matches @color/cob)
             bgi = Color(0xFF00EEEE),                // cyan (matches @color/bgi)
             deviations = Color(0xFF00EEEE),         // cyan (matches @color/bgi — legacy uses per-type colors)
-            sensitivity = onSurface,                // #000000 light / #FFFFFF dark (matches @color/ratio)
-            varSensitivity = onSurface,             // same as sensitivity
+            sensitivity = autosensColor,            // the autosens colour, the same as the autosens chip
+            varSensitivity = onSurface,             // #000000 light / #FFFFFF dark (matches @color/ratio)
             devSlope = Color(0xFFFFFF00),            // yellow (matches @color/devSlopePos)
             heartRate = Color(0xFFFFFF66),           // pale yellow (matches @color/heartRate #FFFFFF66)
             steps = Color(0xFF66FFB8),              // mint green (matches @color/steps)

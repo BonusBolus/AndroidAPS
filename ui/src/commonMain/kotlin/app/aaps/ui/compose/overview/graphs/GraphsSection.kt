@@ -65,6 +65,7 @@ import app.aaps.core.interfaces.overview.graph.SeriesType
 import app.aaps.core.interfaces.overview.graph.TirGraphMode
 import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.core.ui.CoreUiStrings
+import app.aaps.core.ui.compose.AapsSpacing
 import app.aaps.core.ui.compose.LocalDateUtil
 import app.aaps.core.ui.compose.LocalDecimalFormatter
 import app.aaps.core.ui.compose.LocalProfileUtil
@@ -1006,7 +1007,7 @@ private fun GraphSeriesBottomSheet(
                 formatAsInt = true
             )
             if (SeriesType.TIR in selectedSeries) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(AapsSpacing.large))
                 Text(
                     text = stringResource(CoreUiStrings.graph_series_tir),
                     style = MaterialTheme.typography.labelMedium

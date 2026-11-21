@@ -174,7 +174,7 @@ private fun percentile(sorted: List<Double>, fraction: Double): Double {
 
 private fun percentage(count: Int, total: Int): Double = count * 100.0 / total
 
-private const val MIN_VALID_BG = 39.0
+internal const val MIN_VALID_BG = 39.0
 internal const val VERY_LOW_MGDL = 54.0
 internal const val VERY_HIGH_MGDL = 250.0
 internal const val TIGHT_LOW_MGDL = 70.0

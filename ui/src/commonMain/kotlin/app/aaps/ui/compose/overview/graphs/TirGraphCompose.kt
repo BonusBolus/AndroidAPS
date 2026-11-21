@@ -23,14 +23,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.aaps.core.interfaces.InterfacesStrings
 import app.aaps.core.interfaces.overview.graph.BgDataPoint
 import app.aaps.core.interfaces.overview.graph.TirGraphMode
-import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.core.ui.CoreUiStrings
+import app.aaps.core.ui.compose.AapsSpacing
 import app.aaps.core.ui.compose.AapsTheme
 import app.aaps.core.ui.compose.LocalProfileUtil
 import app.aaps.core.ui.compose.stringResource
 import app.aaps.ui.UiStrings
 import app.aaps.ui.compose.stats.AgpTirBreakdown
+import app.aaps.ui.compose.stats.MIN_VALID_BG
 import app.aaps.ui.compose.stats.TIGHT_HIGH_MGDL
 import app.aaps.ui.compose.stats.TIGHT_LOW_MGDL
 import app.aaps.ui.compose.stats.VERY_HIGH_MGDL
@@ -66,7 +67,7 @@ internal fun TirGraphCompose(
             nowTimestamp = nowTimestamp,
             lowMark = profileUtil.convertToMgdl(chartConfig.lowMark, profileUtil.units),
             highMark = profileUtil.convertToMgdl(chartConfig.highMark, profileUtil.units),
-            profileUtil = profileUtil
+            toMgdl = { profileUtil.convertToMgdl(it, profileUtil.units) }
         )
     }
 
@@ -81,7 +82,7 @@ internal fun TirGraphCompose(
                 tightPct = it.tight,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
+                    .padding(top = AapsSpacing.medium)
             )
             TirLegend(
                 breakdown = it,
@@ -91,19 +92,24 @@ internal fun TirGraphCompose(
         } ?: Text(
             text = stringResource(UiStrings.agp_no_data),
             style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = 12.dp)
+            modifier = Modifier.padding(top = AapsSpacing.large)
         )
     }
 }
 
-private fun calculateTir(
+/**
+ * Time in range of the readings in the TIR window: from midnight ([TirGraphMode.DAY]) or the last 24 hours
+ * ([TirGraphMode.HOURS_24]), up to the end of [derivedTimeRange] but never past [nowTimestamp].
+ * Readings are in the user's units; [toMgdl] converts them. Null when there is no reading in the window.
+ */
+internal fun calculateTir(
     readings: List<BgDataPoint>,
     mode: TirGraphMode,
     derivedTimeRange: Pair<Long, Long>?,
     nowTimestamp: Long,
     lowMark: Double,
     highMark: Double,
-    profileUtil: ProfileUtil
+    toMgdl: (Double) -> Double
 ): AgpTirBreakdown? {
     val range = derivedTimeRange ?: return null
     val end = minOf(range.second, nowTimestamp)
@@ -115,8 +121,8 @@ private fun calculateTir(
     val values = readings
         .asSequence()
         .filter { it.timestamp in start..end }
-        .map { profileUtil.convertToMgdl(it.value, profileUtil.units) }
-        .filter { it >= 39.0 }
+        .map { toMgdl(it.value) }
+        .filter { it >= MIN_VALID_BG }
         .toList()
     if (values.isEmpty()) return null
     return calculateAgpTirBreakdown(values, lowMark, highMark)
@@ -139,22 +145,23 @@ private fun TirLegend(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp),
+            .padding(top = AapsSpacing.medium),
         verticalAlignment = Alignment.Top
     ) {
         TirLegendItem(CoreUiStrings.veryLow, stringResource(UiStrings.agp_below, veryLow), breakdown.veryLow, colors.bgVeryLow)
         TirLegendItem(CoreUiStrings.low, stringResource(UiStrings.agp_range, veryLow, low), breakdown.low, colors.bgLow)
         TirLegendItem(CoreUiStrings.in_range, stringResource(UiStrings.agp_range, low, high), breakdown.inRange, colors.bgInRange)
-        TirLegendItem(
-            UiStrings.tir_tight,
-            stringResource(
-                UiStrings.agp_range,
-                profileUtil.fromMgdlToStringInUnits(maxOf(lowMgdl, TIGHT_LOW_MGDL)),
-                profileUtil.fromMgdlToStringInUnits(minOf(highMgdl, TIGHT_HIGH_MGDL))
-            ),
-            breakdown.tight,
-            colors.bgTightRange
-        )
+        // The tight range is cut to the user's range. With a low mark above it nothing is left to show.
+        val tightLow = maxOf(lowMgdl, TIGHT_LOW_MGDL)
+        val tightHigh = minOf(highMgdl, TIGHT_HIGH_MGDL)
+        if (tightLow <= tightHigh) {
+            TirLegendItem(
+                UiStrings.tir_tight,
+                stringResource(UiStrings.agp_range, profileUtil.fromMgdlToStringInUnits(tightLow), profileUtil.fromMgdlToStringInUnits(tightHigh)),
+                breakdown.tight,
+                colors.bgTightRange
+            )
+        }
         TirLegendItem(CoreUiStrings.high, stringResource(UiStrings.agp_range, high, veryHigh), breakdown.high, colors.bgHigh)
         TirLegendItem(CoreUiStrings.veryHigh, stringResource(UiStrings.agp_above, veryHigh), breakdown.veryHigh, colors.bgVeryHigh)
     }
@@ -181,7 +188,7 @@ private fun RowScope.TirLegendItem(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .padding(end = 2.dp)
+                    .padding(end = AapsSpacing.extraSmall)
                     .size(6.dp)
                     .background(color, CircleShape)
             )

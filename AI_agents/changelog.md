@@ -6,3 +6,7 @@
 - TIR graphs: move the Today and 24h choice into the graph edit screen.
 - TIR graphs: show the glucose range next to each label, for example High (10.0–13.9).
 - TIR graphs: show the tight range (3.9–7.8 mmol/L, 70–140 mg/dL) as a darker green part of the In Range bar, with its own legend item.
+- TIR graphs: autosens has its own colour (rose) in the theme; the autosens ratio line in the graphs uses it.
+- TIR graphs: the Tight legend item is hidden when the low mark is above 7.8 mmol/L (140 mg/dL), so it never
+  shows a reversed range. Spacing uses the theme values.
+- Tests: TirCalculationTest (midnight and 24 h window, never past now, past days, invalid readings, tight part).
