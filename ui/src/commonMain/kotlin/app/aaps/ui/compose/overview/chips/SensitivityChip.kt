@@ -47,6 +47,9 @@ internal fun SensitivityChip(
     modifier: Modifier = Modifier
 ) {
     val textColor = MaterialTheme.colorScheme.onSurfaceVariant
+    // The Wizard ISF earns its room only when it reads differently from the ISF in use beside it, the same
+    // rule the autosens chip uses for the algorithm's autosens.
+    val wizardIsf = state.wizardIsf.takeIf { it.isNotEmpty() && it != state.isfTo }
     Surface(
         shape = RoundedCornerShape(AapsSpacing.chipCornerRadius),
         color = ElementType.SENSITIVITY.color().copy(alpha = 0.2f),
@@ -72,16 +75,17 @@ internal fun SensitivityChip(
                     tint = ElementType.SENSITIVITY.color(),
                     modifier = Modifier.size(16.dp)
                 )
+                // The last value in the chip is bold: the Wizard ISF when it is shown, else the ISF in use.
                 Text(
                     text = state.isfTo,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = if (wizardIsf == null) FontWeight.Bold else null,
                     color = textColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            if (state.wizardIsf.isNotEmpty()) {
+            if (wizardIsf != null) {
                 Spacer(Modifier.width(AapsSpacing.extraSmall))
                 Icon(
                     imageVector = ElementType.BOLUS_WIZARD.icon(),
@@ -90,8 +94,8 @@ internal fun SensitivityChip(
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
-                    text = state.wizardIsf,
-                    style = MaterialTheme.typography.bodySmall,
+                    text = wizardIsf,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = textColor,
                     maxLines = 1,

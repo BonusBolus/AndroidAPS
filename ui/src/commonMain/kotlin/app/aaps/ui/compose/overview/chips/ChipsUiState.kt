@@ -35,3 +35,19 @@ data class SensitivityUiState(
     val isEnabled: Boolean = true,
     val hasData: Boolean = false
 )
+
+/**
+ * The last loop run, for the loop chip and the eventual BG chip.
+ *
+ * @param ageText minutes since the last loop run, empty before the first run
+ * @param ageStale true when the last run is so old that the loop may have stopped
+ * @param eventualBgText the eventual BG of the last run in the user's units, empty when unknown
+ * @param eventualBgTime about when it is reached (end of the prediction lines), empty when unknown
+ */
+@Immutable
+data class LoopUiState(
+    val ageText: String = "",
+    val ageStale: Boolean = false,
+    val eventualBgText: String = "",
+    val eventualBgTime: String = ""
+)

@@ -27,7 +27,7 @@ enum class IsfStep { UP, DOWN, SAME }
  * @param asText the autosens percentage for the chip, without a percent sign, empty when it is
  * exactly 100 or unknown
  * @param algorithmAutosens the autosens percentage the algorithm used, without a percent sign, 100
- * when it applied none
+ * when it applied none, empty when there is no loop result yet
  * @param isfFrom the profile ISF for the chip, empty when the algorithm uses it unchanged
  * @param isfTo the ISF in use for the chip, empty when the algorithm uses the profile ISF unchanged
  * @param wizardIsf the average ISF used by the bolus wizard and carb absorption

@@ -31,41 +31,16 @@ internal fun RunningModeChipSuspendedPreview() {
 
 @Preview(showBackground = true)
 @Composable
-internal fun RunningModeChipClosedLoopSmbPreview() {
+internal fun SmbChipAllowedPreview() {
     MaterialTheme {
-        RunningModeChip(
-            mode = RM.Mode.CLOSED_LOOP,
-            text = "Closed Loop",
-            progress = 0f,
-            smbEnabled = true,
-            smbMaxMinutes = 30
-        )
+        SmbChip(allowed = true, maxMinutes = 30, onClick = {})
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-internal fun RunningModeChipClosedLoopSmbDisabledPreview() {
+internal fun SmbChipBlockedPreview() {
     MaterialTheme {
-        RunningModeChip(
-            mode = RM.Mode.CLOSED_LOOP,
-            text = "Closed Loop",
-            progress = 0f,
-            smbEnabled = false,
-            smbMaxMinutes = 30
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-internal fun RunningModeChipOpenLoopSmbPreview() {
-    MaterialTheme {
-        RunningModeChip(
-            mode = RM.Mode.OPEN_LOOP,
-            text = "Open Loop",
-            progress = 0f,
-            smbEnabled = true
-        )
+        SmbChip(allowed = false, maxMinutes = 30, onClick = {})
     }
 }

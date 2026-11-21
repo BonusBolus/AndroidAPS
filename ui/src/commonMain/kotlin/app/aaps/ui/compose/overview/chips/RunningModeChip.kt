@@ -10,12 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -43,7 +40,6 @@ import app.aaps.core.ui.compose.icons.IcLoopPaused
 import app.aaps.core.ui.compose.icons.IcLoopPausedDst
 import app.aaps.core.ui.compose.icons.IcLoopPausedPump
 import app.aaps.core.ui.compose.icons.IcLoopSuperbolus
-import app.aaps.core.ui.compose.icons.IcSmb
 import app.aaps.core.ui.compose.icons.IcQuestion
 import app.aaps.core.ui.compose.loopColor
 import app.aaps.core.ui.compose.stringResource
@@ -51,8 +47,6 @@ import app.aaps.core.ui.compose.stringResource
 /**
  * @see RunningModeChipClosedLoopPreview
  * @see RunningModeChipSuspendedPreview
- * @see RunningModeChipClosedLoopSmbPreview
- * @see RunningModeChipOpenLoopSmbPreview
  */
 /**
  * [mode] is null when no running mode is known for now - a client that has never synced a permanent
@@ -68,14 +62,15 @@ fun RunningModeChip(
     modifier: Modifier = Modifier,
     remaining: String = "",
     sceneManaged: Boolean = false,
-    smbEnabled: Boolean = false,
-    smbMaxMinutes: Int = 0,
+    loopAge: String = "",
+    loopAgeStale: Boolean = false,
     enabled: Boolean = true,
     onClick: () -> Unit = {}
 ) {
-    val isTemporary = mode?.mustBeTemporary() == true
     val iconColor = mode?.toColor() ?: MaterialTheme.colorScheme.onSurfaceVariant
-    val containerColor = if (isTemporary) iconColor.copy(alpha = 0.2f) else Color.Transparent
+    // Always tinted with the loop mode colour, like the other chips: the colour of the row's first chip tells
+    // the loop state at a glance. A temporary mode is shown by its progress bar.
+    val containerColor = iconColor.copy(alpha = 0.2f)
     val haptic = LocalHapticFeedback.current
 
     // Disable the clickable Surface's 48dp minimum interactive size so this content-width chip
@@ -101,45 +96,23 @@ fun RunningModeChip(
                         .fillMaxHeight()
                         .padding(start = AapsSpacing.medium, end = AapsSpacing.small, top = AapsSpacing.small, bottom = AapsSpacing.small)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.height(IntrinsicSize.Min)
-                    ) {
+                    // SMB has its own chip beside this one (SmbChip), so the loop icon carries no SMB mark.
+                    Box(modifier = Modifier.size(AapsSpacing.chipIconSize)) {
                         Icon(
                             imageVector = mode?.toIcon() ?: IcQuestion,
                             contentDescription = text,
                             tint = iconColor,
-                            modifier = Modifier.size(AapsSpacing.chipIconSize)
+                            modifier = Modifier.fillMaxSize()
                         )
-                        if (smbMaxMinutes > 0) {
-                            Spacer(modifier = Modifier.width(AapsSpacing.small))
-                            Box(modifier = Modifier.size(AapsSpacing.chipIconSize)) {
-                                Icon(
-                                    imageVector = IcSmb,
-                                    contentDescription = stringResource(CoreUiStrings.smb_shortname),
-                                    tint = if (smbEnabled) AapsTheme.elementColors.insulin else MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                                if (!smbEnabled) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = stringResource(CoreUiStrings.smb_shortname),
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier
-                                            .align(Alignment.Center)
-                                            .size(AapsSpacing.chipIconSize)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "${smbMaxMinutes}m",
-                                style = MaterialTheme.typography.bodyMedium,
-                                // Same colour as the SMB icon beside it, so the minutes read as part
-                                // of the SMB state: blue when SMB is on, red when it is off.
-                                color = if (smbEnabled) AapsTheme.elementColors.insulin else MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(start = AapsSpacing.small)
-                            )
-                        }
+                    }
+                    // Time since the last loop run. Red when it is old: the loop may have stopped.
+                    if (loopAge.isNotEmpty()) {
+                        Text(
+                            text = loopAge,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (loopAgeStale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = AapsSpacing.small)
+                        )
                     }
                     if (remaining.isNotEmpty()) {
                         Text(

@@ -199,15 +199,15 @@ class OverviewSizeSweepTest {
     private fun Overview(status: StatusViewModel) {
         OverviewScreen(
             profileName = PROFILE_NAME, isProfileModified = true, profileProgress = 0.3f,
-            tempTargetText = TT_TEXT, tempTargetState = TempTargetChipState.Active,
+            tempTargetText = TT_TEXT, profileTargetText = "", tempTargetState = TempTargetChipState.Active,
             tempTargetProgress = 0.5f, tempTargetReason = null,
             runningMode = RM.Mode.CLOSED_LOOP, runningModeText = RM_TEXT,
             runningModeRemaining = "", runningModeProgress = 0f,
-            tbrState = TbrState.NONE, smbEnabled = true, isSimpleMode = false, calcProgress = 100,
+            tbrState = TbrState.NONE, smbEnabled = true, smbMaxMinutes = 30, isSimpleMode = false, calcProgress = 100,
             graphViewModel = viewModels.graphViewModel, chipsViewModel = viewModels.chipsViewModel,
             manageViewModel = viewModels.manageViewModel, statusViewModel = status,
             statusLightsDef = PreferenceSubScreenDef(key = "statuslights", titleResId = CoreUiR.string.statuslights),
-            onNavigate = {}, onTbrChipClick = {}, onIobChipClick = {},
+            onNavigate = {}, onTbrChipClick = {}, onSmbChipClick = {}, onIobChipClick = {},
             notifications = emptyList(), onDismissNotification = {}, onNotificationActionClick = {},
             autoShowNotificationSheet = false, onAutoShowConsumed = {},
             paddingValues = PaddingValues(0.dp)

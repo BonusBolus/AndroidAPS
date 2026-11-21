@@ -184,3 +184,15 @@ Known limitations
 
 Includes code adapted from nightscout/AndroidAPS PR #5482 (AkiLetschne) and
 PR #5553 (Der-Schubi).
+
+- Overview: autosens has its own colour (rose), used by the autosens chip and the autosens ratio line in the graphs.
+  Before it was the scene purple, the same as a custom temp target.
+- Overview: the algorithm autosens value is empty until the loop has run, instead of a made-up 100.
+- Tests: SensitivityOverviewImplTest and MainViewModelTest mock what this branch added (loop sensitivities for the
+  wizard ISF, the SMB max minutes flow). Known failing: SensitivityChipBlockFitTest, the wizard ISF is cut at font
+  1.3 on a 210 dp wide screen. To be fixed with the chip layout change.
+- Overview: SMB has its own chip beside the loop chip. It is blue when an SMB can be given now and red and crossed
+  out when not. Both levels count: the constraints (SMB preference, open loop, objectives) and the algorithm's
+  decision in the last loop run (for example "SMB disabled due to high temptarget"). A tap shows what limits SMB
+  and the max minutes. Display only, the loop is not changed. On a client only the synced SMB preference is known.
+- Tests: SmbStatusTest.

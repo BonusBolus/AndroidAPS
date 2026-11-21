@@ -90,9 +90,11 @@ internal fun AutosensChip(
                 tint = color,
                 modifier = Modifier.size(AapsSpacing.chipIconSize)
             )
+            // The last value in the chip is bold: the algorithm's value when it is shown, else the autosens.
             Text(
                 text = autosensText,
                 style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (algorithmAutosens == null) FontWeight.Bold else null,
                 color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

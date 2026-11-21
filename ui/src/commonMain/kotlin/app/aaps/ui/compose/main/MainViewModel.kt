@@ -17,6 +17,7 @@ import app.aaps.core.interfaces.alerts.EatReminder
 import app.aaps.core.interfaces.alerts.EatReminderAction
 import app.aaps.core.interfaces.alerts.EatReminderState
 import app.aaps.core.interfaces.aps.Loop
+import app.aaps.core.interfaces.aps.RT
 import app.aaps.core.interfaces.automation.Automation
 import app.aaps.core.interfaces.bolus.BatchAction
 import app.aaps.core.interfaces.bolus.BatchExecutor
@@ -49,6 +50,8 @@ import app.aaps.core.interfaces.pump.Pump
 import app.aaps.core.interfaces.queue.SmbPause
 import app.aaps.core.interfaces.resources.TextResolver
 import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.rx.events.EventAPSCalculationFinished
+import app.aaps.core.interfaces.rx.events.EventLoopUpdateGui
 import app.aaps.core.interfaces.rx.events.EventShowDialog
 import app.aaps.core.interfaces.navigation.ElementType
 import app.aaps.core.interfaces.scenes.ActiveSceneSync
@@ -108,6 +111,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -281,8 +285,15 @@ class MainViewModel(
         preferences.observe(BooleanKey.GeneralSimpleMode)
             .onEach { simple -> _eventState.update { it.copy(isSimpleMode = simple) } }
             .launchIn(viewModelScope)
-        preferences.observe(BooleanKey.ApsUseSmb)
-            .onEach { smb -> _eventState.update { it.copy(smbEnabled = smb) } }
+        // The SMB chip shows if an SMB can be given now, not only the preference: the constraints and the
+        // last loop run can switch SMB off too. Checked again when one of them can have changed.
+        merge(
+            preferences.observe(BooleanKey.ApsUseSmb).map { },
+            overviewDataCache.runningModeFlow.map { },
+            rxBus.toFlow(EventAPSCalculationFinished::class).map { },
+            rxBus.toFlow(EventLoopUpdateGui::class).map { }
+        )
+            .onEach { refreshSmbStatus() }
             .launchIn(viewModelScope)
         preferences.observe(IntKey.ApsMaxMinutesOfBasalToLimitSmb)
             .onEach { minutes -> _eventState.update { it.copy(smbMaxMinutes = minutes) } }
@@ -824,6 +835,31 @@ class MainViewModel(
                     rxBus.send(EventShowDialog.Ok(title = title, message = detail))
                 }
             }
+        }
+    }
+
+    private var smbStatus = SmbStatus(allowed = false, reasons = emptyList())
+
+    private suspend fun refreshSmbStatus() {
+        smbStatus =
+            // A client has no constraints or loop runs of its own; the synced preference is all it knows.
+            if (config.AAPSCLIENT) SmbStatus(preferences.get(BooleanKey.ApsUseSmb), emptyList())
+            else {
+                val constraint = constraintChecker.isSMBModeEnabled()
+                val decision = smbDecisionOf((loop.lastRun?.request?.rawData() as? RT)?.consoleError)
+                smbStatusOf(constraint.value(), constraint.getReasons(), decision)
+            }
+        _eventState.update { it.copy(smbEnabled = smbStatus.allowed) }
+    }
+
+    /** What limits SMB, for the SMB chip. */
+    fun showSmbInfo() {
+        viewModelScope.launch {
+            refreshSmbStatus()
+            val headline = rh.gs(if (smbStatus.allowed) UiStrings.smb_can_be_given else UiStrings.smb_cannot_be_given)
+            val maxMinutes = rh.gs(UiStrings.smb_max_minutes_line, preferences.get(IntKey.ApsMaxMinutesOfBasalToLimitSmb))
+            val message = (listOf(headline) + smbStatus.reasons + maxMinutes).joinToString("\n")
+            rxBus.send(EventShowDialog.Ok(title = rh.gs(CoreUiStrings.smb_shortname), message = message))
         }
     }
 

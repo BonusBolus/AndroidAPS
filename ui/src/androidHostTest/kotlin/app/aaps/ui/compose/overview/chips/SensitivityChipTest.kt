@@ -93,6 +93,36 @@ class SensitivityChipTest {
     }
 
     @Test
+    fun showsWizardIsfWhenItDiffers() {
+        compose.setContent {
+            MaterialTheme {
+                SensitivityChip(
+                    state = SensitivityUiState(isfFrom = "5.5", isfTo = "6.8", wizardIsf = "6.4", isfStep = IsfStep.UP, ratio = 1.12, isEnabled = true, hasData = true),
+                    onClick = {}
+                )
+            }
+        }
+
+        compose.onNodeWithText("6.8").assertIsDisplayed()
+        compose.onNodeWithText("6.4").assertIsDisplayed()
+    }
+
+    @Test
+    fun hidesWizardIsfWhenItIsTheSame() {
+        compose.setContent {
+            MaterialTheme {
+                SensitivityChip(
+                    state = SensitivityUiState(isfFrom = "5.5", isfTo = "6.8", wizardIsf = "6.8", isfStep = IsfStep.UP, ratio = 1.12, isEnabled = true, hasData = true),
+                    onClick = {}
+                )
+            }
+        }
+
+        // One number, not the same ISF twice: the chip only spends the room when the Wizard uses a different ISF.
+        compose.onAllNodesWithText("6.8").assertCountEquals(1)
+    }
+
+    @Test
     fun equalIsfValuesGetNoArrowDescription() {
         compose.setContent {
             MaterialTheme {

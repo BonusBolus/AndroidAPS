@@ -70,6 +70,7 @@ fun OverviewScreenSplit(
     statusLightsDef: PreferenceSubScreenDef,
     onNavigate: (NavigationRequest) -> Unit,
     onTbrChipClick: () -> Unit,
+    onSmbChipClick: () -> Unit,
     onIobChipClick: () -> Unit,
     paddingValues: PaddingValues,
     activeSceneState: ActiveSceneState? = null,
@@ -92,6 +93,7 @@ fun OverviewScreenSplit(
     val sensitivityUiState by chipsViewModel.sensitivityUiState.collectAsStateWithLifecycle()
     val iobUiState by chipsViewModel.iobUiState.collectAsStateWithLifecycle()
     val cobUiState by chipsViewModel.cobUiState.collectAsStateWithLifecycle()
+    val loopUiState by chipsViewModel.loopUiState.collectAsStateWithLifecycle()
     val statusState by statusViewModel.uiState.collectAsStateWithLifecycle()
 
     var statusExpanded by rememberSaveable { mutableStateOf(true) }
@@ -133,6 +135,33 @@ fun OverviewScreenSplit(
                     .padding(end = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                // Above the BG circle, full width, so the profile name and the temp target have room.
+                OverviewTopChipsRow(
+                    runningMode = runningMode,
+                    runningModeText = runningModeText,
+                    runningModeRemaining = runningModeRemaining,
+                    runningModeProgress = runningModeProgress,
+                    runningModeSceneManaged = runningModeSceneManaged,
+                    loopAgeText = loopUiState.ageText,
+                    loopAgeStale = loopUiState.ageStale,
+                    smbEnabled = smbEnabled,
+                    smbMaxMinutes = smbMaxMinutes,
+                    profileName = profileName,
+                    isProfileModified = isProfileModified,
+                    profileProgress = profileProgress,
+                    profileSceneManaged = profileSceneManaged,
+                    tempTargetText = tempTargetText,
+                    profileTargetText = profileTargetText,
+                    tempTargetStep = tempTargetStep,
+                    tempTargetState = tempTargetState,
+                    tempTargetProgress = tempTargetProgress,
+                    tempTargetReason = tempTargetReason,
+                    tempTargetSceneManaged = tempTargetSceneManaged,
+                    onNavigate = onNavigate,
+                    onSmbChipClick = onSmbChipClick,
+                    commandsAllowed = commandsAllowed,
+                    modifier = Modifier.padding(horizontal = AapsSpacing.small)
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -160,32 +189,14 @@ fun OverviewScreenSplit(
                             modifier = Modifier.fillMaxWidth()
                         )
                         OverviewChipsColumn(
-                            runningMode = runningMode,
-                            runningModeText = runningModeText,
-                            runningModeRemaining = runningModeRemaining,
-                            runningModeProgress = runningModeProgress,
-                            runningModeSceneManaged = runningModeSceneManaged,
-                            smbEnabled = smbEnabled,
-                            smbMaxMinutes = smbMaxMinutes,
-                            profileName = profileName,
-                            isProfileModified = isProfileModified,
-                            profileProgress = profileProgress,
-                            profileSceneManaged = profileSceneManaged,
-                            tempTargetText = tempTargetText,
-                            profileTargetText = profileTargetText,
-                            tempTargetStep = tempTargetStep,
-                            tempTargetState = tempTargetState,
-                            tempTargetProgress = tempTargetProgress,
-                            tempTargetReason = tempTargetReason,
-                            tempTargetSceneManaged = tempTargetSceneManaged,
                             tbrState = tbrState,
+                            eventualBgText = loopUiState.eventualBgText,
+                            eventualBgTime = loopUiState.eventualBgTime,
                             iobUiState = iobUiState,
                             cobUiState = cobUiState,
                             sensitivityUiState = sensitivityUiState,
-                            onNavigate = onNavigate,
                             onTbrChipClick = onTbrChipClick,
-                            onIobChipClick = onIobChipClick,
-                            commandsAllowed = commandsAllowed
+                            onIobChipClick = onIobChipClick
                         )
                     }
                 }
