@@ -77,6 +77,7 @@ fun OverviewScreenTablet(
     statusLightsDef: PreferenceSubScreenDef,
     onNavigate: (NavigationRequest) -> Unit,
     onTbrChipClick: () -> Unit,
+    onSmbChipClick: () -> Unit,
     onIobChipClick: () -> Unit,
     paddingValues: PaddingValues,
     activeSceneState: ActiveSceneState? = null,
@@ -181,6 +182,7 @@ fun OverviewScreenTablet(
                             sensitivityUiState = sensitivityUiState,
                             onNavigate = onNavigate,
                             onTbrChipClick = onTbrChipClick,
+                            onSmbChipClick = onSmbChipClick,
                             onIobChipClick = onIobChipClick,
                             commandsAllowed = commandsAllowed
                         )

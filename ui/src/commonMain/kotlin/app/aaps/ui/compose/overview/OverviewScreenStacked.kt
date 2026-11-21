@@ -65,6 +65,7 @@ fun OverviewScreenStacked(
     statusLightsDef: PreferenceSubScreenDef,
     onNavigate: (NavigationRequest) -> Unit,
     onTbrChipClick: () -> Unit,
+    onSmbChipClick: () -> Unit,
     onIobChipClick: () -> Unit,
     paddingValues: PaddingValues,
     activeSceneState: ActiveSceneState? = null,
@@ -146,6 +147,7 @@ fun OverviewScreenStacked(
                 sensitivityUiState = sensitivityUiState,
                 onNavigate = onNavigate,
                 onTbrChipClick = onTbrChipClick,
+                onSmbChipClick = onSmbChipClick,
                 onIobChipClick = onIobChipClick,
                 commandsAllowed = commandsAllowed,
                 modifier = Modifier

@@ -25,6 +25,7 @@ import app.aaps.ui.compose.overview.chips.IobUiState
 import app.aaps.ui.compose.overview.chips.ProfileChip
 import app.aaps.ui.compose.overview.chips.ReservedChip
 import app.aaps.ui.compose.overview.chips.RunningModeChip
+import app.aaps.ui.compose.overview.chips.SmbChip
 import app.aaps.ui.compose.overview.chips.SensitivityUiState
 import app.aaps.ui.compose.overview.chips.TbrChip
 import app.aaps.ui.compose.overview.chips.TempTargetChip
@@ -55,6 +56,7 @@ fun OverviewChipsColumn(
     sensitivityUiState: SensitivityUiState,
     onNavigate: (NavigationRequest) -> Unit,
     onTbrChipClick: () -> Unit,
+    onSmbChipClick: () -> Unit,
     onIobChipClick: () -> Unit,
     // The command chips (running mode / profile / temp target) open mutating screens — their click is disabled on an
     // unpaired client (same MASTER_OR_PAIRED_CLIENT gate as nav/Manage), while the chip stays visible as status.
@@ -87,6 +89,7 @@ fun OverviewChipsColumn(
             tbrState = tbrState,
             onNavigate = onNavigate,
             onTbrChipClick = onTbrChipClick,
+            onSmbChipClick = onSmbChipClick,
             commandsAllowed = commandsAllowed
         )
         IobCobChipsRow(
@@ -124,6 +127,7 @@ private fun NarrowChips(
     tbrState: TbrState,
     onNavigate: (NavigationRequest) -> Unit,
     onTbrChipClick: () -> Unit,
+    onSmbChipClick: () -> Unit,
     commandsAllowed: Boolean
 ) {
     Row(
@@ -136,12 +140,12 @@ private fun NarrowChips(
                 progress = runningModeProgress,
                 remaining = runningModeRemaining,
                 sceneManaged = runningModeSceneManaged,
-                smbEnabled = smbEnabled,
-                smbMaxMinutes = smbMaxMinutes,
                 enabled = commandsAllowed && LocalClientRole.current.allows(ElementType.RUNNING_MODE.role),
                 onClick = { onNavigate(NavigationRequest.Element(ElementType.RUNNING_MODE)) }
             )
         }
+        // Its own chip, not part of the loop mode: a tap shows what limits SMB.
+        SmbChip(allowed = smbEnabled, maxMinutes = smbMaxMinutes, onClick = onSmbChipClick)
         ProfileChip(
             profileName = profileName.ifEmpty { stringResource(CoreUiStrings.no_profile_set) },
             isModified = isProfileModified,

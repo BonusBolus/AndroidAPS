@@ -109,7 +109,7 @@ class OverviewScreenVariantsTest {
                     tbrState = TbrState.NONE, smbEnabled = false, isSimpleMode = true,
                     graphViewModel = graph, chipsViewModel = chips, manageViewModel = manage,
                     statusViewModel = status, statusLightsDef = statusLightsDef,
-                    onNavigate = {}, onTbrChipClick = {}, onIobChipClick = {},
+                    onNavigate = {}, onTbrChipClick = {}, onSmbChipClick = {}, onIobChipClick = {},
                     paddingValues = PaddingValues(0.dp)
                 )
 
@@ -122,7 +122,7 @@ class OverviewScreenVariantsTest {
                     tbrState = TbrState.NONE, smbEnabled = false, isSimpleMode = true,
                     graphViewModel = graph, chipsViewModel = chips, manageViewModel = manage,
                     statusViewModel = status, statusLightsDef = statusLightsDef,
-                    onNavigate = {}, onTbrChipClick = {}, onIobChipClick = {},
+                    onNavigate = {}, onTbrChipClick = {}, onSmbChipClick = {}, onIobChipClick = {},
                     paddingValues = PaddingValues(0.dp)
                 )
 
@@ -135,7 +135,7 @@ class OverviewScreenVariantsTest {
                     tbrState = TbrState.NONE, smbEnabled = false, isSimpleMode = true,
                     graphViewModel = graph, chipsViewModel = chips, manageViewModel = manage,
                     statusViewModel = status, statusLightsDef = statusLightsDef,
-                    onNavigate = {}, onTbrChipClick = {}, onIobChipClick = {},
+                    onNavigate = {}, onTbrChipClick = {}, onSmbChipClick = {}, onIobChipClick = {},
                     paddingValues = PaddingValues(0.dp)
                 )
             }

@@ -207,7 +207,7 @@ class OverviewSizeSweepTest {
             graphViewModel = viewModels.graphViewModel, chipsViewModel = viewModels.chipsViewModel,
             manageViewModel = viewModels.manageViewModel, statusViewModel = status,
             statusLightsDef = PreferenceSubScreenDef(key = "statuslights", titleResId = CoreUiR.string.statuslights),
-            onNavigate = {}, onTbrChipClick = {}, onIobChipClick = {},
+            onNavigate = {}, onTbrChipClick = {}, onSmbChipClick = {}, onIobChipClick = {},
             notifications = emptyList(), onDismissNotification = {}, onNotificationActionClick = {},
             autoShowNotificationSheet = false, onAutoShowConsumed = {},
             paddingValues = PaddingValues(0.dp)
