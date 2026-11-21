@@ -100,7 +100,7 @@ Do not expand the scope unless necessary for correctness or safety.
 
 ## Git Workflow - Branch Per Feature
 
-The user does all building, testing, merging, and pushing.
+The user does all building, testing, merging, and pushing, unless the user explicitly asks the agent to do it.
 
 All new branches should be made from main(which should be up to date with upstream master), such that all feature branches only contain the unique features/changes and are up to date with upstream and main. For easy revertability. Before updating feature branch, pull from main!
 
@@ -111,7 +111,7 @@ All new branches should be made from main(which should be up to date with upstre
 - Keep note of the big overview of general changes in /AI_agents/changelog.md
 
 - Allowed without asking: `git status`, `diff`, `log`, `fetch`; creating/switching to a `feature/*` branch; focused commits on the current `feature/*` branch (`WIP:` prefix for unfinished work).
-- **Never do** (the user does these): `git push`; merging into `master` (or `master` into a feature branch without asking); `rebase`, `reset --hard`, `push --force`, `clean -fd`, discarding uncommitted changes; merging/rebasing/resetting onto upstream; deleting branches. If a task seems to require one, stop and ask.
+- **Never do** (the user does these): `git push` (unless the user explicitly asks for it; never `--force`); merging into `master` (or `master` into a feature branch without asking); `rebase`, `reset --hard`, `push --force`, `clean -fd`, discarding uncommitted changes; merging/rebasing/resetting onto upstream; deleting branches. If a task seems to require one, stop and ask.
 - Pause: commit as `WIP: <state>` and switch. Abandon: the user deletes the branch; `master` stays untouched.
 
 ## Safety-Critical Areas
