@@ -1,10 +1,13 @@
 package app.aaps.plugins.automation.actions
 
 import app.aaps.core.data.model.PS
+import app.aaps.core.data.time.T
+import app.aaps.core.objects.profile.ProfileSealed
 import app.aaps.plugins.automation.AutomationStrings
 import app.aaps.plugins.automation.elements.InputDuration
 import app.aaps.plugins.automation.elements.InputPercent
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,8 +25,7 @@ class ActionProfileSwitchPercentTest : ActionsTestBase() {
 
     @BeforeEach
     fun setup() {
-
-
+        runBlocking { whenever(profileFunction.isProfileChangePending()).thenReturn(false) }
         sut = ActionProfileSwitchPercent(aapsLogger, text, { pumpEnactResultProvider() }, profileFunction, triggerDeps)
     }
 
@@ -39,19 +41,71 @@ class ActionProfileSwitchPercentTest : ActionsTestBase() {
 
     @Test fun permanentSwitchTest() = runTest {
         whenever(profileFunction.createProfileSwitch(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(mock<PS>())
-        sut.pct = InputPercent(100.0)
-        sut.duration = InputDuration(0, InputDuration.TimeUnit.MINUTES)
+        sut.pct = InputPercent(90.0)
+        sut.duration = InputDuration(30, InputDuration.TimeUnit.MINUTES)
+        sut.permanent = true
         assertThat(sut.isValid()).isTrue()
-        assertThat(sut.shortDescription()).isEqualTo("Start profile 100%")
+        assertThat(sut.shortDescription()).isEqualTo("Start profile 90%")
         assertThat(sut.doAction().success).isTrue()
-        verify(profileFunction, times(1)).createProfileSwitch(eq(0), eq(100), eq(0), any(), any(), any(), any(), eq(0L))
+        // A permanent switch passes duration 0, also when a duration is still set.
+        verify(profileFunction, times(1)).createProfileSwitch(eq(0), eq(90), eq(0), any(), any(), any(), any(), eq(0L))
     }
 
-    @Test fun preconditionOnlyForTemporarySwitchTest() = runTest {
+    /** A permanent switch replaces the running profile, so a timeshift (for example after travel) must stay. */
+    @Test fun permanentSwitchKeepsTheTimeshift() = runTest {
+        val shifted = ProfileSealed.EPS(effectiveProfileSwitch.copy(originalTimeshift = T.hours(2).msecs()), activePlugin)
+        whenever(profileFunction.getProfile()).thenReturn(shifted)
+        whenever(profileFunction.createProfileSwitch(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(mock<PS>())
+        sut.pct = InputPercent(90.0)
+        sut.permanent = true
+        assertThat(sut.doAction().success).isTrue()
+        verify(profileFunction, times(1)).createProfileSwitch(eq(0), eq(90), eq(2), any(), any(), any(), any(), eq(0L))
+    }
+
+    /** A temporary switch keeps timeshift 0 like upstream: the old profile with its timeshift comes back after it. */
+    @Test fun temporarySwitchUsesNoTimeshift() = runTest {
+        val shifted = ProfileSealed.EPS(effectiveProfileSwitch.copy(originalTimeshift = T.hours(2).msecs()), activePlugin)
+        whenever(profileFunction.getProfile()).thenReturn(shifted)
+        whenever(profileFunction.createProfileSwitch(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(mock<PS>())
+        sut.pct = InputPercent(90.0)
         sut.duration = InputDuration(30, InputDuration.TimeUnit.MINUTES)
-        assertThat(sut.precondition).isNotNull()
+        assertThat(sut.doAction().success).isTrue()
+        verify(profileFunction, times(1)).createProfileSwitch(eq(30), eq(90), eq(0), any(), any(), any(), any(), eq(0L))
+    }
+
+    /** The running profile in the test base is 100%. */
+    @Test fun temporarySwitchOnlyStartsFrom100Percent() = runTest {
+        sut.pct = InputPercent(120.0)
+        assertThat(sut.precondition!!.shouldRun()).isTrue()
+    }
+
+    /** A permanent switch to the percentage that already runs must not fire again every loop run. */
+    @Test fun permanentSwitchDoesNotRunWhenPercentageIsTheSame() = runTest {
+        sut.permanent = true
+        sut.pct = InputPercent(100.0)
+        assertThat(sut.precondition!!.shouldRun()).isFalse()
+        sut.pct = InputPercent(90.0)
+        assertThat(sut.precondition!!.shouldRun()).isTrue()
+        sut.pct = InputPercent(110.0)
+        assertThat(sut.precondition!!.shouldRun()).isTrue()
+    }
+
+    @Test fun durationMustBeAtLeastOneMinuteUnlessPermanent() = runTest {
+        sut.pct = InputPercent(100.0)
         sut.duration = InputDuration(0, InputDuration.TimeUnit.MINUTES)
-        assertThat(sut.precondition).isNull()
+        assertThat(sut.isValid()).isFalse()
+        sut.duration = InputDuration(1, InputDuration.TimeUnit.MINUTES)
+        assertThat(sut.isValid()).isTrue()
+        sut.duration = InputDuration(0, InputDuration.TimeUnit.MINUTES)
+        sut.permanent = true
+        assertThat(sut.isValid()).isTrue()
+    }
+
+    /** A rule with no duration in its JSON must be invalid, not silently permanent. */
+    @Test fun missingDurationIsNotPermanent() = runTest {
+        sut.fromJSON("""{"percentage":110}""")
+        assertThat(sut.permanent).isFalse()
+        assertThat(sut.isValid()).isFalse()
     }
 
     @Test fun doActionTest() = runTest {
@@ -84,12 +138,15 @@ class ActionProfileSwitchPercentTest : ActionsTestBase() {
     @Test fun toJSONTest() = runTest {
         sut.pct = InputPercent(100.0)
         sut.duration = InputDuration(30, InputDuration.TimeUnit.MINUTES)
-        JSONAssert.assertEquals("""{"data":{"percentage":100,"durationInMinutes":30},"type":"ActionProfileSwitchPercent"}""", sut.toJSON(), true)
+        JSONAssert.assertEquals("""{"data":{"percentage":100,"durationInMinutes":30,"permanent":false},"type":"ActionProfileSwitchPercent"}""", sut.toJSON(), true)
     }
 
     @Test fun fromJSONTest() = runTest {
         sut.fromJSON("""{"percentage":100,"durationInMinutes":30}""")
         assertThat(sut.pct.value).isWithin(0.001).of(100.0)
         assertThat(sut.duration.getMinutes().toDouble()).isWithin(0.001).of(30.0)
+        assertThat(sut.permanent).isFalse()
+        sut.fromJSON("""{"percentage":90,"durationInMinutes":30,"permanent":true}""")
+        assertThat(sut.permanent).isTrue()
     }
 }

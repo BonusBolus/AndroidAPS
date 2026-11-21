@@ -29,23 +29,33 @@
 feature/profile-percent-permanent
 
 Added
-- "Start profile N% for M min" automation action: a duration of 0 now makes it a permanent switch of
-  the current profile at N% (e.g. 100% / 0 min = back to 100% with no end time). Shown as "Start profile N%".
-  The profile is whichever one is currently active, so no profile name is needed.
+- "Start profile N%" automation action: a "Permanent (no end time)" switch in the editor makes it a permanent
+  switch of the current profile at N% (e.g. 100% permanent = back to 100% with no end time). Shown as
+  "Start profile N%". The profile is whichever one is currently active, so no profile name is needed.
+  The duration field is hidden while Permanent is on.
 
 Changed
-- Duration range in the action editor is now 0-1440 min (was 5-1440). Validation accepts 0.
-- The "profile must be at 100%" precondition only applies to temporary switches. A permanent switch replaces
-  whatever percentage is running.
+- Duration range in the action editor is now 1-1440 min, step 1 (was 5-1440, step 10). Validation needs
+  Permanent or a duration of at least 1 min.
+- A missing or broken duration in the rule JSON makes the action invalid. It no longer becomes permanent.
+- Preconditions:
+  - temporary switch: the profile must be at 100% (as before);
+  - permanent switch: the running percentage must be different from N%. So 90% -> 100% runs, but
+    100% -> 100% does not, and a trigger that stays true does not add the same switch every loop run.
 - User entry / automation log note for this action uses the action description, so a permanent switch is
   not logged as "for 0 min". Temporary switches are logged as before.
 
 Notes
 - Same pump, hard-limit and insulin checks as before. Only the switch duration differs.
-- Does not skip when the profile is already at that percentage, so use a one-shot trigger, not a condition that can re-fire.
+- A permanent switch keeps the timeshift of the running profile (for example after travel).
+  A temporary switch uses timeshift 0 like upstream: when it ends, the old profile with its timeshift comes back.
 
 Tests
-- Added: permanent switch (valid, description, createProfileSwitch with duration 0), precondition only for temporary switches.feature/smb-max-minute-automation-toggle
+- Permanent switch (valid, description, createProfileSwitch with duration 0), precondition for temporary and
+  permanent switches, minimum duration of 1 min, missing duration is invalid, JSON with the permanent flag, timeshift
+  kept for permanent and 0 for temporary switches.
+
+feature/smb-max-minute-automation-toggle
 
 Added
 - Automation action "Change SMB max minutes": sets "Max minutes of basal to limit SMB" (15-120 min).
