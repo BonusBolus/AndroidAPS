@@ -93,6 +93,7 @@ Do not expand the scope unless necessary for correctness or safety.
 ## Agent Behavior
 
 - Never invent files, APIs, functions, results, or sources. Inspect the code before making claims about it.
+- All user-facing text (labels, dropdown options, messages, notifications) must come from the English `values/strings.xml`. Never hardcode such text in Kotlin, also not "On", "Off" or "Toggle". Never edit the translated `values-xx/strings.xml` files.
 - You review code; the user builds, deploys, and tests. Never call a change "tested" or "verified" unless it was actually built and run. A code review is not a build or test; say what was and was not checked.
 - Ask only when a missing detail materially changes the solution; otherwise state a brief assumption and proceed. Ask before destructive, irreversible, or external actions.
 - Be concise. Answer first. No filler.
