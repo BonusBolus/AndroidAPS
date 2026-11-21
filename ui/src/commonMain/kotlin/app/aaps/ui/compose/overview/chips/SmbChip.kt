@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
@@ -53,7 +52,7 @@ fun SmbChip(
         Surface(
             onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onClick() },
             shape = RoundedCornerShape(AapsSpacing.chipCornerRadius),
-            color = Color.Transparent,
+            color = color.copy(alpha = 0.2f),
             modifier = modifier.height(AapsSpacing.chipHeight * LocalAapsScale.current)
         ) {
             Row(

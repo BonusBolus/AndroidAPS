@@ -20,6 +20,7 @@ import app.aaps.core.ui.compose.navigation.NavigationRequest
 import app.aaps.core.ui.compose.stringResource
 import app.aaps.ui.compose.main.TempTargetChipState
 import app.aaps.ui.compose.overview.chips.CobUiState
+import app.aaps.ui.compose.overview.chips.EventualBgChip
 import app.aaps.ui.compose.overview.chips.IobCobChipsRow
 import app.aaps.ui.compose.overview.chips.IobUiState
 import app.aaps.ui.compose.overview.chips.ProfileChip
@@ -30,13 +31,19 @@ import app.aaps.ui.compose.overview.chips.SensitivityUiState
 import app.aaps.ui.compose.overview.chips.TbrChip
 import app.aaps.ui.compose.overview.chips.TempTargetChip
 
+/**
+ * The full-width row above the BG circle: loop mode with the time since the last loop run, SMB, profile and
+ * temp target. Above the circle these chips get the whole screen width, so the profile name is not cut off.
+ */
 @Composable
-fun OverviewChipsColumn(
+fun OverviewTopChipsRow(
     runningMode: RM.Mode?,
     runningModeText: String,
     runningModeRemaining: String,
     runningModeProgress: Float,
     runningModeSceneManaged: Boolean = false,
+    loopAgeText: String = "",
+    loopAgeStale: Boolean = false,
     smbEnabled: Boolean = false,
     smbMaxMinutes: Int = 0,
     profileName: String,
@@ -50,88 +57,17 @@ fun OverviewChipsColumn(
     tempTargetProgress: Float,
     tempTargetReason: TT.Reason?,
     tempTargetSceneManaged: Boolean = false,
-    tbrState: TbrState,
-    iobUiState: IobUiState,
-    cobUiState: CobUiState,
-    sensitivityUiState: SensitivityUiState,
     onNavigate: (NavigationRequest) -> Unit,
-    onTbrChipClick: () -> Unit,
     onSmbChipClick: () -> Unit,
-    onIobChipClick: () -> Unit,
     // The command chips (running mode / profile / temp target) open mutating screens — their click is disabled on an
     // unpaired client (same MASTER_OR_PAIRED_CLIENT gate as nav/Manage), while the chip stays visible as status.
     commandsAllowed: Boolean = true,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        NarrowChips(
-            runningMode = runningMode,
-            runningModeText = runningModeText,
-            runningModeRemaining = runningModeRemaining,
-            runningModeProgress = runningModeProgress,
-            runningModeSceneManaged = runningModeSceneManaged,
-            smbEnabled = smbEnabled,
-            smbMaxMinutes = smbMaxMinutes,
-            profileName = profileName,
-            isProfileModified = isProfileModified,
-            profileProgress = profileProgress,
-            profileSceneManaged = profileSceneManaged,
-            tempTargetText = tempTargetText,
-            profileTargetText = profileTargetText,
-            tempTargetStep = tempTargetStep,
-            tempTargetState = tempTargetState,
-            tempTargetProgress = tempTargetProgress,
-            tempTargetReason = tempTargetReason,
-            tempTargetSceneManaged = tempTargetSceneManaged,
-            tbrState = tbrState,
-            onNavigate = onNavigate,
-            onTbrChipClick = onTbrChipClick,
-            onSmbChipClick = onSmbChipClick,
-            commandsAllowed = commandsAllowed
-        )
-        IobCobChipsRow(
-            iobUiState = iobUiState,
-            cobUiState = cobUiState,
-            onIobChipClick = onIobChipClick
-        )
-        SensitivityChipBlock(
-            state = sensitivityUiState,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-@Composable
-private fun NarrowChips(
-    runningMode: RM.Mode?,
-    runningModeText: String,
-    runningModeRemaining: String,
-    runningModeProgress: Float,
-    runningModeSceneManaged: Boolean,
-    smbEnabled: Boolean,
-    smbMaxMinutes: Int,
-    profileName: String,
-    isProfileModified: Boolean,
-    profileProgress: Float,
-    profileSceneManaged: Boolean,
-    tempTargetText: String,
-    profileTargetText: String,
-    tempTargetStep: IsfStep,
-    tempTargetState: TempTargetChipState,
-    tempTargetProgress: Float,
-    tempTargetReason: TT.Reason?,
-    tempTargetSceneManaged: Boolean,
-    tbrState: TbrState,
-    onNavigate: (NavigationRequest) -> Unit,
-    onTbrChipClick: () -> Unit,
-    onSmbChipClick: () -> Unit,
-    commandsAllowed: Boolean
-) {
     Row(
-        verticalAlignment = Alignment.CenterVertically
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AapsSpacing.small)
     ) {
         if (runningModeText.isNotEmpty()) {
             RunningModeChip(
@@ -140,6 +76,8 @@ private fun NarrowChips(
                 progress = runningModeProgress,
                 remaining = runningModeRemaining,
                 sceneManaged = runningModeSceneManaged,
+                loopAge = loopAgeText,
+                loopAgeStale = loopAgeStale,
                 enabled = commandsAllowed && LocalClientRole.current.allows(ElementType.RUNNING_MODE.role),
                 onClick = { onNavigate(NavigationRequest.Element(ElementType.RUNNING_MODE)) }
             )
@@ -155,13 +93,9 @@ private fun NarrowChips(
             isNoProfile = profileName.isEmpty(),
             // Stays clickable even on an unpaired client: profile management opens read-only there,
             // so this is a view affordance, not a command one (unlike the running-mode / TT chips).
-            modifier = Modifier.weight(1f)
+            // As wide as its name, so the temp target gets the rest; it shrinks only when the row is full.
+            modifier = Modifier.weight(1f, fill = false)
         )
-    }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(AapsSpacing.small)
-    ) {
         if (tempTargetText.isNotEmpty()) {
             TempTargetChip(
                 targetText = tempTargetText,
@@ -176,13 +110,46 @@ private fun NarrowChips(
                 enabled = commandsAllowed && LocalClientRole.current.allows(ElementType.TEMP_TARGET_MANAGEMENT.role)
             )
         }
-        TbrChip(
-            state = tbrState,
-            onClick = onTbrChipClick
-        )
-        // Grey placeholder for a value that comes in a later change. It is sized like the temp
-        // basal chip, so the row reads as: temp target, temp basal, reserved block.
-        ReservedChip()
     }
 }
 
+/** The chips beside the BG circle: temp basal, eventual BG and the reserved block; IOB and COB; sensitivity. */
+@Composable
+fun OverviewChipsColumn(
+    tbrState: TbrState,
+    eventualBgText: String,
+    eventualBgTime: String = "",
+    iobUiState: IobUiState,
+    cobUiState: CobUiState,
+    sensitivityUiState: SensitivityUiState,
+    onTbrChipClick: () -> Unit,
+    onIobChipClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(AapsSpacing.small)
+        ) {
+            TbrChip(
+                state = tbrState,
+                onClick = onTbrChipClick
+            )
+            EventualBgChip(text = eventualBgText, time = eventualBgTime)
+            // Grey placeholder for a value that comes in a later change.
+            ReservedChip()
+        }
+        IobCobChipsRow(
+            iobUiState = iobUiState,
+            cobUiState = cobUiState,
+            onIobChipClick = onIobChipClick
+        )
+        SensitivityChipBlock(
+            state = sensitivityUiState,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}

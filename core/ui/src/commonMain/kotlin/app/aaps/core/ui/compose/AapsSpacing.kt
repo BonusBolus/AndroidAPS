@@ -38,6 +38,8 @@ object AapsSpacing {
 
     // BG circle dimensions
     val bgCircleSize = 126.dp
+    // The phone overview: 75 % of the default, so the chips beside it have more room
+    val bgCircleSizeCompact = 95.dp
     val bgRingStrokeWidth = 8.dp
 
     // Trend arrow drawn next to a BG value

@@ -21,6 +21,7 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
@@ -173,6 +174,9 @@ fun BgInfoSection(
             }
         }
 
+        // The text was sized for the default ring. A smaller ring (the phone overview) gets smaller text, so the
+        // value still fits; at the default size the factor is 1 and nothing changes.
+        val textScale = size / (AapsSpacing.bgCircleSize * LocalAapsScale.current)
         // Center content: delta on top, BG value, time ago below
         LinesInsideRing(
             circleSize = size,
@@ -181,7 +185,7 @@ fun BgInfoSection(
                 bgInfo.deltaText?.let { delta ->
                     Text(
                         text = delta,
-                        style = AapsTheme.typography.bgSecondary,
+                        style = AapsTheme.typography.bgSecondary.scaled(textScale),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -193,7 +197,7 @@ fun BgInfoSection(
                     // BG value - large bold text with strikethrough if outdated
                     Text(
                         text = bgInfo.bgText,
-                        style = AapsTheme.typography.bgValue,
+                        style = AapsTheme.typography.bgValue.scaled(textScale),
                         color = bgColor,
                         textDecoration = if (bgInfo.isOutdated) TextDecoration.LineThrough else TextDecoration.None
                     )
@@ -203,7 +207,7 @@ fun BgInfoSection(
                 if (showTimeAgo) {
                     Text(
                         text = timeAgoText,
-                        style = AapsTheme.typography.bgTimeAgo,
+                        style = AapsTheme.typography.bgTimeAgo.scaled(textScale),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -340,3 +344,7 @@ internal fun TrendArrow.toArcIndicator(): ArcIndicator? {
         TrendArrow.TRIPLE_DOWN     -> ArcIndicator(centerAngle = 90f, sweepAngle = sweepAngle, triangleCount = 3)
     }
 }
+
+/** The style with its font size and line height times [factor]. */
+private fun TextStyle.scaled(factor: Float): TextStyle =
+    if (factor == 1f) this else copy(fontSize = fontSize * factor, lineHeight = lineHeight * factor)

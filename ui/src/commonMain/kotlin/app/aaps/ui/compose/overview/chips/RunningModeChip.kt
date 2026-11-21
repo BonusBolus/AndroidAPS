@@ -62,12 +62,15 @@ fun RunningModeChip(
     modifier: Modifier = Modifier,
     remaining: String = "",
     sceneManaged: Boolean = false,
+    loopAge: String = "",
+    loopAgeStale: Boolean = false,
     enabled: Boolean = true,
     onClick: () -> Unit = {}
 ) {
-    val isTemporary = mode?.mustBeTemporary() == true
     val iconColor = mode?.toColor() ?: MaterialTheme.colorScheme.onSurfaceVariant
-    val containerColor = if (isTemporary) iconColor.copy(alpha = 0.2f) else Color.Transparent
+    // Always tinted with the loop mode colour, like the other chips: the colour of the row's first chip tells
+    // the loop state at a glance. A temporary mode is shown by its progress bar.
+    val containerColor = iconColor.copy(alpha = 0.2f)
     val haptic = LocalHapticFeedback.current
 
     // Disable the clickable Surface's 48dp minimum interactive size so this content-width chip
@@ -100,6 +103,15 @@ fun RunningModeChip(
                             contentDescription = text,
                             tint = iconColor,
                             modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    // Time since the last loop run. Red when it is old: the loop may have stopped.
+                    if (loopAge.isNotEmpty()) {
+                        Text(
+                            text = loopAge,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (loopAgeStale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = AapsSpacing.small)
                         )
                     }
                     if (remaining.isNotEmpty()) {

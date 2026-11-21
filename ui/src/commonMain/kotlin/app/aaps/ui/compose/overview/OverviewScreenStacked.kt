@@ -23,6 +23,8 @@ import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.TT
 import app.aaps.core.interfaces.overview.graph.TbrState
 import app.aaps.core.interfaces.overview.IsfStep
+import app.aaps.core.ui.compose.LocalAapsScale
+import app.aaps.core.ui.compose.AapsSpacing
 import app.aaps.core.ui.compose.AapsTheme
 import app.aaps.core.ui.compose.LocalConfig
 import app.aaps.core.ui.compose.navigation.NavigationRequest
@@ -87,6 +89,7 @@ fun OverviewScreenStacked(
     val sensitivityUiState by chipsViewModel.sensitivityUiState.collectAsStateWithLifecycle()
     val iobUiState by chipsViewModel.iobUiState.collectAsStateWithLifecycle()
     val cobUiState by chipsViewModel.cobUiState.collectAsStateWithLifecycle()
+    val loopUiState by chipsViewModel.loopUiState.collectAsStateWithLifecycle()
     val statusState by statusViewModel.uiState.collectAsStateWithLifecycle()
 
     var statusExpanded by rememberSaveable { mutableStateOf(false) }
@@ -107,6 +110,33 @@ fun OverviewScreenStacked(
             formatDuration = formatDuration
         )
         eatReminderBanner()
+        // Above the BG circle, full width, so the profile name and the temp target have room.
+        OverviewTopChipsRow(
+            runningMode = runningMode,
+            runningModeText = runningModeText,
+            runningModeRemaining = runningModeRemaining,
+            runningModeProgress = runningModeProgress,
+            runningModeSceneManaged = runningModeSceneManaged,
+            loopAgeText = loopUiState.ageText,
+            loopAgeStale = loopUiState.ageStale,
+            smbEnabled = smbEnabled,
+            smbMaxMinutes = smbMaxMinutes,
+            profileName = profileName,
+            isProfileModified = isProfileModified,
+            profileProgress = profileProgress,
+            profileSceneManaged = profileSceneManaged,
+            tempTargetText = tempTargetText,
+            profileTargetText = profileTargetText,
+            tempTargetStep = tempTargetStep,
+            tempTargetState = tempTargetState,
+            tempTargetProgress = tempTargetProgress,
+            tempTargetReason = tempTargetReason,
+            tempTargetSceneManaged = tempTargetSceneManaged,
+            onNavigate = onNavigate,
+            onSmbChipClick = onSmbChipClick,
+            commandsAllowed = commandsAllowed,
+            modifier = Modifier.padding(horizontal = AapsSpacing.medium)
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -118,38 +148,20 @@ fun OverviewScreenStacked(
             ) {
                 BgInfoSection(
                     bgInfo = bgInfoState.bgInfo,
-                    timeAgoText = bgInfoState.timeAgoText
+                    timeAgoText = bgInfoState.timeAgoText,
+                    size = AapsSpacing.bgCircleSizeCompact * LocalAapsScale.current
                 )
             }
 
             OverviewChipsColumn(
-                runningMode = runningMode,
-                runningModeText = runningModeText,
-                runningModeRemaining = runningModeRemaining,
-                runningModeProgress = runningModeProgress,
-                runningModeSceneManaged = runningModeSceneManaged,
-                smbEnabled = smbEnabled,
-                smbMaxMinutes = smbMaxMinutes,
-                profileName = profileName,
-                isProfileModified = isProfileModified,
-                profileProgress = profileProgress,
-                profileSceneManaged = profileSceneManaged,
-                tempTargetText = tempTargetText,
-                profileTargetText = profileTargetText,
-                tempTargetStep = tempTargetStep,
-                tempTargetState = tempTargetState,
-                tempTargetProgress = tempTargetProgress,
-                tempTargetReason = tempTargetReason,
-                tempTargetSceneManaged = tempTargetSceneManaged,
                 tbrState = tbrState,
+                eventualBgText = loopUiState.eventualBgText,
+                eventualBgTime = loopUiState.eventualBgTime,
                 iobUiState = iobUiState,
                 cobUiState = cobUiState,
                 sensitivityUiState = sensitivityUiState,
-                onNavigate = onNavigate,
                 onTbrChipClick = onTbrChipClick,
-                onSmbChipClick = onSmbChipClick,
                 onIobChipClick = onIobChipClick,
-                commandsAllowed = commandsAllowed,
                 modifier = Modifier
                     .weight(1f)
                     .padding(start = 8.dp)
