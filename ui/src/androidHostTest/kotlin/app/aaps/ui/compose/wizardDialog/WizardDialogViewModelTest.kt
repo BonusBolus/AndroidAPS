@@ -121,7 +121,28 @@ internal class WizardDialogViewModelTest {
         assertThat(followed.bgAgeMinutes).isEqualTo(0)
 
         val edited = opened.copy(bg = 5.0, bgEdited = true)
-        assertThat(edited.withNewReading(bg = 7.3, ageMinutes = 0)).isEqualTo(edited)
+        // The field keeps the user's value; only the sensor BG used for the standard amount moves on.
+        assertThat(edited.withNewReading(bg = 7.3, ageMinutes = 0)).isEqualTo(edited.copy(sensorBg = 7.3))
+    }
+
+    @Test
+    fun `a changed percentage shows the standard amount next to the delivered one`() {
+        val wizards = givenWizardsThatCalculate(totalForPercentage = { it / 10.0 })
+
+        sut.updateCarbs(40)
+        mainDispatcher.scheduler.advanceUntilIdle()
+        assertThat(sut.uiState.value.standardInsulin).isNull()
+
+        val before = wizards.size
+        sut.updatePercentage(70)
+        mainDispatcher.scheduler.advanceUntilIdle()
+
+        // The standard one is made first, so the wizard that can be confirmed is the last one
+        val (standard, delivered) = wizards.drop(before)
+        assertThat(calculation(standard)[PERCENTAGE]).isEqualTo(100)
+        assertThat(calculation(delivered)[PERCENTAGE]).isEqualTo(70)
+        assertThat(sut.uiState.value.standardInsulin).isEqualTo(10.0)
+        assertThat(sut.uiState.value.totalInsulin).isEqualTo(7.0)
     }
 
     @Test
@@ -206,7 +227,7 @@ internal class WizardDialogViewModelTest {
     }
 
     /** Every calculation gets its own wizard, whose `doCalc` returns itself. Returns them in the order made. */
-    private fun givenWizardsThatCalculate(): List<BolusWizard> {
+    private fun givenWizardsThatCalculate(totalForPercentage: (Int) -> Double = { 0.0 }): List<BolusWizard> {
         // Only after initialize() has run with no profile store, so it does not need everything a real start does
         mainDispatcher.scheduler.advanceUntilIdle()
         whenever(profileRepository.profile).thenReturn(MutableStateFlow(mock<ProfileStore>()))
@@ -220,7 +241,10 @@ internal class WizardDialogViewModelTest {
             mock<BolusWizard>(defaultAnswer = { invocation ->
                 if (invocation.method.name == "doCalc") invocation.mock else RETURNS_DEFAULTS.answer(invocation)
             }).also { wizard ->
-                whenever(wizard.data).thenReturn(mock<BolusWizardData>())
+                whenever(wizard.data).thenAnswer {
+                    val total = totalForPercentage(calculation(wizard)[PERCENTAGE] as Int)
+                    mock<BolusWizardData> { on { calculatedTotalInsulin } doReturn total }
+                }
                 wizards += wizard
             }
         }
@@ -361,7 +385,8 @@ internal class WizardDialogViewModelTest {
 
         const val NOW = 1_700_000_000_000L
 
-        /** Positions of `useAlarm` and `notes` in the parameters of `BolusWizard.doCalc`. */
+        /** Positions of `percentageCorrection`, `useAlarm` and `notes` in the parameters of `BolusWizard.doCalc`. */
+        const val PERCENTAGE = 7
         const val USE_ALARM = 15
         const val NOTES = 16
     }
