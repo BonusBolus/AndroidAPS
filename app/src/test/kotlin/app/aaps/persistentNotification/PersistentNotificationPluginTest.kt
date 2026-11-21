@@ -2,6 +2,7 @@ package app.aaps.persistentNotification
 
 import app.aaps.core.interfaces.rx.events.EventAutosensCalculationFinished
 import app.aaps.core.interfaces.rx.events.EventRefreshOverview
+import app.aaps.core.keys.StringKey
 import app.aaps.shared.tests.TestBase
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.launch
@@ -128,5 +129,38 @@ class PersistentNotificationPluginTest : TestBase() {
     fun `nothing to show gives no samsung texts`() {
         assertThat(PersistentNotificationPlugin.samsungLiveTexts(null, null, null, null)).isNull()
         assertThat(PersistentNotificationPlugin.samsungLiveTexts("x", " ", "y", "z")).isNull()
+    }
+
+    /** Every stored value maps to a mode. The receiver runs on the main thread, so an unknown value must not throw. */
+    @Test
+    fun `stored status modes map to a mode and unknown values give null`() {
+        assertThat(PersistentNotificationPlugin.statusModeOf("chip")).isEqualTo(PersistentNotificationPlugin.StatusMode.CHIP)
+        assertThat(PersistentNotificationPlugin.statusModeOf("icon")).isEqualTo(PersistentNotificationPlugin.StatusMode.ICON)
+        assertThat(PersistentNotificationPlugin.statusModeOf("graph_locked")).isEqualTo(PersistentNotificationPlugin.StatusMode.GRAPH_LOCKED)
+        assertThat(PersistentNotificationPlugin.statusModeOf("standard")).isEqualTo(PersistentNotificationPlugin.StatusMode.STANDARD)
+        // A mode of an older test build
+        assertThat(PersistentNotificationPlugin.statusModeOf("chip_locked")).isEqualTo(PersistentNotificationPlugin.StatusMode.CHIP)
+        assertThat(PersistentNotificationPlugin.statusModeOf("something_else")).isNull()
+        assertThat(PersistentNotificationPlugin.statusModeOf("")).isNull()
+    }
+
+    @Test
+    fun `only graph_locked depends on the lock state`() {
+        for (locked in listOf(true, false)) {
+            assertThat(PersistentNotificationPlugin.lookFor(PersistentNotificationPlugin.StatusMode.CHIP, locked)).isEqualTo(PersistentNotificationPlugin.Look.CHIP_CARD)
+            assertThat(PersistentNotificationPlugin.lookFor(PersistentNotificationPlugin.StatusMode.ICON, locked)).isEqualTo(PersistentNotificationPlugin.Look.GRAPH)
+            assertThat(PersistentNotificationPlugin.lookFor(PersistentNotificationPlugin.StatusMode.STANDARD, locked)).isEqualTo(PersistentNotificationPlugin.Look.STANDARD)
+        }
+        assertThat(PersistentNotificationPlugin.lookFor(PersistentNotificationPlugin.StatusMode.GRAPH_LOCKED, true)).isEqualTo(PersistentNotificationPlugin.Look.GRAPH_LOCK_SCREEN)
+        assertThat(PersistentNotificationPlugin.lookFor(PersistentNotificationPlugin.StatusMode.GRAPH_LOCKED, false)).isEqualTo(PersistentNotificationPlugin.Look.CHIP_MINIMAL)
+    }
+
+    /** Every choice of the setting in the preference list must be a known mode. */
+    @Test
+    fun `every mode in the preference list is known`() {
+        val choices = StringKey.NotificationStatusMode.entries.keys
+        assertThat(choices).isNotEmpty()
+        for (value in choices) assertThat(PersistentNotificationPlugin.statusModeOf(value)).isNotNull()
+        assertThat(PersistentNotificationPlugin.statusModeOf(StringKey.NotificationStatusMode.defaultValue)).isNotNull()
     }
 }

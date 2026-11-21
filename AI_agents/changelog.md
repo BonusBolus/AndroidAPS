@@ -35,6 +35,14 @@ Changed
   importance (no banner or sound on each update). The old channel is removed
   once no notification uses it. Channel settings in Android start from default.
 - In the non-chip states the Samsung Now Bar extras are not applied.
+- An unknown stored mode (for example from an imported or older setting) gives the standard notification
+  and a log warning. Before, it crashed the app from the screen on/off receiver.
+- When the detailed status cannot be built or drawn, the error is logged and the standard notification is
+  posted instead. The redraw when a reading turns stale can no longer crash the app.
+
+Tests
+- PersistentNotificationPluginTest: mapping of every stored mode (also the old "chip_locked" and unknown
+  values), the look for each mode and lock state, and that every choice in the setting has a mode.
 
 Known limitations
 - The live chip cannot be combined with custom layouts or the graph (Android

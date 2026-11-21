@@ -66,6 +66,7 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.IntKey
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.binding
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -165,10 +166,10 @@ class PersistentNotificationPlugin(
     private var lastAutoNotificationContent: String = ""
 
     /** The setting the user picks. */
-    private enum class StatusMode { CHIP, ICON, GRAPH_LOCKED, STANDARD }
+    internal enum class StatusMode { CHIP, ICON, GRAPH_LOCKED, STANDARD }
 
     /** What the notification looks like at this moment. In [StatusMode.GRAPH_LOCKED] it depends on the lock state. */
-    private enum class Look {
+    internal enum class Look {
 
         /** Live chip with the coloured text card. */
         CHIP_CARD,
@@ -186,14 +187,13 @@ class PersistentNotificationPlugin(
         STANDARD
     }
 
-    private fun statusMode(): StatusMode = when (val mode = preferences.get(StringKey.NotificationStatusMode)) {
-        "chip"         -> StatusMode.CHIP
-        "icon"         -> StatusMode.ICON
-        "graph_locked" -> StatusMode.GRAPH_LOCKED
-        "standard"     -> StatusMode.STANDARD
-        // A mode of a test build that no longer exists. It was a live chip, so it stays one.
-        "chip_locked"  -> StatusMode.CHIP
-        else           -> error("Unknown notification status mode: $mode")
+    // Never throws: this runs in the screen receiver on the main thread, and a crash there stops the app
+    // and the loop. An unknown value (for example from an imported or older setting) gives the standard look.
+    private fun statusMode(): StatusMode {
+        val mode = preferences.get(StringKey.NotificationStatusMode)
+        return statusModeOf(mode) ?: StatusMode.STANDARD.also {
+            aapsLogger.warn(LTag.CORE, "Unknown notification status mode: $mode, standard notification is used")
+        }
     }
 
     // Lock screen handling adapted from nightscout/AndroidAPS pull request #5482 (AkiLetschne).
@@ -466,18 +466,18 @@ class PersistentNotificationPlugin(
         if (includeAuto) lastAutoNotificationContent = content
         // Android allows no custom views in a promoted (live chip) notification, so there the card is a styled
         // text and the graph is left out. Without the chip the custom layout with the graph is used.
-        val look = when (statusMode()) {
-            StatusMode.CHIP         -> Look.CHIP_CARD
-            StatusMode.ICON         -> Look.GRAPH
-            StatusMode.GRAPH_LOCKED -> if (isPhoneLocked()) Look.GRAPH_LOCK_SCREEN else Look.CHIP_MINIMAL
-            StatusMode.STANDARD     -> Look.STANDARD
-        }
+        val wantedLook = lookFor(statusMode(), isPhoneLocked())
         // Beside the small chip the graph goes into a second notification, so it is needed there too.
-        val status = if (look == Look.STANDARD) null
-        else detailedStatus.build(
-            withGraph = look == Look.GRAPH || look == Look.GRAPH_LOCK_SCREEN || look == Look.CHIP_MINIMAL,
-            detailed = preferences.get(BooleanKey.NotificationStatusDetailed)
-        )
+        val status = if (wantedLook == Look.STANDARD) null
+        else orNullOnError("build the detailed status") {
+            detailedStatus.build(
+                withGraph = wantedLook == Look.GRAPH || wantedLook == Look.GRAPH_LOCK_SCREEN || wantedLook == Look.CHIP_MINIMAL,
+                detailed = preferences.get(BooleanKey.NotificationStatusDetailed)
+            )
+        }
+        // Without a detailed status (no reading, no profile or an error) the plain notification is shown, so the
+        // glucose, IOB and profile are always posted.
+        val look = if (status == null) Look.STANDARD else wantedLook
         val builder = NotificationCompat.Builder(context, notificationHolder.channelID)
         builder.setOngoing(true)
         when (look) {
@@ -507,7 +507,17 @@ class PersistentNotificationPlugin(
         builder.setContentTitle(line1)
         if (line2 != null) builder.setContentText(line2)
         if (line3 != null) builder.setSubText(line3)
-        applyStatusContent(builder, status, look, usesMetricStyle = Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN && bgMetric != null)
+        val usesMetricStyle = Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN && bgMetric != null
+        if (orNullOnError("draw the detailed status") { applyStatusContent(builder, status, look, usesMetricStyle) } == null) {
+            // Drawing failed half way: remove what was set for the custom look and post the plain notification.
+            builder.setStyle(null)
+            builder.setCustomContentView(null)
+            builder.setCustomBigContentView(null)
+            builder.setContentTitle(line1)
+            builder.setContentText(line2)
+            builder.setSubText(line3)
+            applyStatusContent(builder, null, Look.STANDARD, usesMetricStyle)
+        }
         /// Android Auto
         if (includeAuto && unreadConversationBuilder != null) {
             builder.extend(
@@ -543,7 +553,8 @@ class PersistentNotificationPlugin(
                 delay(delayMs)
                 // Drop the reference first: the update below cancels staleJob, which would be this very job.
                 staleJob = null
-                updateNotification()
+                // A throw here would crash the app: this job has no other handler.
+                orNullOnError("redraw the stale reading") { updateNotification() }
             }
         }
         when (look) {
@@ -619,6 +630,21 @@ class PersistentNotificationPlugin(
      * Android may lock only some seconds after the screen goes off, and the chip must be ready when the
      * user looks at the lock screen. Adapted from nightscout/AndroidAPS pull request #5482.
      */
+    /**
+     * Runs [block] and returns null when it throws, after logging the error. Cancellation is passed on.
+     * The notification keeps the foreground service, and with it the loop, alive: a failed redraw must not
+     * crash the app.
+     */
+    private inline fun <T> orNullOnError(what: String, block: () -> T): T? =
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            aapsLogger.error(LTag.CORE, "Notification: could not $what", e)
+            null
+        }
+
     private fun isPhoneLocked(): Boolean {
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
@@ -697,6 +723,25 @@ class PersistentNotificationPlugin(
     )
 
     internal companion object {
+
+        /** The stored setting as a mode. Null for a value no build knows. */
+        fun statusModeOf(value: String): StatusMode? = when (value) {
+            "chip"         -> StatusMode.CHIP
+            "icon"         -> StatusMode.ICON
+            "graph_locked" -> StatusMode.GRAPH_LOCKED
+            "standard"     -> StatusMode.STANDARD
+            // A mode of a test build that no longer exists. It was a live chip, so it stays one.
+            "chip_locked"  -> StatusMode.CHIP
+            else           -> null
+        }
+
+        /** What the notification looks like for [mode]. Only [StatusMode.GRAPH_LOCKED] depends on the lock state. */
+        fun lookFor(mode: StatusMode, phoneLocked: Boolean): Look = when (mode) {
+            StatusMode.CHIP         -> Look.CHIP_CARD
+            StatusMode.ICON         -> Look.GRAPH
+            StatusMode.GRAPH_LOCKED -> if (phoneLocked) Look.GRAPH_LOCK_SCREEN else Look.CHIP_MINIMAL
+            StatusMode.STANDARD     -> Look.STANDARD
+        }
 
         /** The second notification with the graph, beside the small chip. Not used by any other notification. */
         const val GRAPH_NOTIFICATION_ID = 4740
