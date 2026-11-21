@@ -27,6 +27,7 @@ data class SensitivityUiState(
     val asText: String = "",
     val isfFrom: String = "",
     val isfTo: String = "",
+    val wizardIsf: String = "",
     val isfStep: IsfStep = IsfStep.SAME,
     val dialogText: String = "",
     val ratio: Double = 1.0,
