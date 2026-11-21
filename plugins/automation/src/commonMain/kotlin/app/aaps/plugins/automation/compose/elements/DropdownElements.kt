@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import app.aaps.core.ui.compose.stringResource
+import app.aaps.plugins.automation.AutomationStrings
 import app.aaps.plugins.automation.elements.InputLocationMode
 
 /**
@@ -71,14 +72,14 @@ fun InputDropdownOnOffEditor(
     onValueChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val options = listOf(true to "On", false to "Off")
+    val options = listOf(true to AutomationStrings.on, false to AutomationStrings.off)
     SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
         options.forEachIndexed { i, (v, label) ->
             SegmentedButton(
                 selected = on == v,
                 onClick = { onValueChange(v) },
                 shape = SegmentedButtonDefaults.itemShape(i, options.size)
-            ) { Text(label) }
+            ) { Text(stringResource(label)) }
         }
     }
 }
@@ -93,14 +94,14 @@ fun InputDropdownOnOffToggleEditor(
     onValueChange: (Boolean?) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val options = listOf(true to "On", false to "Off", null to "Toggle")
+    val options = listOf(true to AutomationStrings.on, false to AutomationStrings.off, null to AutomationStrings.toggle)
     SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
         options.forEachIndexed { i, (v, label) ->
             SegmentedButton(
                 selected = state == v,
                 onClick = { onValueChange(v) },
                 shape = SegmentedButtonDefaults.itemShape(i, options.size)
-            ) { Text(label) }
+            ) { Text(stringResource(label)) }
         }
     }
 }

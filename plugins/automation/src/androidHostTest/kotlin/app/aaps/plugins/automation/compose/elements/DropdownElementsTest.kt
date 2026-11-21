@@ -5,7 +5,10 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import app.aaps.core.interfaces.resources.TextRefIdRegistry
+import app.aaps.plugins.automation.AutomationStringIds
 import com.google.common.truth.Truth.assertThat
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,6 +24,12 @@ class DropdownElementsTest {
     @get:Rule
     val compose = createComposeRule()
 
+    @Before
+    fun setUp() {
+        // What MainApp does at startup: the On / Off labels are TextRef.Named and resolve through this registry.
+        TextRefIdRegistry.register("automation") { name -> AutomationStringIds.idOf(name) }
+    }
+
     @Test
     fun onOffEditor_showsBothOptions() {
         compose.setContent {
@@ -29,8 +38,8 @@ class DropdownElementsTest {
             }
         }
 
-        compose.onNodeWithText("On").assertIsDisplayed()
-        compose.onNodeWithText("Off").assertIsDisplayed()
+        compose.onNodeWithText("ON").assertIsDisplayed()
+        compose.onNodeWithText("OFF").assertIsDisplayed()
     }
 
     @Test
@@ -42,7 +51,7 @@ class DropdownElementsTest {
             }
         }
 
-        compose.onNodeWithText("Off").performClick()
+        compose.onNodeWithText("OFF").performClick()
 
         assertThat(captured).isEqualTo(false)
     }

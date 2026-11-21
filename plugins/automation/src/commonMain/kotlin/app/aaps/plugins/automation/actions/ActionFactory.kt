@@ -90,10 +90,10 @@ class ActionFactory(
             persistenceLayer, importExportPrefs, exportPasswordDataStore, preferences
         )
 
-    fun actionSMBChange() = ActionSMBChange(aapsLogger, rh, pumpEnactResultProvider, dateUtil, preferences)
+    fun actionSMBChange() = ActionSMBChange(aapsLogger, rh, pumpEnactResultProvider, dateUtil, preferences, notificationManager)
     fun actionSmoothingChange() = ActionSmoothingChange(aapsLogger, rh, pumpEnactResultProvider, activePlugin, configBuilder, triggerDeps)
-    fun actionSMBMaxMinutesChange() = ActionSMBMaxMinutesChange(aapsLogger, rh, pumpEnactResultProvider, preferences)
-    fun actionUAMSMBMaxMinutesChange() = ActionUAMSMBMaxMinutesChange(aapsLogger, rh, pumpEnactResultProvider, preferences)
+    fun actionSMBMaxMinutesChange() = ActionSMBMaxMinutesChange(aapsLogger, rh, pumpEnactResultProvider, preferences, notificationManager)
+    fun actionUAMSMBMaxMinutesChange() = ActionUAMSMBMaxMinutesChange(aapsLogger, rh, pumpEnactResultProvider, preferences, notificationManager)
     fun actionStartTempTarget() = ActionStartTempTarget(aapsLogger, rh, pumpEnactResultProvider, activePlugin, persistenceLayer, profileFunction, dateUtil, profileUtil, triggerDeps)
     fun actionStopProcessing() = ActionStopProcessing(aapsLogger, rh, pumpEnactResultProvider)
     fun actionStopTempTarget() = ActionStopTempTarget(aapsLogger, rh, pumpEnactResultProvider, persistenceLayer, dateUtil)
