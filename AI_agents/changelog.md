@@ -8,6 +8,8 @@ Changes
 - Scene trigger: optional scene picker ("Any scene" by default). Now selectable in the
   trigger list (category Other); before it was only a hidden precondition.
 - New Stop scene action with an option to run the follow-up (chain) scene or not.
+- Stop scene can be limited to one chosen scene, or "Any scene". It only runs while that scene runs, so a
+  rule for one scene does not end a scene the user started by hand. Old rules have no scene and stop any scene.
 - SceneAutomationApi: new activeSceneId().
 - Tests: ActionRunSceneTest, TriggerSceneActiveTest, SceneAutomationApiImplTest updated;
   ActionStopSceneTest added.

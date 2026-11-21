@@ -36,6 +36,8 @@
     <string name="action_run_scene_guard_always">Always run, replace any running scene</string>
     <string name="action_stop_scene">Stop scene</string>
     <string name="action_stop_scene_follow_up_short">Stop scene, run follow-up scene</string>
+    <string name="action_stop_named_scene_short" comment="%1$s=scene name. Example: Stop scene: Exercise">Stop scene: %1$s</string>
+    <string name="action_stop_named_scene_follow_up_short" comment="%1$s=scene name. Example: Stop scene: Exercise, run follow-up scene">Stop scene: %1$s, run follow-up scene</string>
     <string name="action_stop_scene_follow_up_label">Follow-up scene</string>
     <string name="action_stop_scene_option_stop_only">Do not run follow-up scene</string>
     <string name="action_stop_scene_option_follow_up">Run follow-up scene if there is one</string>

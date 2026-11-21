@@ -1,5 +1,6 @@
 package app.aaps.plugins.automation.actions
 
+import app.aaps.core.data.model.Scene
 import app.aaps.core.interfaces.scenes.SceneAutomationResult
 import app.aaps.plugins.automation.AutomationStrings
 import com.google.common.truth.Truth.assertThat
@@ -15,9 +16,10 @@ import org.skyscreamer.jsonassert.JSONAssert
 class ActionStopSceneTest : ActionsTestBase() {
 
     private lateinit var sut: ActionStopScene
+    private val exercise = Scene(id = "scene-1", name = "Exercise", isEnabled = true)
 
     @BeforeEach fun setUp() {
-        sut = ActionStopScene(aapsLogger, text, { pumpEnactResultProvider() }, sceneApi)
+        sut = ActionStopScene(aapsLogger, text, { pumpEnactResultProvider() }, sceneApi, triggerDeps)
     }
 
     @Test fun friendlyName() = runTest {
@@ -79,12 +81,51 @@ class ActionStopSceneTest : ActionsTestBase() {
 
     @Test fun toJSONTest() {
         sut.runFollowUp = true
-        JSONAssert.assertEquals("""{"data":{"runFollowUp":true},"type":"ActionStopScene"}""", sut.toJSON(), true)
+        JSONAssert.assertEquals("""{"data":{"runFollowUp":true,"sceneId":""},"type":"ActionStopScene"}""", sut.toJSON(), true)
     }
 
     @Test fun fromJSONTest() {
         sut.fromJSON("""{"runFollowUp":true}""")
         assertThat(sut.runFollowUp).isTrue()
+    }
+
+    @Test fun shortDescriptionNamesTheChosenScene() = runTest {
+        whenever(sceneApi.getScene("scene-1")).thenReturn(exercise)
+        sut.scene.value = "scene-1"
+        assertThat(sut.shortDescription()).isEqualTo("Stop scene: Exercise")
+        sut.runFollowUp = true
+        assertThat(sut.shortDescription()).isEqualTo("Stop scene: Exercise, run follow-up scene")
+    }
+
+    /** With a scene chosen, the rule must not end another scene, for example one the user started by hand. */
+    @Test fun preconditionOnlyRunsWhenTheChosenSceneIsRunning() = runTest {
+        sut.scene.value = "scene-1"
+        whenever(sceneApi.activeSceneId()).thenReturn("scene-1")
+        assertThat(sut.precondition!!.shouldRun()).isTrue()
+        whenever(sceneApi.activeSceneId()).thenReturn("scene-2")
+        assertThat(sut.precondition!!.shouldRun()).isFalse()
+        whenever(sceneApi.activeSceneId()).thenReturn(null)
+        assertThat(sut.precondition!!.shouldRun()).isFalse()
+    }
+
+    @Test fun preconditionWithAnySceneNeedsARunningScene() = runTest {
+        whenever(sceneApi.isAnySceneActive()).thenReturn(true)
+        assertThat(sut.precondition!!.shouldRun()).isTrue()
+        whenever(sceneApi.isAnySceneActive()).thenReturn(false)
+        assertThat(sut.precondition!!.shouldRun()).isFalse()
+    }
+
+    @Test fun deletedSceneIsInvalid() {
+        whenever(sceneApi.getScene("missing")).thenReturn(null)
+        sut.scene.value = "missing"
+        assertThat(sut.isValid()).isFalse()
+    }
+
+    @Test fun sceneIdRoundTrip() {
+        sut.fromJSON("""{"runFollowUp":false,"sceneId":"scene-1"}""")
+        assertThat(sut.scene.value).isEqualTo("scene-1")
+        sut.fromJSON("""{"runFollowUp":false}""")
+        assertThat(sut.scene.value).isEmpty()
     }
 
     @Test fun missingOptionMeansNoFollowUp() {
