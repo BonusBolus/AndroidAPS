@@ -44,6 +44,7 @@
     <string name="loop_age_minutes" comment="Minutes since the last loop run, short, in the loop chip. %1$d=minutes. Example: 2m">%1$dm</string>
     <string name="eventual_bg_chip" comment="Eventual BG: the glucose the algorithm expects when all insulin and carbs on board have acted. %1$s=glucose value. Example: ⇢ 6.1">⇢ %1$s</string>
     <string name="eventual_bg_chip_with_time" comment="Eventual BG and about when it is reached. %1$s=glucose value, %2$s=clock time. Example: ⇢ 9.0 (≈22:00)">⇢ %1$s (≈%2$s)</string>
+    <string name="tir_tight" comment="Short label in the time in range bar legend for the tight glucose range (3.9–7.8 mmol/L, 70–140 mg/dL). Shown as: Tight (3.9–7.8)">Tight</string>
     <string name="agp_average">Average</string>
     <string name="agp_median">Median</string>
     <string name="agp_ea1c" comment="Estimated HbA1c">eA1c</string>

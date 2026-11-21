@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
  * @property ttCustom Color for Custom/Automation/Manual temp target badge
  * @property bgHigh Color for BG readings above high mark (matches highColor attr)
  * @property bgInRange Color for BG readings within target range (matches bgInRange attr)
+ * @property bgTightRange Darker green for the tight range (70-140 mg/dL) part of the TIR bar
  * @property bgLow Color for BG readings below low mark (matches lowColor attr)
  * @property originalBgValue Color for regular CGM BG readings (white/outlined dots)
  * @property iobPrediction Color for IOB-based BG predictions (blue)
@@ -70,6 +71,7 @@ data class GeneralColors(
     val onBadge: Color,
     val bgHigh: Color,
     val bgInRange: Color,
+    val bgTightRange: Color,
     val bgLow: Color,
     val bgVeryLow: Color,
     val bgVeryHigh: Color,
@@ -132,6 +134,7 @@ val LightGeneralColors = GeneralColors(
     onBadge = Color(0xFFFFFFFF),             // white text on colored badges
     bgHigh = Color(0xFFFB8C00),              // orange for high BG (matches @color/high in values)
     bgInRange = Color(0xFF00FF00),           // pure green for in-range BG (matches @color/inRange)
+    bgTightRange = Color(0xFF009900),        // darker green for tight range in the TIR bar
     bgLow = Color(0xFFFF0000),               // pure red for low BG (matches @color/low)
     bgVeryLow = Color(0xFF8B0000),           // dark red for very low BG (Dexcom TIR 5-range)
     bgVeryHigh = Color(0xFFD84315),          // deep orange-red for very high BG (Dexcom TIR 5-range)
@@ -190,6 +193,7 @@ val DarkGeneralColors = GeneralColors(
     onBadge = Color(0xFFFFFFFF),             // white text on colored badges
     bgHigh = Color(0xFFFFFF00),              // yellow for high BG (dark mode, matches @color/high in values-night)
     bgInRange = Color(0xFF00FF00),           // pure green for in-range BG (matches @color/inRange - same in both modes)
+    bgTightRange = Color(0xFF009900),        // darker green for tight range in the TIR bar (same in both modes)
     bgLow = Color(0xFFFF0000),               // pure red for low BG (matches @color/low - same in both modes)
     bgVeryLow = Color(0xFFB71C1C),           // dark red for very low BG (dark mode, Dexcom TIR 5-range)
     bgVeryHigh = Color(0xFFFB8C00),          // orange for very high BG (dark mode, differentiates from yellow bgHigh)

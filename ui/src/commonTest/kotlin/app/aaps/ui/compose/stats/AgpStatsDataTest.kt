@@ -22,7 +22,7 @@ class AgpStatsDataTest {
         val values = listOf(40.0, 60.0, 100.0, 200.0, 300.0)
         val data = calculateAgpStatsData(values.mapIndexed { index, value -> glucose(index.toLong(), value) }, 70.0, 180.0)
 
-        assertEquals(AgpTirBreakdown(20.0, 20.0, 20.0, 20.0, 20.0), data.tir)
+        assertEquals(AgpTirBreakdown(20.0, 20.0, 20.0, 20.0, 20.0, tight = 20.0), data.tir)
         assertEquals(20.0, data.tightRangePercent)
         assertEquals(140.0, data.averageMgdl)
         assertEquals(100.0, data.medianMgdl)
@@ -35,7 +35,7 @@ class AgpStatsDataTest {
         val values = listOf(40.0, 50.0, 100.0, 260.0, 300.0)
         val data = calculateAgpStatsData(values.mapIndexed { index, value -> glucose(index.toLong(), value) }, 45.0, 280.0)
 
-        assertEquals(AgpTirBreakdown(20.0, 0.0, 60.0, 0.0, 20.0), data.tir)
+        assertEquals(AgpTirBreakdown(20.0, 0.0, 60.0, 0.0, 20.0, tight = 20.0), data.tir)
     }
 
     @Test

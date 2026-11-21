@@ -135,7 +135,8 @@ internal fun TirBarCompose(
     inRangePct: Double,
     highPct: Double,
     veryHighPct: Double,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    tightPct: Double = 0.0
 ) {
     val colors = AapsTheme.generalColors
     Column(modifier = modifier) {
@@ -156,7 +157,9 @@ internal fun TirBarCompose(
         ) {
             BarSegment(pct = veryLowPct, color = colors.bgVeryLow)
             BarSegment(pct = lowPct, color = colors.bgLow)
-            BarSegment(pct = inRangePct, color = colors.bgInRange)
+            // tight is a part of in range, so the green part is split in two shades
+            BarSegment(pct = tightPct, color = colors.bgTightRange)
+            BarSegment(pct = inRangePct - tightPct, color = colors.bgInRange)
             BarSegment(pct = highPct, color = colors.bgHigh)
             BarSegment(pct = veryHighPct, color = colors.bgVeryHigh)
         }
