@@ -3,10 +3,14 @@ package app.aaps.plugins.automation.compose.actions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GlucoseUnit
@@ -214,14 +218,26 @@ fun ActionProfileSwitchPercentEditor(a: ActionProfileSwitchPercent, tick: Int = 
         step = 5.0,
         unitLabel = CoreUiStrings.units_percent
     )
-    NumberInputRow(
-        labelRef = CoreUiStrings.duration_label,
-        value = a.duration.value.toDouble(),
-        onValueChange = { a.duration.value = it.toInt(); onChange() },
-        valueRange = 0.0..(24 * 60.0), // 0 = permanent
-        step = 10.0,
-        unitLabel = CoreUiStrings.units_min
+    ListItem(
+        headlineContent = { Text(stringResource(AutomationStrings.permanent_switch)) },
+        trailingContent = {
+            Switch(
+                checked = a.permanent,
+                onCheckedChange = { a.permanent = it; onChange() }
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
     )
+    if (!a.permanent) {
+        NumberInputRow(
+            labelRef = CoreUiStrings.duration_label,
+            value = a.duration.value.toDouble(),
+            onValueChange = { a.duration.value = it.toInt(); onChange() },
+            valueRange = ActionProfileSwitchPercent.MIN_DURATION_MINUTES.toDouble()..(24 * 60.0),
+            step = 1.0,
+            unitLabel = CoreUiStrings.units_min
+        )
+    }
 }
 
 @Composable

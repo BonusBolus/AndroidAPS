@@ -52,6 +52,7 @@
     <string name="alreadyset">Already set</string>
     <string name="profilepercentage">Profile percentage</string>
     <string name="startprofileforever">Start profile %1$d%%</string>
+    <string name="permanent_switch">Permanent (no end time)</string>
     <string name="sendsmsactionlabel">Send SMS: %1$s</string>
     <string name="sendsmsactiondescription">Send SMS to all numbers</string>
     <string name="sendsmsactiontext">Send SMS with text</string>
