@@ -37,6 +37,7 @@ Changed
 - In the non-chip states the Samsung Now Bar extras are not applied.
 - An unknown stored mode (for example from an imported or older setting) gives the standard notification
   and a log warning. Before, it crashed the app from the screen on/off receiver.
+- The time since the reading uses digits of equal width, so the "|" after it no longer moves every second.
 - When the detailed status cannot be built or drawn, the error is logged and the standard notification is
   posted instead. The redraw when a reading turns stale can no longer crash the app.
 

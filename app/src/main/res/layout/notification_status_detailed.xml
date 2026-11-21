@@ -26,11 +26,13 @@
             android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
             android:textSize="15sp" />
 
+        <!-- tnum: digits of equal width, so the divider after the time does not move every second. -->
         <Chronometer
             android:id="@+id/status_age"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
+            android:fontFeatureSettings="tnum"
             android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
             android:textSize="12sp"
             android:textStyle="normal" />
