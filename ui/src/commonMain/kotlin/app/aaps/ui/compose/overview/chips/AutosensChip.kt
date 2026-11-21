@@ -53,9 +53,9 @@ internal fun AutosensChip(
     modifier: Modifier = Modifier
 ) {
     val icon = selectAutosensIcon(ratio = state.ratio, isEnabled = state.isEnabled)
-    // Same purple the overview graphs use for variable sensitivity, so one colour means the same
-    // thing in the chips and in the graphs.
-    val color = AapsTheme.elementColors.scene
+    // The autosens colour, the same one the ratio line in the secondary graph and the ongoing notification use,
+    // so one colour means autosens everywhere.
+    val color = AapsTheme.elementColors.autosens
     val textColor = MaterialTheme.colorScheme.onSurfaceVariant
     // Autosens being switched off is drawn as a small X across the icon. So a screen reader read out
     // a percentage that is not actually being applied, with no sign of it. Above or below profile

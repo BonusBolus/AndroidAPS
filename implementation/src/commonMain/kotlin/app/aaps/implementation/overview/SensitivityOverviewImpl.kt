@@ -81,11 +81,13 @@ class SensitivityOverviewImpl(
         // 1.0 means "nothing to show": the algorithm kept the profile values, for example because
         // autosens is off. A value that is not above zero can only come from foreign device status
         // data; it is read as unknown rather than divided by.
-        val ratioUsed = (
+        // Null when there is no loop result yet (for example just after a start): then nothing is known.
+        val ratioFromAlgorithm = (
             if (config.APS) (request?.rawData() as? RT)?.sensitivityRatio ?: request?.autosensResult?.ratio
             else if (config.AAPSCLIENT) processedDeviceStatusData.openAPSData.suggested?.sensitivityRatio
             else null
-            )?.takeIf { it > 0.0 } ?: 1.0
+            )?.takeIf { it > 0.0 }
+        val ratioUsed = ratioFromAlgorithm ?: 1.0
         // The algorithm's ratio is worth naming only when it reads differently than the autosens
         // value shown above. Both lines print whole percent, so comparing the raw numbers would
         // print the same percentage twice: autosens is computed again on every new reading, while
@@ -95,10 +97,11 @@ class SensitivityOverviewImpl(
         val units = profileFunction.getUnits()
 
         var asText = ""
-        // The autosens value the algorithm used, always shown beside the current autosens. A ratio
-        // of 1.0 means it applied no adjustment, and 100 is the honest way to say that. No percent
+        // The autosens value the algorithm used, shown beside the current autosens. A ratio of 1.0
+        // means it applied no adjustment, and 100 is the honest way to say that. Without a loop result
+        // it is empty, not 100: the algorithm has not run, so it did not use anything. No percent
         // sign: the chip is narrow and the autosens icon already says what the number is.
-        val algorithmAutosens = rh.gs(CoreUiStrings.autosens_chip_value, ratioUsed * 100)
+        val algorithmAutosens = ratioFromAlgorithm?.let { rh.gs(CoreUiStrings.autosens_chip_value, it * 100) } ?: ""
         var isfFrom = ""
         var isfTo = ""
         var wizardIsf = ""

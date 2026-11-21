@@ -58,6 +58,8 @@ class SensitivityOverviewImplTest : TestBaseWithProfile() {
         runBlocking {
             whenever(profileFunction.getProfile()).thenReturn(effectiveProfile)
             whenever(profileFunction.getUnits()).thenReturn(GlucoseUnit.MGDL)
+            // No stored loop runs: the wizard ISF is the profile ISF.
+            whenever(persistenceLayer.getLoopSensitivities(any(), any())).thenReturn(emptyList())
         }
     }
 
@@ -106,7 +108,8 @@ class SensitivityOverviewImplTest : TestBaseWithProfile() {
 
         assertThat(data.hasData).isTrue()
         assertThat(data.ratio).isEqualTo(1.2)
-        assertThat(data.asText).isEqualTo("120%")
+        // The chip shows no percent sign: the chip is narrow and the icon says what the number is.
+        assertThat(data.asText).isEqualTo("120")
         assertThat(data.lines).containsExactly("Autosens Value: 120%", profileIsfLine(), effectiveIsfLine(1.2)).inOrder()
     }
 
@@ -203,6 +206,16 @@ class SensitivityOverviewImplTest : TestBaseWithProfile() {
         val data = sut.build()
 
         assertThat(data.lines).containsExactly("Autosens Value: 80%", profileIsfLine()).inOrder()
+        // The algorithm has not run, so it used no autosens value: empty, not a made-up 100.
+        assertThat(data.algorithmAutosens).isEmpty()
+    }
+
+    @Test
+    fun `the autosens value the loop used is shown without a percent sign`() = runBlocking {
+        autosensRatio(1.0)
+        ratioUsedByLoop(0.7)
+
+        assertThat(sut.build().algorithmAutosens).isEqualTo("70")
     }
 
     /**

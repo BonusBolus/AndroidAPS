@@ -44,6 +44,7 @@ import app.aaps.core.interfaces.ui.UrlOpener
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.BooleanKey
+import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.StringNonKey
 import app.aaps.core.keys.interfaces.AppPlatform
 import app.aaps.core.keys.interfaces.ClientRole
@@ -153,6 +154,7 @@ internal class MainViewModelTest {
         // Preference observers created (launchIn deferred) in init.
         whenever(preferences.observe(BooleanKey.GeneralSimpleMode)).thenReturn(MutableStateFlow(true))
         whenever(preferences.observe(BooleanKey.ApsUseSmb)).thenReturn(MutableStateFlow(false))
+        whenever(preferences.observe(IntKey.ApsMaxMinutesOfBasalToLimitSmb)).thenReturn(MutableStateFlow(30))
         whenever(preferences.observe(StringNonKey.QuickLaunchActions)).thenReturn(MutableStateFlow(""))
         // Toolbar actions are valid unless a test says otherwise. The view model built here refreshes its
         // toolbar when the first runTest runs the deferred collectors, and an unstubbed isValid (false)
