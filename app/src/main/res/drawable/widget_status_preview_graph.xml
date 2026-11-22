@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A sample glucose curve for the widget picker preview only. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="60dp"
+    android:viewportWidth="300"
+    android:viewportHeight="60">
+    <path
+        android:pathData="M0,54 L300,54"
+        android:strokeWidth="1"
+        android:strokeColor="#FFC62828" />
+    <path
+        android:pathData="M0,12 L300,12"
+        android:strokeWidth="1"
+        android:strokeColor="#FFFFB300" />
+    <path
+        android:pathData="M0,40 L175,40"
+        android:strokeWidth="1"
+        android:strokeColor="#66FFFFFF" />
+    <path
+        android:pathData="M175,32 L300,32"
+        android:strokeWidth="4"
+        android:strokeColor="#FF64B5F6" />
+    <path
+        android:pathData="M0,38 C40,39 70,38 90,32 C110,20 130,6 150,8 C175,12 200,30 230,34 C255,36 280,32 300,28"
+        android:strokeLineCap="round"
+        android:strokeWidth="3"
+        android:strokeColor="#FF66BB6A" />
+</vector>

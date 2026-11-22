@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- White text with a dark shadow for the status widgets: it has to read on any wallpaper. -->
+    <style name="WidgetStatusText">
+        <item name="android:textColor">#FFFFFFFF</item>
+        <item name="android:shadowColor">#D9000000</item>
+        <item name="android:shadowDy">1</item>
+        <item name="android:shadowRadius">3</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+</resources>

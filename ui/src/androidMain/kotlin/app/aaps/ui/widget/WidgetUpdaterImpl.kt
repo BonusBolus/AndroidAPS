@@ -1,7 +1,6 @@
 package app.aaps.ui.widget
 
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.hardware.display.DisplayManager
@@ -14,6 +13,7 @@ import androidx.core.os.BundleCompat
 import androidx.glance.ExperimentalGlanceApi
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.runComposition
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
@@ -107,8 +107,8 @@ class WidgetUpdaterImpl(
                 render(CompactBgGlanceWidget())
                 render(GlucoseCircleGlanceWidget())
             }
-            runCatching { triggerSmallWidgetUpdate() }
-                .onFailure { aapsLogger.error(LTag.WIDGET, "updateSmallWidget failed: ${it.message}", it) }
+            runCatching { triggerClassicWidgetUpdates() }
+                .onFailure { aapsLogger.error(LTag.WIDGET, "update of the classic widgets failed: ${it.message}", it) }
         }
     }
 
@@ -190,18 +190,25 @@ class WidgetUpdaterImpl(
     }
 
     /**
-     * SmallWidget is a classic [android.appwidget.AppWidgetProvider], not Glance,
-     * so we trigger its onUpdate via a broadcast targeted at the receiver.
+     * The classic [android.appwidget.AppWidgetProvider]s, not Glance - [SmallWidget] here and the status widgets
+     * in `:app`, which this module cannot name - draw themselves in onUpdate, so each placed one gets the update
+     * broadcast. The Glance receivers are left out: the broadcast would start the job based update that
+     * [render] exists to avoid.
      */
-    private fun triggerSmallWidgetUpdate() {
-        val component = ComponentName(context, SmallWidget::class.java)
-        val ids = AppWidgetManager.getInstance(context).getAppWidgetIds(component)
-        if (ids.isEmpty()) return
-        val intent = Intent(context, SmallWidget::class.java).apply {
-            action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
-        }
-        context.sendBroadcast(intent)
+    private fun triggerClassicWidgetUpdates() {
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        appWidgetManager.getInstalledProvidersForPackage(context.packageName, null)
+            .map { it.provider }
+            .filterNot { GlanceAppWidgetReceiver::class.java.isAssignableFrom(Class.forName(it.className)) }
+            .forEach { component ->
+                val ids = appWidgetManager.getAppWidgetIds(component)
+                if (ids.isEmpty()) return@forEach
+                val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE).apply {
+                    setComponent(component)
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                }
+                context.sendBroadcast(intent)
+            }
     }
 
     private companion object {

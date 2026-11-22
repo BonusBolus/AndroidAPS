@@ -1,8 +1,10 @@
 package app.aaps.persistentNotification
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.Typeface
 import android.os.SystemClock
 import android.text.SpannableStringBuilder
@@ -62,6 +64,7 @@ import app.aaps.core.ui.R as CoreUiR
  * Everything the ongoing status notification shows besides the plain lines: glucose, trend, delta, age,
  * profile, scene, SMB state, IOB, COB, sensitivity, target and the glucose graph - as a coloured text card (for
  * the live chip, where Android allows no custom views) or as a custom [RemoteViews] layout with the graph.
+ * The status home screen widgets ([StatusWidget]) show the same, with their own layout.
  *
  * Two levels of detail. Detailed: the values carry no labels, their colours say what they are, and beside the
  * current values it shows the profile, algorithm and Wizard values, with the overview chips' rules for which
@@ -99,6 +102,10 @@ class DetailedStatusRenderer(
         val header: String,
         /** IOB • COB | SMB: the first line of the chip card and the right part of the graph layout's top row */
         val cardValues: CharSequence,
+        /** IOB • COB alone, for the widget, which shows the SMB on its own line */
+        val iobCob: CharSequence,
+        /** The SMB state, null when there is no SMB limit to show */
+        val smb: CharSequence?,
         /** autosens | ISF | target: the second line of the chip card and the line under the graph */
         val sensitivityLine: CharSequence,
         val graph: Bitmap?
@@ -123,12 +130,21 @@ class DetailedStatusRenderer(
      * @return null when there is no valid profile or no reading: the caller then keeps the plain notification
      * @param withGraph the graph bitmap is only needed for the custom layout
      * @param detailed the detailed or the simple sensitivity line
+     * @param labelled detailed values with the AS, ISF and target marks before them, for the widget which has room
+     * @param night dark colours. The widget always uses them: it sits on the wallpaper, not on a notification.
      */
-    suspend fun build(withGraph: Boolean, detailed: Boolean): Status? {
+    suspend fun build(
+        withGraph: Boolean,
+        detailed: Boolean,
+        labelled: Boolean = false,
+        night: Boolean = isNight(),
+        graphWidthPx: Int = defaultGraphWidthPx(),
+        graphHeightPx: Int = defaultGraphHeightPx()
+    ): Status? {
         if (!profileFunction.isProfileValid("Notification")) return null
         val lastBg = lastBgData.lastBg() ?: return null
         val now = dateUtil.now()
-        val palette = palette()
+        val palette = Palette(night)
 
         val bgColor = when {
             lastBgData.isLow()  -> palette.low
@@ -159,16 +175,23 @@ class DetailedStatusRenderer(
         val sensitivity = sensitivityOverview.build()
         val target = cacheProvider().tempTargetFlow.value
 
-        val cardValues = SpannableStringBuilder()
+        val iobCob = SpannableStringBuilder()
             .add(iob, color = palette.element.insulin.toArgb())
             .dot()
             .add(cob, color = palette.element.cob.toArgb())
+        val cardValues = SpannableStringBuilder(iobCob)
         smb?.let { cardValues.bar().append(it) }
 
         // Always autosens first, then ISF, then the target.
-        val parts =
-            if (detailed) listOf(autosens(sensitivity, palette), isf(sensitivity, palette), target?.let { target(it, palette) })
-            else listOf(simpleAutosens(sensitivity, palette), simpleIsf(sensitivity, palette), target?.let { simpleTarget(it, palette) })
+        val parts = when {
+            detailed && labelled -> listOf(
+                labelled(AppR.string.notification_autosens_detailed, autosens(sensitivity, palette), palette.element.autosens.toArgb()),
+                labelled(AppR.string.notification_isf_simple, isf(sensitivity, palette), palette.element.sensitivity.toArgb()),
+                labelled(AppR.string.notification_target_simple, target?.let { target(it, palette) }, target?.let { targetColor(it, palette) })
+            )
+            detailed             -> listOf(autosens(sensitivity, palette), isf(sensitivity, palette), target?.let { target(it, palette) })
+            else                 -> listOf(simpleAutosens(sensitivity, palette), simpleIsf(sensitivity, palette), target?.let { simpleTarget(it, palette) })
+        }
         val sensitivityLine = SpannableStringBuilder()
         parts.filterNotNull().forEach { sensitivityLine.barIfNotEmpty().append(it) }
 
@@ -183,8 +206,10 @@ class DetailedStatusRenderer(
             profileLine = scene?.let { "$profile$DOT$it" } ?: profile,
             header = scene?.let { "$profile$BAR$it" } ?: profile,
             cardValues = cardValues,
+            iobCob = iobCob,
+            smb = smb,
             sensitivityLine = sensitivityLine,
-            graph = if (withGraph) graph(now, palette) else null
+            graph = if (withGraph) graph(now, palette, graphWidthPx, graphHeightPx) else null
         )
     }
 
@@ -219,6 +244,57 @@ class DetailedStatusRenderer(
             if (status.sensitivityLine.isNotEmpty()) setTextViewText(AppR.id.status_values, status.sensitivityLine)
             else setViewVisibility(AppR.id.status_values, View.GONE)
         }
+
+    /**
+     * The home screen widget layout. White text on [background], which the user sets per widget.
+     * Glucose and arrow are one text of one size, so a stale reading gets one straight line through both.
+     */
+    fun widgetViews(status: Status, background: Int, openApp: PendingIntent?): RemoteViews =
+        RemoteViews(context.packageName, AppR.layout.widget_status).apply {
+            setInt(AppR.id.widget_background, "setColorFilter", background or 0xFF000000.toInt())
+            setInt(AppR.id.widget_background, "setImageAlpha", Color.alpha(background))
+            setTextViewText(AppR.id.widget_header, status.header)
+            val glucose = SpannableStringBuilder().add(status.bgText, color = status.bgColor, bold = true)
+            status.trendSymbol?.let { glucose.add(" $it", color = status.bgColor, bold = true) }
+            setTextViewText(AppR.id.widget_bg, glucose.strikeIf(status.isStale))
+            setTextViewText(AppR.id.widget_delta, SpannableStringBuilder(status.deltaText.orEmpty()).strikeIf(status.isStale))
+            // No format: the age sits under the delta, without the bullet the notification needs on its one line.
+            setChronometer(AppR.id.widget_age, SystemClock.elapsedRealtime() - (dateUtil.now() - status.readingTimestamp), null, true)
+            setTextViewText(AppR.id.widget_iob_cob, status.iobCob)
+            if (status.smb != null) setTextViewText(AppR.id.widget_smb, status.smb)
+            else setViewVisibility(AppR.id.widget_smb, View.GONE)
+            status.graph?.let { setImageViewBitmap(AppR.id.widget_graph, it) }
+            if (status.sensitivityLine.isNotEmpty()) setTextViewText(AppR.id.widget_values, status.sensitivityLine)
+            else setViewVisibility(AppR.id.widget_values, View.GONE)
+            openApp?.let { setOnClickPendingIntent(AppR.id.widget_root, it) }
+        }
+
+    /** The widget without a reading or a profile: only the background and a short message. */
+    fun emptyWidgetViews(background: Int, openApp: PendingIntent?): RemoteViews =
+        RemoteViews(context.packageName, AppR.layout.widget_status).apply {
+            setInt(AppR.id.widget_background, "setColorFilter", background or 0xFF000000.toInt())
+            setInt(AppR.id.widget_background, "setImageAlpha", Color.alpha(background))
+            setTextViewText(AppR.id.widget_header, rh.gs(CoreUiR.string.no_data))
+            listOf(AppR.id.widget_status_row, AppR.id.widget_graph, AppR.id.widget_values).forEach { setViewVisibility(it, View.GONE) }
+            openApp?.let { setOnClickPendingIntent(AppR.id.widget_root, it) }
+        }
+
+    private fun SpannableStringBuilder.strikeIf(stale: Boolean): SpannableStringBuilder {
+        if (stale) setSpan(StrikethroughSpan(), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        return this
+    }
+
+    /**
+     * Puts a coloured value into a label template like "ISF %1$s", keeping its colours. The template is formatted
+     * with a marker that is then replaced, so the translator still decides where the value goes.
+     */
+    private fun labelled(template: Int, value: CharSequence?, color: Int?): CharSequence? {
+        if (value.isNullOrEmpty()) return null
+        // The label in the colour of its value; the value keeps its own spans.
+        val text = SpannableStringBuilder().add(rh.gs(template, MARKER), color = color)
+        val at = text.indexOf(MARKER)
+        return if (at < 0) value else text.replace(at, at + MARKER.length, value)
+    }
 
     /** Glucose and trend in the range colour, then the delta. All struck through together when the reading is stale. */
     private fun headline(status: Status, deltaScale: Float): SpannableStringBuilder {
@@ -332,7 +408,7 @@ class DetailedStatusRenderer(
         IsfStep.SAME -> "→"
     }
 
-    private fun graph(now: Long, palette: Palette): Bitmap {
+    private fun graph(now: Long, palette: Palette, widthPx: Int, heightPx: Int): Bitmap {
         val cache = cacheProvider()
         val margin = when (profileFunction.getUnits()) {
             GlucoseUnit.MGDL -> Y_MARGIN_MGDL
@@ -379,18 +455,20 @@ class DetailedStatusRenderer(
             carbs = palette.element.carbs.toArgb()
         )
         val density = context.resources.displayMetrics.density
-        val widthPx = (context.resources.displayMetrics.widthPixels * GRAPH_WIDTH_FRACTION).toInt()
         return BgGraphBitmapRenderer().render(
-            widthPx, (GRAPH_HEIGHT_DP * density).toInt(), input, colors,
+            widthPx, heightPx, input, colors,
             dotRadiusPx = DOT_RADIUS_DP * density,
             markerSizePx = MARKER_SIZE_DP * density
         )
     }
 
-    private fun palette(): Palette {
-        val night = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        return Palette(night)
-    }
+    /** The notification's graph: nearly the screen width, 48 dp high. */
+    private fun defaultGraphWidthPx(): Int = (context.resources.displayMetrics.widthPixels * GRAPH_WIDTH_FRACTION).toInt()
+
+    private fun defaultGraphHeightPx(): Int = (GRAPH_HEIGHT_DP * context.resources.displayMetrics.density).toInt()
+
+    private fun isNight(): Boolean =
+        (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
     private fun SpannableStringBuilder.dot(): SpannableStringBuilder = append(DOT)
 
@@ -437,5 +515,8 @@ class DetailedStatusRenderer(
 
         /** The Wizard mark (abacus) before the Wizard ISF and the algorithm's autosens. Notification text cannot hold icons. */
         private const val WIZARD = "🧮"
+
+        /** Stands in for the value while a label template is formatted. The object replacement character never shows up in a string. */
+        private const val MARKER = "￼"
     }
 }

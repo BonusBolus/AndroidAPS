@@ -5,6 +5,7 @@
 - Overview: show SMB on/off status and the configured SMB maximum basal minutes beside the loop indicator. The minutes use the same colour as the SMB icon, blue when SMB is on and red when it is off.
 - Overview: split the sensitivity chip into a purple autosens chip (autosens value, and the value the algorithm used when it differs, both without a percent sign) and the blueish ISF chip.
 - Overview: reserve an empty grey block beside the temp basal chip, the same size as it. A value for it comes in a later change.
+- Widgets (ui-feature/new-widgets): two 4 × 2 status widgets, "AAPS status, detailed" and "AAPS status, simple". They show profile | scene, glucose with arrow, delta and age, IOB • COB, the SMB state, the 3 h graph with bolus, carb and SMB marks and the (temp) target, and the autosens, ISF and target values of the detailed or simple notification. The detailed widget adds AS, ISF and 🎯 marks. Drawn by the same renderer as the notification, always in the dark colours, with the background opacity setting the other widgets use.
 
 Ongoing status notification: selectable mode, detailed layout, no pop-up on updates
 
