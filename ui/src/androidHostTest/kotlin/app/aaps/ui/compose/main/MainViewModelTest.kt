@@ -3,6 +3,7 @@ package app.aaps.ui.compose.main
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import app.aaps.core.data.model.ActiveSceneState
+import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.Scene
 import app.aaps.core.data.model.SceneEndAction
 import app.aaps.core.interfaces.alerts.EatReminder
@@ -30,6 +31,7 @@ import app.aaps.core.interfaces.overview.graph.TbrDisplayData
 import app.aaps.core.interfaces.overview.graph.TempTargetDisplayData
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.protection.ProtectionCheck
 import app.aaps.core.interfaces.protection.ProtectionResult
 import app.aaps.core.interfaces.resources.ResourceHelper
@@ -55,6 +57,8 @@ import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.keys.interfaces.TextRef
 import app.aaps.core.keys.interfaces.VisibilityContext
 import app.aaps.core.objects.wizard.QuickWizard
+import app.aaps.core.ui.CoreUiStrings
+import app.aaps.ui.UiStrings
 import app.aaps.ui.compose.quickLaunch.QuickLaunchAction
 import app.aaps.ui.compose.quickLaunch.QuickLaunchResolver
 import app.aaps.ui.compose.quickLaunch.QuickLaunchSerializer
@@ -103,6 +107,7 @@ internal class MainViewModelTest {
     @Mock private lateinit var overviewDataCache: OverviewDataCache
     @Mock private lateinit var iobCobCalculator: IobCobCalculator
     @Mock private lateinit var profileFunction: ProfileFunction
+    @Mock private lateinit var profileUtil: ProfileUtil
     @Mock private lateinit var constraintChecker: ConstraintsChecker
     @Mock private lateinit var quickWizard: QuickWizard
     @Mock private lateinit var automation: Automation
@@ -180,7 +185,7 @@ internal class MainViewModelTest {
     /** The one place the constructor is called, so a test can re-stub a flow and build its own instance. */
     private fun buildSut() = MainViewModel(
         activePlugin, config, urlOpener, preferences, fabricPrivacy, rh, dateUtil,
-        overviewDataCache, iobCobCalculator, profileFunction, constraintChecker, quickWizard,
+        overviewDataCache, iobCobCalculator, profileFunction, profileUtil, constraintChecker, quickWizard,
         automation, persistenceLayer, aapsLogger, quickLaunchResolver, wizardExecutor,
         batchExecutor, uel, loop, protectionCheck, sceneActions, sceneChainTargetResolver,
         sceneStore, activeSceneManager, rxBus, nsClient, visibilityContext,
@@ -413,5 +418,25 @@ internal class MainViewModelTest {
         val sent = argumentCaptor<Event>()
         verify(rxBus, times(2)).send(sent.capture())
         assertThat((sent.lastValue as EventShowDialog.Ok).message).isEqualTo("The pump cannot take it")
+    }
+
+    /** The algorithm writes the high temp target unrounded in mg/dL; the dialog rounds it and adds the user's unit. */
+    @Test
+    fun `high temp target reason is rounded and shown in mmol per L too`() {
+        whenever(profileUtil.units).thenReturn(GlucoseUnit.MMOL)
+        whenever(rh.gs(CoreUiStrings.bg_mgdl, 126)).thenReturn("126 mg/dL")
+        whenever(profileUtil.fromMgdlToStringWithUnits(126.12740000000001)).thenReturn("7.0 mmol/L")
+        whenever(rh.gs(UiStrings.smb_disabled_high_temp_target, "126 mg/dL", "7.0 mmol/L")).thenReturn("expected")
+
+        assertThat(sut.highTempTargetReason(126.12740000000001)).isEqualTo("expected")
+    }
+
+    @Test
+    fun `high temp target reason in mg per dL shows the value once`() {
+        whenever(profileUtil.units).thenReturn(GlucoseUnit.MGDL)
+        whenever(rh.gs(CoreUiStrings.bg_mgdl, 160)).thenReturn("160 mg/dL")
+        whenever(rh.gs(UiStrings.smb_disabled_high_temp_target_mgdl, "160 mg/dL")).thenReturn("expected")
+
+        assertThat(sut.highTempTargetReason(159.6)).isEqualTo("expected")
     }
 }

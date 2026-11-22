@@ -20,3 +20,6 @@
   fit). Beside the circle: profile (whole width), temp basal + reserved block + temp target, IOB + COB,
   autosens + ISF. IOB and autosens are equally wide, so COB and ISF line up. The eventual BG chip is removed.
   The loop chip no longer shows the time since the last loop run: it did not fit.
+- SMB chip dialog: the "SMB disabled due to high temptarget" line from the algorithm now shows the value rounded to
+  whole mg/dL and also in the user's glucose unit (UI only, the algorithm is not changed). Tests: SmbStatusTest,
+  MainViewModelTest.
