@@ -8,18 +8,15 @@ import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.iob.IobCobCalculator
-import app.aaps.core.interfaces.nsclient.ProcessedDeviceStatusData
 import app.aaps.core.interfaces.overview.SensitivityOverview
 import app.aaps.core.interfaces.overview.graph.OverviewDataCache
 import app.aaps.core.interfaces.resources.TextResolver
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventShowDialog
-import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.objects.extensions.round
 import app.aaps.core.ui.CoreUiStrings
 import app.aaps.core.ui.extensions.displayText
-import app.aaps.ui.UiStrings
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -43,9 +40,7 @@ class ChipsViewModel(
     private val sensitivityOverview: SensitivityOverview,
     private val rh: TextResolver,
     private val decimalFormatter: DecimalFormatter,
-    private val rxBus: RxBus,
-    private val dateUtil: DateUtil,
-    private val processedDeviceStatusData: ProcessedDeviceStatusData
+    private val rxBus: RxBus
 ) : ViewModel() {
 
     @AssistedFactory
@@ -112,37 +107,6 @@ class ChipsViewModel(
         initialValue = SensitivityUiState()
     )
 
-    private val minuteTicker = flow {
-        while (true) {
-            emit(Unit)
-            delay(60_000L)
-        }
-    }
-
-    // Predictions are published right after a loop run on the master and after a device status on a client,
-    // so they mark a new loop result. The ticker keeps the age right in between.
-    val loopUiState: StateFlow<LoopUiState> = combine(minuteTicker, cache.predictionsFlow) { _, _ ->
-        buildLoopUiState()
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = LoopUiState()
-    )
-
-    private fun buildLoopUiState(): LoopUiState {
-        // The master's own last run; a client gets the master's from the device status.
-        val runTime = when {
-            config.APS        -> loop.lastRun?.lastAPSRun
-            config.AAPSCLIENT -> processedDeviceStatusData.openAPSData.clockSuggested.takeIf { it > 0 }
-            else              -> null
-        }
-        val ageMinutes = runTime?.let { ((dateUtil.now() - it) / MINUTE_MS).coerceAtLeast(0L) }
-        return LoopUiState(
-            ageText = ageMinutes?.let { rh.gs(UiStrings.loop_age_minutes, it.toInt()) } ?: "",
-            ageStale = ageMinutes != null && ageMinutes >= LOOP_STALE_MINUTES
-        )
-    }
-
     private suspend fun buildSensitivityUiState(): SensitivityUiState {
         // Worked out in one place for the chip, its dialog and the watch - see SensitivityOverview
         val data = sensitivityOverview.build()
@@ -181,10 +145,3 @@ class ChipsViewModel(
         }
     }
 }
-
-private const val MINUTE_MS = 60_000L
-
-/** The prediction lines have one point every 5 minutes. */
-
-/** A loop runs every 5 minutes. After 3 missed runs the age turns red. */
-private const val LOOP_STALE_MINUTES = 15L

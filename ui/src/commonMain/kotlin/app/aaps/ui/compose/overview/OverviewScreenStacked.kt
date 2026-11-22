@@ -89,7 +89,6 @@ fun OverviewScreenStacked(
     val sensitivityUiState by chipsViewModel.sensitivityUiState.collectAsStateWithLifecycle()
     val iobUiState by chipsViewModel.iobUiState.collectAsStateWithLifecycle()
     val cobUiState by chipsViewModel.cobUiState.collectAsStateWithLifecycle()
-    val loopUiState by chipsViewModel.loopUiState.collectAsStateWithLifecycle()
     val statusState by statusViewModel.uiState.collectAsStateWithLifecycle()
 
     var statusExpanded by rememberSaveable { mutableStateOf(false) }
@@ -127,8 +126,6 @@ fun OverviewScreenStacked(
                         runningModeRemaining = runningModeRemaining,
                         runningModeProgress = runningModeProgress,
                         runningModeSceneManaged = runningModeSceneManaged,
-                        loopAgeText = loopUiState.ageText,
-                        loopAgeStale = loopUiState.ageStale,
                         smbEnabled = smbEnabled,
                         smbMaxMinutes = smbMaxMinutes,
                         onNavigate = onNavigate,

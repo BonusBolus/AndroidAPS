@@ -17,8 +17,8 @@ import app.aaps.core.ui.compose.LocalAapsScale
 /**
  * Empty chip-shaped block, kept for a value that is added in a later change.
  *
- * Sized like [TbrChip] - the same padding around an icon-sized space - so it takes its own block in
- * the narrow chips row and the temp basal block fits beside it. The grey is the sensor age bar's
+ * Sized like [TbrChip] - the same padding around an icon-sized space - and placed right after it in
+ * the chips row. The grey is the sensor age bar's
  * track grey, so it reads as "nothing here yet" instead of as a status of its own. It carries no
  * text and no semantics on purpose: there is nothing to show and nothing to read out.
  */
