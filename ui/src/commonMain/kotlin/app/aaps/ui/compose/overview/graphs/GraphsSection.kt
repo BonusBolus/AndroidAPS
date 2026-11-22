@@ -724,14 +724,28 @@ fun GraphsSection(
                         .fillMaxWidth()
                         .height(secondary.height.dp - REMOVED_TIME_LABELS_HEIGHT)
                 )
-                GraphNameRow(
-                    name = seriesListLabel(secondary.series),
-                    editName = seriesListLabel(secondary.series),
-                    onEdit = if (isSimpleMode) null else ({ editingGraphIndex = i }),
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 4.dp, bottom = GRAPH_NAME_BOTTOM_PADDING)
-                )
+                if (SeriesType.TIR in secondary.series) {
+                    // The TIR legend fills the bottom of the graph, so the edit button goes to the top, level with
+                    // the "Time in range" title. That title already names the graph, so no name row here.
+                    if (!isSimpleMode) {
+                        GraphEditButton(
+                            onClick = { editingGraphIndex = i },
+                            graphName = seriesListLabel(secondary.series),
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(end = 4.dp, top = AapsSpacing.extraSmall)
+                        )
+                    }
+                } else {
+                    GraphNameRow(
+                        name = seriesListLabel(secondary.series),
+                        editName = seriesListLabel(secondary.series),
+                        onEdit = if (isSimpleMode) null else ({ editingGraphIndex = i }),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 4.dp, bottom = GRAPH_NAME_BOTTOM_PADDING)
+                    )
+                }
             }
         }
         if (editingGraphIndex >= 0 && editingGraphIndex < activeCount) {
