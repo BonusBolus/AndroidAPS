@@ -69,7 +69,7 @@ When using code written by others:
 
 When the app's Gradle build guard blocks an intentional build on an uncommitted
 feature branch, agents may pass `-PallowUncommitted` to run the build or test.
-This does not change source files or bypass safety code.
+This does not change source files or bypass safety code. Prefer doing small specific targeted gradlew build tests, for the changes just made, instead of time consuming long test. 
 
 Examples:
 
@@ -157,6 +157,6 @@ Three GitHub Actions build options are available through the VS Code terminal (`
    ```
    Builds the selected branch with specified upstream commits applied temporarily.
 
-**Permission requirement:** The AI agent must explicitly ask for user permission before triggering any build workflow. Never execute a build without confirmation.
+When changes/work on a branch are the final version, which need to be tested on device. Build and evaluate errors using the 2. branch build. If the build fails, adress errors. If not the user can directly test. 
 
 The user can change `--ref`, version tags, commit hashes, and build variants as needed.
