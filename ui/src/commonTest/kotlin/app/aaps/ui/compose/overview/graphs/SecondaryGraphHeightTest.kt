@@ -65,6 +65,16 @@ class SecondaryGraphHeightTest {
     }
 
     @Test
+    fun nonTirSeriesCombineWithoutLimit() {
+        val three = toggleSeries(bgi.series, SeriesType.COB)
+        assertEquals(listOf(SeriesType.BGI, SeriesType.DEVIATIONS, SeriesType.COB), three)
+        assertEquals(
+            listOf(SeriesType.BGI, SeriesType.DEVIATIONS, SeriesType.COB, SeriesType.SENSITIVITY),
+            toggleSeries(three, SeriesType.SENSITIVITY)
+        )
+    }
+
+    @Test
     fun togglingTirOffLeavesAnEmptySelection() {
         assertEquals(emptyList(), toggleSeries(listOf(SeriesType.TIR), SeriesType.TIR))
     }

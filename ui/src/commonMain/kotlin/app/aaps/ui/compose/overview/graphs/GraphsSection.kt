@@ -855,11 +855,11 @@ internal fun withSecondaryGraphHeight(config: GraphConfig, index: Int, expectedS
     return config.copy(secondaryGraphs = graphs)
 }
 
+/** TIR is always alone on its graph; other fields can be combined without a limit. */
 internal fun toggleSeries(current: List<SeriesType>, type: SeriesType): List<SeriesType> =
     when {
         type in current -> current - type
         type == SeriesType.TIR || SeriesType.TIR in current -> listOf(type)
-        current.size >= 2 -> current.drop(1) + type
         else -> current + type
     }
 

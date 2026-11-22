@@ -15,6 +15,7 @@
 - Bolus wizard: order the extra settings as Use percentage, Carb time, BG, Correction, and Profile.## UI
 
 - Overview graphs: allow more than two data fields on one graph.
+- Overview graphs: the TIR merge brought the 2-field limit back when picking fields; removed again (TIR still stays alone on its graph).
 - Overview graphs: use the first field on the left axis and later fields on the right axis. Fields with the same
   unit as the first (IOB with absolute IOB, BGI with deviations) share the left axis, as on master.
 - Overview graphs: zoom the graphs below the glucose graph with a two-finger pinch, the same as on the glucose graph itself.
