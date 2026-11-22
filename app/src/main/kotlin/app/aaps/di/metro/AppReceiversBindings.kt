@@ -8,6 +8,8 @@ import app.aaps.implementation.receivers.ChargingStateReceiver
 import app.aaps.implementation.receivers.NetworkChangeReceiver
 import app.aaps.implementation.receivers.TimeDateOrTZChangeReceiver
 import app.aaps.persistentNotification.DummyService
+import app.aaps.persistentNotification.StatusDetailedWidget
+import app.aaps.persistentNotification.StatusSimpleWidget
 import app.aaps.receivers.AutoStartReceiver
 import app.aaps.receivers.CarbSuggestionReceiver
 import app.aaps.receivers.DataReceiver
@@ -50,6 +52,19 @@ object AppReceiversBindings {
     @IntoMap
     @ClassKey(EatReminderReceiver::class)
     fun bindEatReminderReceiver(injector: MembersInjector<EatReminderReceiver>): MembersInjector<*> = injector
+
+    // The status widgets are AppWidgetProviders: they call `injectMetroMembers` in onReceive, which looks up the runtime class.
+    @Provides
+    @FeatureMemberInjectors
+    @IntoMap
+    @ClassKey(StatusDetailedWidget::class)
+    fun bindStatusDetailedWidget(injector: MembersInjector<StatusDetailedWidget>): MembersInjector<*> = injector
+
+    @Provides
+    @FeatureMemberInjectors
+    @IntoMap
+    @ClassKey(StatusSimpleWidget::class)
+    fun bindStatusSimpleWidget(injector: MembersInjector<StatusSimpleWidget>): MembersInjector<*> = injector
 
     @Provides
     @FeatureMemberInjectors

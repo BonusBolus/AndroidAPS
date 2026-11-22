@@ -167,6 +167,33 @@
             </intent-filter>
         </receiver>
 
+        <!-- Status home screen widgets. They live here, beside DetailedStatusRenderer which draws them. -->
+        <receiver
+            android:name="app.aaps.persistentNotification.StatusDetailedWidget"
+            android:exported="true"
+            android:label="@string/widget_status_detailed_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/status_detailed_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name="app.aaps.persistentNotification.StatusSimpleWidget"
+            android:exported="true"
+            android:label="@string/widget_status_simple_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/status_simple_widget_info" />
+        </receiver>
+
         <!-- Moved here from :plugins:main together with the class. The service field injects, and a
              members injector is generated code, which a multiplatform module cannot produce. -->
         <service
