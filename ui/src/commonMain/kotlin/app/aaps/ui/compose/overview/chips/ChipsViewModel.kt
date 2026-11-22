@@ -5,14 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.aaps.core.interfaces.InterfacesStrings
 import app.aaps.core.interfaces.aps.Loop
-import app.aaps.core.interfaces.aps.RT
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.iob.IobCobCalculator
 import app.aaps.core.interfaces.nsclient.ProcessedDeviceStatusData
 import app.aaps.core.interfaces.overview.SensitivityOverview
 import app.aaps.core.interfaces.overview.graph.OverviewDataCache
-import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.resources.TextResolver
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventShowDialog
@@ -47,7 +45,6 @@ class ChipsViewModel(
     private val decimalFormatter: DecimalFormatter,
     private val rxBus: RxBus,
     private val dateUtil: DateUtil,
-    private val profileUtil: ProfileUtil,
     private val processedDeviceStatusData: ProcessedDeviceStatusData
 ) : ViewModel() {
 
@@ -134,32 +131,16 @@ class ChipsViewModel(
 
     private fun buildLoopUiState(): LoopUiState {
         // The master's own last run; a client gets the master's from the device status.
-        val (runTime, result) = when {
-            config.APS        -> loop.lastRun?.let { it.lastAPSRun to it.request?.rawData() as? RT } ?: (null to null)
-            config.AAPSCLIENT -> processedDeviceStatusData.openAPSData.let { it.clockSuggested.takeIf { time -> time > 0 } to it.suggested }
-            else              -> null to null
+        val runTime = when {
+            config.APS        -> loop.lastRun?.lastAPSRun
+            config.AAPSCLIENT -> processedDeviceStatusData.openAPSData.clockSuggested.takeIf { it > 0 }
+            else              -> null
         }
         val ageMinutes = runTime?.let { ((dateUtil.now() - it) / MINUTE_MS).coerceAtLeast(0L) }
-        val eventualBg = result?.eventualBG?.takeIf { it.isFinite() && it > 0.0 }
-        val settles = runTime?.let { predictionEnd(result, it) }
         return LoopUiState(
             ageText = ageMinutes?.let { rh.gs(UiStrings.loop_age_minutes, it.toInt()) } ?: "",
-            ageStale = ageMinutes != null && ageMinutes >= LOOP_STALE_MINUTES,
-            eventualBgText = eventualBg?.let { profileUtil.fromMgdlToStringInUnits(it) } ?: "",
-            eventualBgTime = settles?.let { dateUtil.timeString(it) } ?: ""
+            ageStale = ageMinutes != null && ageMinutes >= LOOP_STALE_MINUTES
         )
-    }
-
-    /**
-     * About when the eventual BG is reached. The algorithm gives the eventual BG without a time, so this is the
-     * end of the longest prediction line: oref cuts a line off where it stops changing. The zero-temp line is a
-     * "what if" and is left out. Null when the run has no prediction lines.
-     */
-    private fun predictionEnd(result: RT?, runTime: Long): Long? {
-        val predictions = result?.predBGs ?: return null
-        val points = listOfNotNull(predictions.IOB, predictions.COB, predictions.UAM, predictions.aCOB).maxOfOrNull { it.size } ?: return null
-        if (points < 2) return null
-        return (result.timestamp ?: runTime) + (points - 1) * PREDICTION_STEP_MS
     }
 
     private suspend fun buildSensitivityUiState(): SensitivityUiState {
@@ -204,7 +185,6 @@ class ChipsViewModel(
 private const val MINUTE_MS = 60_000L
 
 /** The prediction lines have one point every 5 minutes. */
-private const val PREDICTION_STEP_MS = 5 * MINUTE_MS
 
 /** A loop runs every 5 minutes. After 3 missed runs the age turns red. */
 private const val LOOP_STALE_MINUTES = 15L
