@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import app.aaps.core.ui.compose.AapsSpacing
 
 /**
@@ -15,7 +17,9 @@ fun IobCobChipsRow(
     iobUiState: IobUiState,
     cobUiState: CobUiState,
     onIobChipClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // The IOB chip is at least this wide, so it can line up with the autosens chip below it.
+    iobMinWidth: Dp = 0.dp
 ) {
     val spacingDp = AapsSpacing.small
     SubcomposeLayout(
@@ -54,7 +58,7 @@ fun IobCobChipsRow(
 
         val placeables = if (isWidthBounded) {
             // IOB hugs its content but never grabs more than half the row when space is tight.
-            val iobWidth = naturalWidths[0].coerceAtMost(availableWidth / 2)
+            val iobWidth = maxOf(naturalWidths[0], iobMinWidth.roundToPx()).coerceAtMost(availableWidth / 2)
             // COB fills the rest of the row up to the edge so the chips span the full width;
             // its text marquee-scrolls when it can't fit (see CobChip).
             val cobWidth = (availableWidth - iobWidth).coerceAtLeast(0)

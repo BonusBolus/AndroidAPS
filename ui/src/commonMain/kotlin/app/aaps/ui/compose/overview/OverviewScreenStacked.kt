@@ -110,61 +110,57 @@ fun OverviewScreenStacked(
             formatDuration = formatDuration
         )
         eatReminderBanner()
-        // Above the BG circle, full width, so the profile name and the temp target have room.
-        OverviewTopChipsRow(
-            runningMode = runningMode,
-            runningModeText = runningModeText,
-            runningModeRemaining = runningModeRemaining,
-            runningModeProgress = runningModeProgress,
-            runningModeSceneManaged = runningModeSceneManaged,
-            loopAgeText = loopUiState.ageText,
-            loopAgeStale = loopUiState.ageStale,
-            smbEnabled = smbEnabled,
-            smbMaxMinutes = smbMaxMinutes,
-            profileName = profileName,
-            isProfileModified = isProfileModified,
-            profileProgress = profileProgress,
-            profileSceneManaged = profileSceneManaged,
-            tempTargetText = tempTargetText,
-            profileTargetText = profileTargetText,
-            tempTargetStep = tempTargetStep,
-            tempTargetState = tempTargetState,
-            tempTargetProgress = tempTargetProgress,
-            tempTargetReason = tempTargetReason,
-            tempTargetSceneManaged = tempTargetSceneManaged,
-            onNavigate = onNavigate,
-            onSmbChipClick = onSmbChipClick,
-            commandsAllowed = commandsAllowed,
-            modifier = Modifier.padding(horizontal = AapsSpacing.medium)
-        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.Top
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                BgInfoSection(
-                    bgInfo = bgInfoState.bgInfo,
-                    timeAgoText = bgInfoState.timeAgoText,
-                    size = AapsSpacing.bgCircleSizeCompact * LocalAapsScale.current
-                )
-            }
+            OverviewLoopAndBgColumn(
+                bgInfo = bgInfoState.bgInfo,
+                timeAgoText = bgInfoState.timeAgoText,
+                circleSize = AapsSpacing.bgCircleSizeCompact * LocalAapsScale.current,
+                loopSmbRow = {
+                    OverviewLoopSmbRow(
+                        runningMode = runningMode,
+                        runningModeText = runningModeText,
+                        runningModeRemaining = runningModeRemaining,
+                        runningModeProgress = runningModeProgress,
+                        runningModeSceneManaged = runningModeSceneManaged,
+                        loopAgeText = loopUiState.ageText,
+                        loopAgeStale = loopUiState.ageStale,
+                        smbEnabled = smbEnabled,
+                        smbMaxMinutes = smbMaxMinutes,
+                        onNavigate = onNavigate,
+                        onSmbChipClick = onSmbChipClick,
+                        commandsAllowed = commandsAllowed
+                    )
+                }
+            )
 
             OverviewChipsColumn(
+                profileName = profileName,
+                isProfileModified = isProfileModified,
+                profileProgress = profileProgress,
+                profileSceneManaged = profileSceneManaged,
+                tempTargetText = tempTargetText,
+                profileTargetText = profileTargetText,
+                tempTargetStep = tempTargetStep,
+                tempTargetState = tempTargetState,
+                tempTargetProgress = tempTargetProgress,
+                tempTargetReason = tempTargetReason,
+                tempTargetSceneManaged = tempTargetSceneManaged,
                 tbrState = tbrState,
-                eventualBgText = loopUiState.eventualBgText,
-                eventualBgTime = loopUiState.eventualBgTime,
                 iobUiState = iobUiState,
                 cobUiState = cobUiState,
                 sensitivityUiState = sensitivityUiState,
                 onTbrChipClick = onTbrChipClick,
                 onIobChipClick = onIobChipClick,
+                onNavigate = onNavigate,
+                commandsAllowed = commandsAllowed,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 8.dp)
+                    .padding(start = AapsSpacing.small)
             )
         }
 

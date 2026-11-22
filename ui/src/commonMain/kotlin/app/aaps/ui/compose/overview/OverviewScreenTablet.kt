@@ -29,6 +29,7 @@ import app.aaps.core.data.model.TT
 import app.aaps.core.interfaces.overview.graph.TbrState
 import app.aaps.core.interfaces.overview.IsfStep
 import app.aaps.core.ui.compose.AapsSpacing
+import app.aaps.core.ui.compose.LocalAapsScale
 import app.aaps.core.ui.compose.AapsTheme
 import app.aaps.core.ui.compose.LocalConfig
 import app.aaps.core.ui.compose.navigation.NavigationRequest
@@ -134,46 +135,34 @@ fun OverviewScreenTablet(
                     .padding(end = AapsSpacing.small),
                 verticalArrangement = Arrangement.spacedBy(AapsSpacing.small)
             ) {
-                // Above the BG circle, full width, so the profile name and the temp target have room.
-                OverviewTopChipsRow(
-                    runningMode = runningMode,
-                    runningModeText = runningModeText,
-                    runningModeRemaining = runningModeRemaining,
-                    runningModeProgress = runningModeProgress,
-                    runningModeSceneManaged = runningModeSceneManaged,
-                    loopAgeText = loopUiState.ageText,
-                    loopAgeStale = loopUiState.ageStale,
-                    smbEnabled = smbEnabled,
-                    smbMaxMinutes = smbMaxMinutes,
-                    profileName = profileName,
-                    isProfileModified = isProfileModified,
-                    profileProgress = profileProgress,
-                    profileSceneManaged = profileSceneManaged,
-                    tempTargetText = tempTargetText,
-                    profileTargetText = profileTargetText,
-                    tempTargetStep = tempTargetStep,
-                    tempTargetState = tempTargetState,
-                    tempTargetProgress = tempTargetProgress,
-                    tempTargetReason = tempTargetReason,
-                    tempTargetSceneManaged = tempTargetSceneManaged,
-                    onNavigate = onNavigate,
-                    onSmbChipClick = onSmbChipClick,
-                    commandsAllowed = commandsAllowed,
-                    modifier = Modifier.padding(horizontal = AapsSpacing.small)
-                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = AapsSpacing.small),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        BgInfoSection(
-                            bgInfo = bgInfoState.bgInfo,
-                            timeAgoText = bgInfoState.timeAgoText,
-                            showTimeAgo = false
-                        )
-                    }
+                    OverviewLoopAndBgColumn(
+                        bgInfo = bgInfoState.bgInfo,
+                        timeAgoText = bgInfoState.timeAgoText,
+                        circleSize = AapsSpacing.bgCircleSize * LocalAapsScale.current,
+                        loopSmbRow = {
+                            OverviewLoopSmbRow(
+                                runningMode = runningMode,
+                                runningModeText = runningModeText,
+                                runningModeRemaining = runningModeRemaining,
+                                runningModeProgress = runningModeProgress,
+                                runningModeSceneManaged = runningModeSceneManaged,
+                                loopAgeText = loopUiState.ageText,
+                                loopAgeStale = loopUiState.ageStale,
+                                smbEnabled = smbEnabled,
+                                smbMaxMinutes = smbMaxMinutes,
+                                onNavigate = onNavigate,
+                                onSmbChipClick = onSmbChipClick,
+                                commandsAllowed = commandsAllowed
+                            )
+                        },
+                        showTimeAgo = false
+                    )
 
                     Column(
                         modifier = Modifier
@@ -186,14 +175,25 @@ fun OverviewScreenTablet(
                             modifier = Modifier.fillMaxWidth()
                         )
                         OverviewChipsColumn(
+                            profileName = profileName,
+                            isProfileModified = isProfileModified,
+                            profileProgress = profileProgress,
+                            profileSceneManaged = profileSceneManaged,
+                            tempTargetText = tempTargetText,
+                            profileTargetText = profileTargetText,
+                            tempTargetStep = tempTargetStep,
+                            tempTargetState = tempTargetState,
+                            tempTargetProgress = tempTargetProgress,
+                            tempTargetReason = tempTargetReason,
+                            tempTargetSceneManaged = tempTargetSceneManaged,
                             tbrState = tbrState,
-                            eventualBgText = loopUiState.eventualBgText,
-                            eventualBgTime = loopUiState.eventualBgTime,
                             iobUiState = iobUiState,
                             cobUiState = cobUiState,
                             sensitivityUiState = sensitivityUiState,
                             onTbrChipClick = onTbrChipClick,
-                            onIobChipClick = onIobChipClick
+                            onIobChipClick = onIobChipClick,
+                            onNavigate = onNavigate,
+                            commandsAllowed = commandsAllowed
                         )
                     }
                 }
