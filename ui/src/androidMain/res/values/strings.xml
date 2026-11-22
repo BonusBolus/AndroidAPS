@@ -40,6 +40,8 @@
     <string name="smb_can_be_given">SMB can be given now.</string>
     <string name="smb_cannot_be_given">SMB cannot be given now. Reason:</string>
     <string name="smb_max_minutes_line" comment="%1$d=max minutes of basal that limit one SMB. Example: Max minutes of basal to limit SMB: 30 min">Max minutes of basal to limit SMB: %1$d min</string>
+    <string name="smb_disabled_high_temp_target" comment="Why the loop gave no SMB. %1$s=temp target in mg/dL, %2$s=the same temp target in the user's glucose unit. Example: SMB disabled due to high temp target of 126 mg/dL (7.0 mmol/L)">SMB disabled due to high temp target of %1$s (%2$s)</string>
+    <string name="smb_disabled_high_temp_target_mgdl" comment="Why the loop gave no SMB. %1$s=temp target with its unit. Example: SMB disabled due to high temp target of 126 mg/dL">SMB disabled due to high temp target of %1$s</string>
     <string name="smb_chip_minutes" comment="Max minutes of basal that limit one SMB, short, beside the SMB icon. %1$d=minutes. Example: 30m">%1$dm</string>
     <string name="tir_tight" comment="Short label in the time in range bar legend for the tight glucose range (3.9–7.8 mmol/L, 70–140 mg/dL). Shown as: Tight (3.9–7.8)">Tight</string>
     <string name="agp_average">Average</string>

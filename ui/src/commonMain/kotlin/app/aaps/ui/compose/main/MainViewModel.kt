@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.aaps.core.data.iob.InMemoryGlucoseValue
 import app.aaps.core.data.model.ActiveSceneState
+import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.SceneLifecycle
 import app.aaps.core.data.model.TT
@@ -44,6 +45,7 @@ import app.aaps.core.interfaces.overview.graph.TempTargetState
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.protection.ProtectionCheck
 import app.aaps.core.interfaces.protection.ProtectionResult
 import app.aaps.core.interfaces.pump.Pump
@@ -100,6 +102,7 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.binding
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -135,6 +138,7 @@ class MainViewModel(
     private val overviewDataCache: OverviewDataCache,
     private val iobCobCalculator: IobCobCalculator,
     private val profileFunction: ProfileFunction,
+    private val profileUtil: ProfileUtil,
     private val constraintChecker: ConstraintsChecker,
     private val quickWizard: QuickWizard,
     private val automation: Automation,
@@ -847,9 +851,16 @@ class MainViewModel(
             else {
                 val constraint = constraintChecker.isSMBModeEnabled()
                 val decision = smbDecisionOf((loop.lastRun?.request?.rawData() as? RT)?.consoleError)
-                smbStatusOf(constraint.value(), constraint.getReasons(), decision)
+                smbStatusOf(constraint.value(), constraint.getReasons(), decision, ::highTempTargetReason)
             }
         _eventState.update { it.copy(smbEnabled = smbStatus.allowed) }
+    }
+
+    /** The algorithm's high temp target line, rounded and also in the user's glucose unit. */
+    internal fun highTempTargetReason(mgdl: Double): String {
+        val inMgdl = rh.gs(CoreUiStrings.bg_mgdl, mgdl.roundToInt())
+        return if (profileUtil.units == GlucoseUnit.MGDL) rh.gs(UiStrings.smb_disabled_high_temp_target_mgdl, inMgdl)
+        else rh.gs(UiStrings.smb_disabled_high_temp_target, inMgdl, profileUtil.fromMgdlToStringWithUnits(mgdl))
     }
 
     /** What limits SMB, for the SMB chip. */
