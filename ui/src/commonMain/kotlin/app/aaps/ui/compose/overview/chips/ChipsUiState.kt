@@ -35,15 +35,3 @@ data class SensitivityUiState(
     val isEnabled: Boolean = true,
     val hasData: Boolean = false
 )
-
-/**
- * The last loop run, for the loop chip.
- *
- * @param ageText minutes since the last loop run, empty before the first run
- * @param ageStale true when the last run is so old that the loop may have stopped
- */
-@Immutable
-data class LoopUiState(
-    val ageText: String = "",
-    val ageStale: Boolean = false
-)

@@ -134,7 +134,7 @@ Revert: git revert -m 1 <merge commit>. Check rules that use scene triggers afte
 - Tests: ApsResultAlgorithmValuesTest (real SQLite).
 - Overview: show SMB on/off status and the configured SMB maximum basal minutes beside the loop indicator. The minutes use the same colour as the SMB icon, blue when SMB is on and red when it is off.
 - Overview: split the sensitivity chip into a purple autosens chip (autosens value, and the value the algorithm used when it differs, both without a percent sign) and the blueish ISF chip.
-- Overview: reserve an empty grey block above the temp basal chip, the same size as it. A value for it comes in a later change.
+- Overview: reserve an empty grey block beside the temp basal chip, the same size as it. A value for it comes in a later change.
 
 Ongoing status notification: selectable mode, detailed layout, no pop-up on updates
 
@@ -205,5 +205,6 @@ PR #5553 (Der-Schubi).
   shows a reversed range. Spacing uses the theme values.
 - Tests: TirCalculationTest (midnight and 24 h window, never past now, past days, invalid readings, tight part).
 - Overview layout: the loop and SMB chips sit above the BG circle (phone circle 95 -> 103 dp, so the two chips just
-  fit). Beside the circle: reserved block + profile, temp basal + temp target, IOB + COB, autosens + ISF. IOB and
-  autosens are equally wide, so COB and ISF line up. The eventual BG chip is removed.
+  fit). Beside the circle: profile (whole width), temp basal + reserved block + temp target, IOB + COB,
+  autosens + ISF. IOB and autosens are equally wide, so COB and ISF line up. The eventual BG chip is removed.
+  The loop chip no longer shows the time since the last loop run: it did not fit.

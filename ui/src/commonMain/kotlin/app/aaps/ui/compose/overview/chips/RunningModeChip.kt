@@ -62,8 +62,6 @@ fun RunningModeChip(
     modifier: Modifier = Modifier,
     remaining: String = "",
     sceneManaged: Boolean = false,
-    loopAge: String = "",
-    loopAgeStale: Boolean = false,
     enabled: Boolean = true,
     onClick: () -> Unit = {}
 ) {
@@ -103,15 +101,6 @@ fun RunningModeChip(
                             contentDescription = text,
                             tint = iconColor,
                             modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    // Time since the last loop run. Red when it is old: the loop may have stopped.
-                    if (loopAge.isNotEmpty()) {
-                        Text(
-                            text = loopAge,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (loopAgeStale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = AapsSpacing.small)
                         )
                     }
                     if (remaining.isNotEmpty()) {

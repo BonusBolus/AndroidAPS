@@ -40,7 +40,7 @@ import app.aaps.ui.compose.overview.chips.TempTargetChip
 fun bgSectionWidth(circleSize: Dp): Dp = circleSize + AapsSpacing.small * 2
 
 /**
- * The loop mode chip (with the time since the last loop run) and the SMB chip, above the BG circle. The SMB
+ * The loop mode chip and the SMB chip, above the BG circle. The SMB
  * chip keeps its own width and the loop chip takes the rest, so the row is exactly as wide as the circle and
  * ends where the chips beside the circle start.
  */
@@ -51,8 +51,6 @@ fun OverviewLoopSmbRow(
     runningModeRemaining: String,
     runningModeProgress: Float,
     runningModeSceneManaged: Boolean = false,
-    loopAgeText: String = "",
-    loopAgeStale: Boolean = false,
     smbEnabled: Boolean = false,
     smbMaxMinutes: Int = 0,
     onNavigate: (NavigationRequest) -> Unit,
@@ -74,8 +72,6 @@ fun OverviewLoopSmbRow(
                 progress = runningModeProgress,
                 remaining = runningModeRemaining,
                 sceneManaged = runningModeSceneManaged,
-                loopAge = loopAgeText,
-                loopAgeStale = loopAgeStale,
                 enabled = commandsAllowed && LocalClientRole.current.allows(ElementType.RUNNING_MODE.role),
                 onClick = { onNavigate(NavigationRequest.Element(ElementType.RUNNING_MODE)) },
                 modifier = Modifier.weight(1f)
@@ -116,13 +112,12 @@ fun OverviewLoopAndBgColumn(
 
 /**
  * The chips beside the BG circle:
- * - reserved block, profile
- * - temp basal, temp target
+ * - profile, over the whole width
+ * - temp basal, reserved block, temp target
  * - IOB, COB
  * - autosens, ISF
  *
- * The reserved block is built like the temp basal chip, so it has the same width and sits right above it.
- * IOB and autosens get the same width, so COB and ISF do too and the last two rows line up.
+ * The reserved block sits right after the temp basal chip. IOB and autosens get the same width, so COB and ISF do too and the last two rows line up.
  */
 @Composable
 fun OverviewChipsColumn(
@@ -153,25 +148,17 @@ fun OverviewChipsColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AapsSpacing.small)
-        ) {
-            // Grey placeholder for a value that comes in a later change.
-            ReservedChip()
-            ProfileChip(
-                profileName = profileName.ifEmpty { stringResource(CoreUiStrings.no_profile_set) },
-                isModified = isProfileModified,
-                progress = profileProgress,
-                onClick = { onNavigate(NavigationRequest.Element(ElementType.PROFILE_MANAGEMENT)) },
-                sceneManaged = profileSceneManaged,
-                isNoProfile = profileName.isEmpty(),
-                // Stays clickable even on an unpaired client: profile management opens read-only there,
-                // so this is a view affordance, not a command one (unlike the running-mode / TT chips).
-                modifier = Modifier.weight(1f)
-            )
-        }
+        ProfileChip(
+            profileName = profileName.ifEmpty { stringResource(CoreUiStrings.no_profile_set) },
+            isModified = isProfileModified,
+            progress = profileProgress,
+            onClick = { onNavigate(NavigationRequest.Element(ElementType.PROFILE_MANAGEMENT)) },
+            sceneManaged = profileSceneManaged,
+            isNoProfile = profileName.isEmpty(),
+            // Stays clickable even on an unpaired client: profile management opens read-only there,
+            // so this is a view affordance, not a command one (unlike the running-mode / TT chips).
+            modifier = Modifier.fillMaxWidth()
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -181,6 +168,8 @@ fun OverviewChipsColumn(
                 state = tbrState,
                 onClick = onTbrChipClick
             )
+            // Grey placeholder for a value that comes in a later change.
+            ReservedChip()
             if (tempTargetText.isNotEmpty()) {
                 TempTargetChip(
                     targetText = tempTargetText,

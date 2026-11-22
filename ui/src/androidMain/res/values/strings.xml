@@ -41,7 +41,6 @@
     <string name="smb_cannot_be_given">SMB cannot be given now. Reason:</string>
     <string name="smb_max_minutes_line" comment="%1$d=max minutes of basal that limit one SMB. Example: Max minutes of basal to limit SMB: 30 min">Max minutes of basal to limit SMB: %1$d min</string>
     <string name="smb_chip_minutes" comment="Max minutes of basal that limit one SMB, short, beside the SMB icon. %1$d=minutes. Example: 30m">%1$dm</string>
-    <string name="loop_age_minutes" comment="Minutes since the last loop run, short, in the loop chip. %1$d=minutes. Example: 2m">%1$dm</string>
     <string name="tir_tight" comment="Short label in the time in range bar legend for the tight glucose range (3.9–7.8 mmol/L, 70–140 mg/dL). Shown as: Tight (3.9–7.8)">Tight</string>
     <string name="agp_average">Average</string>
     <string name="agp_median">Median</string>
