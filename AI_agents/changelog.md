@@ -197,7 +197,7 @@ PR #5553 (Der-Schubi).
   and the max minutes. Display only, the loop is not changed. On a client only the synced SMB preference is known.
 - Tests: SmbStatusTest.
 
-- TIR graphs: show the glucose range next to each label, for example High (10.0–13.9).
+- TIR graphs: the legend shows only the name and the percentage of each range, no glucose numbers, so it is less cluttered.
 - TIR graphs: show the tight range (3.9–7.8 mmol/L, 70–140 mg/dL) as a darker green part of the In Range bar, with its own legend item.
 - TIR graphs: autosens has its own colour (rose) in the theme; the autosens ratio line in the graphs uses it.
 - TIR graphs: the Tight legend item is hidden when the low mark is above 7.8 mmol/L (140 mg/dL), so it never
