@@ -69,7 +69,7 @@ When using code written by others:
 
 When the app's Gradle build guard blocks an intentional build on an uncommitted
 feature branch, agents may pass `-PallowUncommitted` to run the build or test.
-This does not change source files or bypass safety code.
+This does not change source files or bypass safety code. Prefer doing small specific targeted gradlew build tests, for the changes just made, instead of time consuming long test. 
 
 Examples:
 
@@ -93,13 +93,14 @@ Do not expand the scope unless necessary for correctness or safety.
 ## Agent Behavior
 
 - Never invent files, APIs, functions, results, or sources. Inspect the code before making claims about it.
+- All user-facing text (labels, dropdown options, messages, notifications) must come from the English `values/strings.xml`. Never hardcode such text in Kotlin, also not "On", "Off" or "Toggle". Never edit the translated `values-xx/strings.xml` files.
 - You review code; the user builds, deploys, and tests. Never call a change "tested" or "verified" unless it was actually built and run. A code review is not a build or test; say what was and was not checked.
 - Ask only when a missing detail materially changes the solution; otherwise state a brief assumption and proceed. Ask before destructive, irreversible, or external actions.
 - Be concise. Answer first. No filler.
 
 ## Git Workflow - Branch Per Feature
 
-The user does all building, testing, merging, and pushing.
+The user does all building, testing, merging, and pushing, unless the user explicitly asks the agent to do it.
 
 All new branches should be made from main(which should be up to date with upstream master), such that all feature branches only contain the unique features/changes and are up to date with upstream and main. For easy revertability. Before updating feature branch, pull from main!
 
@@ -110,7 +111,7 @@ All new branches should be made from main(which should be up to date with upstre
 - Keep note of the big overview of general changes in /AI_agents/changelog.md
 
 - Allowed without asking: `git status`, `diff`, `log`, `fetch`; creating/switching to a `feature/*` branch; focused commits on the current `feature/*` branch (`WIP:` prefix for unfinished work).
-- **Never do** (the user does these): `git push`; merging into `master` (or `master` into a feature branch without asking); `rebase`, `reset --hard`, `push --force`, `clean -fd`, discarding uncommitted changes; merging/rebasing/resetting onto upstream; deleting branches. If a task seems to require one, stop and ask.
+- **Never do** (the user does these): `git push` (unless the user explicitly asks for it; never `--force`); merging into `master` (or `master` into a feature branch without asking); `rebase`, `reset --hard`, `push --force`, `clean -fd`, discarding uncommitted changes; merging/rebasing/resetting onto upstream; deleting branches. If a task seems to require one, stop and ask.
 - Pause: commit as `WIP: <state>` and switch. Abandon: the user deletes the branch; `master` stays untouched.
 
 ## Safety-Critical Areas
@@ -156,6 +157,6 @@ Three GitHub Actions build options are available through the VS Code terminal (`
    ```
    Builds the selected branch with specified upstream commits applied temporarily.
 
-**Permission requirement:** The AI agent must explicitly ask for user permission before triggering any build workflow. Never execute a build without confirmation.
+When changes/work on a branch are the final version, which need to be tested on device. Build and evaluate errors using the 2. branch build. If the build fails, adress errors. If not the user can directly test. 
 
 The user can change `--ref`, version tags, commit hashes, and build variants as needed.
