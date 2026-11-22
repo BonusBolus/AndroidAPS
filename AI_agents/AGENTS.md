@@ -97,6 +97,7 @@ Do not expand the scope unless necessary for correctness or safety.
 - You review code; the user builds, deploys, and tests. Never call a change "tested" or "verified" unless it was actually built and run. A code review is not a build or test; say what was and was not checked.
 - Ask only when a missing detail materially changes the solution; otherwise state a brief assumption and proceed. Ask before destructive, irreversible, or external actions.
 - Be concise. Answer first. No filler.
+- When the user asks for tasks on several branches, give each task to a subagent. Choose the agents so they balance speed, correctness and token use. Run them in parallel (one git worktree per branch), and do not let them wait for each other's gradle builds. Gradle builds themselves must still run one after the other.
 
 ## Git Workflow - Branch Per Feature
 
