@@ -72,6 +72,8 @@ class WidgetConfigureActivity : MetroAppCompatActivity() {
                                 widgetUpdater.update("WidgetConfigure")
                             },
                             onClose = {
+                                // A widget placed with this screen gets no update broadcast from Android: draw it now.
+                                widgetUpdater.update("WidgetConfigureClose")
                                 val resultValue = Intent().apply {
                                     putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                                 }
