@@ -130,13 +130,11 @@ class DetailedStatusRenderer(
      * @return null when there is no valid profile or no reading: the caller then keeps the plain notification
      * @param withGraph the graph bitmap is only needed for the custom layout
      * @param detailed the detailed or the simple sensitivity line
-     * @param labelled detailed values with the AS, ISF and target marks before them, for the widget which has room
      * @param night dark colours. The widget always uses them: it sits on the wallpaper, not on a notification.
      */
     suspend fun build(
         withGraph: Boolean,
         detailed: Boolean,
-        labelled: Boolean = false,
         night: Boolean = isNight(),
         graphWidthPx: Int = defaultGraphWidthPx(),
         graphHeightPx: Int = defaultGraphHeightPx()
@@ -183,15 +181,9 @@ class DetailedStatusRenderer(
         smb?.let { cardValues.bar().append(it) }
 
         // Always autosens first, then ISF, then the target.
-        val parts = when {
-            detailed && labelled -> listOf(
-                labelled(AppR.string.notification_autosens_detailed, autosens(sensitivity, palette), palette.element.autosens.toArgb()),
-                labelled(AppR.string.notification_isf_simple, isf(sensitivity, palette), palette.element.sensitivity.toArgb()),
-                labelled(AppR.string.notification_target_simple, target?.let { target(it, palette) }, target?.let { targetColor(it, palette) })
-            )
-            detailed             -> listOf(autosens(sensitivity, palette), isf(sensitivity, palette), target?.let { target(it, palette) })
-            else                 -> listOf(simpleAutosens(sensitivity, palette), simpleIsf(sensitivity, palette), target?.let { simpleTarget(it, palette) })
-        }
+        val parts =
+            if (detailed) listOf(autosens(sensitivity, palette), isf(sensitivity, palette), target?.let { target(it, palette) })
+            else listOf(simpleAutosens(sensitivity, palette), simpleIsf(sensitivity, palette), target?.let { simpleTarget(it, palette) })
         val sensitivityLine = SpannableStringBuilder()
         parts.filterNotNull().forEach { sensitivityLine.barIfNotEmpty().append(it) }
 
@@ -282,18 +274,6 @@ class DetailedStatusRenderer(
     private fun SpannableStringBuilder.strikeIf(stale: Boolean): SpannableStringBuilder {
         if (stale) setSpan(StrikethroughSpan(), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         return this
-    }
-
-    /**
-     * Puts a coloured value into a label template like "ISF %1$s", keeping its colours. The template is formatted
-     * with a marker that is then replaced, so the translator still decides where the value goes.
-     */
-    private fun labelled(template: Int, value: CharSequence?, color: Int?): CharSequence? {
-        if (value.isNullOrEmpty()) return null
-        // The label in the colour of its value; the value keeps its own spans.
-        val text = SpannableStringBuilder().add(rh.gs(template, MARKER), color = color)
-        val at = text.indexOf(MARKER)
-        return if (at < 0) value else text.replace(at, at + MARKER.length, value)
     }
 
     /** Glucose and trend in the range colour, then the delta. All struck through together when the reading is stale. */
@@ -515,8 +495,5 @@ class DetailedStatusRenderer(
 
         /** The Wizard mark (abacus) before the Wizard ISF and the algorithm's autosens. Notification text cannot hold icons. */
         private const val WIZARD = "🧮"
-
-        /** Stands in for the value while a label template is formatted. The object replacement character never shows up in a string. */
-        private const val MARKER = "￼"
     }
 }

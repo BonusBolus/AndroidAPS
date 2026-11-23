@@ -26,11 +26,10 @@
     <!-- Ongoing status notification -->
     <string name="notification_smb" comment="The drop stands for SMB, to save room. %1$d=max minutes of basal that limit an SMB. Example: 💧20m">💧%1$dm</string>
     <string name="notification_autosens_simple" comment="Current autosens in the short status notification. %1$s=autosens in percent without the percent sign. Example: AS 97%">AS %1$s%%</string>
-    <string name="notification_isf_simple" comment="ISF in the short status notification and the status widgets. %1$s=ISF in the user's glucose unit per unit of insulin, in the detailed widget sometimes from → to and the Wizard ISF after an abacus emoji. Example: ISF 8.1">ISF %1$s</string>
-    <string name="notification_target_simple" comment="Target glucose the algorithm uses, in the short status notification and the status widgets. The target emoji stands for the word target. %1$s=target in the user's glucose unit, in the detailed widget sometimes profile target → adjusted target. Example: 🎯 6.1">🎯 %1$s</string>
+    <string name="notification_isf_simple" comment="ISF in the short status notification and the simple status widget. %1$s=ISF in the user's glucose unit per unit of insulin. Example: ISF 8.1">ISF %1$s</string>
+    <string name="notification_target_simple" comment="Target glucose the algorithm uses, in the short status notification and the simple status widget. The target emoji stands for the word target. %1$s=target in the user's glucose unit. Example: 🎯 6.1">🎯 %1$s</string>
     <string name="notification_age_format" comment="Time since the last glucose reading, after the glucose value. %s=the running time, for example 3:47. Only %s is allowed here, no positional placeholder. Example: • 3:47">• %s</string>
     <string name="notification_divider" translatable="false">|</string>
-    <string name="notification_autosens_detailed" comment="Autosens in the detailed status widget. %1$s=autosens in percent without the percent sign, sometimes followed by the abacus emoji and the autosens the algorithm used. Example: AS 112 🧮 105">AS %1$s</string>
 
     <!-- Status home screen widgets -->
     <string name="widget_status_detailed_label">AAPS status, detailed</string>
@@ -45,7 +44,7 @@
     <string name="widget_status_preview_age" translatable="false">3:47</string>
     <string name="widget_status_preview_iob_cob" translatable="false">1.3U  •  12g</string>
     <string name="widget_status_preview_smb" translatable="false">💧30m</string>
-    <string name="widget_status_preview_values_detailed" translatable="false">AS 112 🧮 105  |  ISF 8.1 ↘ 7.2 🧮 7.4  |  🎯 7.0</string>
+    <string name="widget_status_preview_values_detailed" translatable="false">112 🧮 105  |  8.1 ↘ 7.2 🧮 7.4  |  7.0</string>
     <string name="widget_status_preview_values_simple" translatable="false">AS 112%  |  ISF 7.2  |  🎯 7.0</string>
 
 </resources>

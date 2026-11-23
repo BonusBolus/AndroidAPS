@@ -74,7 +74,6 @@ abstract class StatusWidget(private val detailed: Boolean) : AppWidgetProvider()
         val status = detailedStatus.build(
             withGraph = true,
             detailed = detailed,
-            labelled = true,
             night = true,
             graphWidthPx = widthPx,
             graphHeightPx = heightPx
@@ -116,7 +115,7 @@ abstract class StatusWidget(private val detailed: Boolean) : AppWidgetProvider()
     }
 }
 
-/** The values of the detailed notification, with the wizard values beside the current ones, and AS, ISF and target marks. */
+/** The values of the detailed notification, with the wizard values beside the current ones. No AS, ISF and target marks, to save room. */
 class StatusDetailedWidget : StatusWidget(detailed = true)
 
 /** Only the current values with a short label, like the simple notification. */
